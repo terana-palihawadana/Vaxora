@@ -65,6 +65,39 @@ public class PostgreSqlIntegrationTests
     }
 
     [Fact]
+    public void Schema_safety_sql_survives_ef_raw_sql_formatting()
+    {
+        // ExecuteSqlRaw runs string.Format over the SQL; unescaped JSON braces used to throw
+        // and silently skip every safety column on startup.
+        var formatted = string.Format(DbInitializer.SchemaSafetySql, Array.Empty<object>());
+
+        Assert.Contains("DEFAULT '{}'", formatted);
+        Assert.Contains("\"CheckedInAt\"", formatted);
+    }
+
+    [Fact]
+    public async Task PostgreSql_schema_safety_sql_runs_on_a_migrated_database()
+    {
+        var connectionString = GetRequiredPostgreSqlConnectionString();
+        _postgres.EnsureMigrated(connectionString);
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            .UseNpgsql(connectionString)
+            .Options;
+        await using var context = new ApplicationDbContext(options);
+
+        // Same call DbInitializer makes on every API start; it must not throw.
+        await context.Database.ExecuteSqlRawAsync(DbInitializer.SchemaSafetySql);
+
+        await using var conn = new NpgsqlConnection(connectionString);
+        await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = @"SELECT column_default FROM information_schema.columns
+                            WHERE table_name = 'AgentWorkflows' AND column_name = 'PlanJson'";
+        var columnDefault = (string?)await cmd.ExecuteScalarAsync();
+        Assert.NotNull(columnDefault);
+    }
+
+    [Fact]
     public async Task PostgreSql_staff_affiliation_shift_and_swap_crud()
     {
         var connectionString = GetRequiredPostgreSqlConnectionString();
