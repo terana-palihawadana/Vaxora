@@ -671,7 +671,7 @@ export default function HospitalShiftsPanel() {
               alignItems: 'center',
               gap: '8px',
               padding: '9px 18px',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '10px',
@@ -738,6 +738,7 @@ export default function HospitalShiftsPanel() {
               </button>
               <input
                 type="date"
+                aria-label="Week starting"
                 value={weekStart}
                 onChange={(e) => setWeekStart(startOfWeek(e.target.value || hospitalToday()))}
                 style={{
@@ -907,8 +908,9 @@ export default function HospitalShiftsPanel() {
             </div>
 
             <div className="modal-form-group" style={{ margin: 0 }}>
-              <label className="modal-label">Date *</label>
+              <label className="modal-label" htmlFor="shift-date">Date *</label>
               <input
+                id="shift-date"
                 type="date"
                 name="shiftDate"
                 value={form.shiftDate}
@@ -920,8 +922,9 @@ export default function HospitalShiftsPanel() {
             </div>
 
             <div className="modal-form-group" style={{ margin: 0 }}>
-              <label className="modal-label">Start *</label>
+              <label className="modal-label" htmlFor="shift-start">Start *</label>
               <input
+                id="shift-start"
                 type="time"
                 name="startTime"
                 value={form.startTime}
@@ -932,8 +935,9 @@ export default function HospitalShiftsPanel() {
             </div>
 
             <div className="modal-form-group" style={{ margin: 0 }}>
-              <label className="modal-label">End *</label>
+              <label className="modal-label" htmlFor="shift-end">End *</label>
               <input
+                id="shift-end"
                 type="time"
                 name="endTime"
                 value={form.endTime}
@@ -944,8 +948,9 @@ export default function HospitalShiftsPanel() {
             </div>
 
             <div className="modal-form-group" style={{ margin: 0 }}>
-              <label className="modal-label">Booth</label>
+              <label className="modal-label" htmlFor="shift-booth">Booth</label>
               <select
+                id="shift-booth"
                 name="boothId"
                 value={form.boothId}
                 onChange={handleChange}
@@ -967,8 +972,9 @@ export default function HospitalShiftsPanel() {
           </div>
 
           <div className="modal-form-group" style={{ margin: 0 }}>
-            <label className="modal-label">Notes</label>
+            <label className="modal-label" htmlFor="shift-notes">Notes</label>
             <input
+              id="shift-notes"
               type="text"
               name="notes"
               value={form.notes}

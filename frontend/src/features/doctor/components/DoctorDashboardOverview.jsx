@@ -4,9 +4,8 @@ import AefiReportModal from './AefiReportModal';
 import doctorHomeHero from '../../../assets/images/doctor-home-hero.jpg';
 
 function formatDoctorName(user) {
-  const raw = (user?.name || '').trim();
+  const raw = (user?.name || '').trim().replace(/^(?:(?:dr\.|dr\s|doctor\s|nurse\s)\s*)+/i, '').trim();
   if (!raw) return 'Doctor';
-  if (/^dr\.?\s/i.test(raw)) return raw;
   return `Dr. ${raw}`;
 }
 

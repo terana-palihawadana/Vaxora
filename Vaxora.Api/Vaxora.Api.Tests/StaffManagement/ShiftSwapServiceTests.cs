@@ -300,6 +300,81 @@ public class ShiftSwapServiceTests
         return (hospital, request, first, second);
     }
 
+    [Theory]
+    [InlineData("this is not json at all")]
+    [InlineData("{\"reviews\": \"oops\"}")]
+    [InlineData("{\"content\": \"{ broken json \"}")]
+    public async Task RankWithAgentAsync_falls_back_to_roster_order_on_malformed_ai_output(string agentJson)
+    {
+        await using var context = TestDb.CreateContext();
+        var (hospital, request, _, _) = await SeedPendingRequestWithTwoReplacementsAsync(context);
+        var rosterService = CreateService(context);
+        var rosterOrder = (await rosterService.ListForHospitalAsync(hospital.Id))
+            .Single(r => r.Id == request.Id)
+            .Suggestions.Select(s => s.AffiliationId)
+            .ToList();
+        var service = new ShiftSwapService(context, new CannedGateway(agentJson), NullLogger<ShiftSwapService>.Instance);
+
+        var ranked = await service.RankWithAgentAsync(hospital.Id, request.Id, "token");
+
+        Assert.False(ranked.AiRanked);
+        Assert.Equal(rosterOrder, ranked.Suggestions.Select(s => s.AffiliationId));
+    }
+
+    [Fact]
+    public async Task RankWithAgentAsync_ignores_staff_the_ai_invents()
+    {
+        await using var context = TestDb.CreateContext();
+        var (hospital, request, first, _) = await SeedPendingRequestWithTwoReplacementsAsync(context);
+        var invented = Guid.NewGuid();
+        var content = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            reviews = new[]
+            {
+                new
+                {
+                    requestId = request.Id,
+                    summary = "Ranked",
+                    ranked = new[]
+                    {
+                        new { affiliationId = invented, why = "Not on the roster" },
+                        new { affiliationId = first.Id, why = "Free all day" }
+                    }
+                }
+            }
+        });
+        var agentJson = System.Text.Json.JsonSerializer.Serialize(new { content });
+        var service = new ShiftSwapService(context, new CannedGateway(agentJson), NullLogger<ShiftSwapService>.Instance);
+
+        var ranked = await service.RankWithAgentAsync(hospital.Id, request.Id, "token");
+
+        Assert.True(ranked.AiRanked);
+        Assert.DoesNotContain(ranked.Suggestions, s => s.AffiliationId == invented);
+        Assert.Equal(first.Id, ranked.Suggestions[0].AffiliationId);
+        Assert.Equal(2, ranked.Suggestions.Count);
+    }
+
+    /// <summary>Agent fake that always returns the same raw JSON.</summary>
+    private sealed class CannedGateway : IAgentGatewayService
+    {
+        private readonly string _json;
+
+        public CannedGateway(string json) => _json = json;
+
+        public Task<AgentGatewayResult> ChatAsync(
+            AgentChatRequestDto request,
+            string? bearerToken,
+            IReadOnlyCollection<string>? allowedAgents = null,
+            CancellationToken ct = default) =>
+            Task.FromResult(AgentGatewayResult.Ok(_json));
+
+        public Task<AgentGatewayResult> PatientCarePlanAsync(Guid patientProfileId, string? bearerToken, CancellationToken ct = default) =>
+            Task.FromResult(AgentGatewayResult.Ok("{}"));
+
+        public Task<AgentHealthDto> HealthAsync(CancellationToken ct = default) =>
+            Task.FromResult(new AgentHealthDto { Online = true, Agents = new List<string>() });
+    }
+
     /// <summary>Agent fake that ranks the given candidates in reverse order and counts calls.</summary>
     private sealed class RankingGateway : IAgentGatewayService
     {

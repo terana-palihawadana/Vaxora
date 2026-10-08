@@ -751,7 +751,7 @@ public class StaffManagementService : IStaffManagementService
 
     public async Task<StaffCoverageReportDto> GetCoverageReportAsync(Guid hospitalUserId, DateOnly from, DateOnly to)
     {
-        await EnsureActiveHospitalAsync(hospitalUserId);
+        var hospitalProfileId = await EnsureActiveHospitalWithProfileAsync(hospitalUserId);
 
         if (to < from)
             throw new InvalidOperationException("Coverage end date must be on or after the start date.");
@@ -767,10 +767,6 @@ public class StaffManagementService : IStaffManagementService
         var activeDoctors = activeAffiliations.Count(a => a.StaffRole == UserRole.DOCTOR);
         var activeNurses = activeAffiliations.Count(a => a.StaffRole == UserRole.NURSE);
 
-        var onDutyStaff = (await StaffDutyHelper.GetOnDutyAffiliationIdsAsync(
-            _context,
-            activeAffiliations.Select(a => a.Id).ToList())).Count;
-
         var shifts = await _context.StaffShifts
             .AsNoTracking()
             .Include(s => s.Affiliation)
@@ -781,9 +777,13 @@ public class StaffManagementService : IStaffManagementService
                 s.ShiftDate <= to)
             .ToListAsync();
 
+        // When today is in range, the affiliations and shifts above already hold everything the
+        // on-duty count needs, so skip the helper's two extra round trips.
+        var onDutyStaff = await CountOnDutyAsync(activeAffiliations, shifts, from, to);
+
         // Coverage only matters on days the hospital actually runs vaccine sessions;
         // closed days and past days must not show as "Low".
-        var clinicDays = await GetClinicDaysAsync(hospitalUserId, from, to);
+        var clinicDays = await GetClinicDaysAsync(hospitalUserId, from, to, hospitalProfileId);
         var today = HospitalToday();
 
         var days = new List<StaffDayCoverageDto>();
@@ -873,14 +873,34 @@ public class StaffManagementService : IStaffManagementService
     /// <summary>
     /// Dates in [from, to] with at least one active vaccine session (one-time or weekly).
     /// </summary>
-    private async Task<HashSet<DateOnly>> GetClinicDaysAsync(Guid hospitalUserId, DateOnly from, DateOnly to)
+    private async Task<int> CountOnDutyAsync(
+        List<StaffAffiliation> activeAffiliations,
+        List<StaffShift> shiftsInRange,
+        DateOnly from,
+        DateOnly to)
     {
-        var hospitalProfileId = await _context.HospitalProfiles
-            .AsNoTracking()
-            .Where(h => h.UserId == hospitalUserId)
-            .Select(h => (Guid?)h.Id)
-            .FirstOrDefaultAsync();
+        var today = StaffDutyHelper.HospitalToday();
+        if (today < from || today > to)
+        {
+            return (await StaffDutyHelper.GetOnDutyAffiliationIdsAsync(
+                _context,
+                activeAffiliations.Select(a => a.Id).ToList())).Count;
+        }
 
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
+        var utcNow = DateTime.UtcNow;
+        var liveShiftIds = shiftsInRange
+            .Where(s => s.ShiftDate == today && s.StartTime <= now && s.EndTime > now)
+            .Select(s => s.AffiliationId)
+            .ToHashSet();
+
+        return activeAffiliations.Count(a =>
+            a.DutyStatus != DutyStatus.OnBreak &&
+            (liveShiftIds.Contains(a.Id) || StaffDutyHelper.IsClockedIn(a.DutyStatus, a.DutyUpdatedAt, utcNow)));
+    }
+
+    private async Task<HashSet<DateOnly>> GetClinicDaysAsync(Guid hospitalUserId, DateOnly from, DateOnly to, Guid? hospitalProfileId)
+    {
         var schedules = await _context.VaccineSchedules
             .AsNoTracking()
             .Where(s =>
@@ -1324,6 +1344,21 @@ public class StaffManagementService : IStaffManagementService
             throw new UnauthorizedAccessException("Only hospital accounts can perform this action.");
         if (hospital.Status != UserStatus.Active)
             throw new InvalidOperationException("Hospital account must be Active.");
+    }
+
+    /// <summary>Same checks as EnsureActiveHospitalAsync, plus the hospital profile id, in one query.</summary>
+    private async Task<Guid?> EnsureActiveHospitalWithProfileAsync(Guid hospitalUserId)
+    {
+        var hospital = await _context.Users
+            .AsNoTracking()
+            .Where(u => u.Id == hospitalUserId)
+            .Select(u => new { u.Role, u.Status, ProfileId = u.HospitalProfile != null ? (Guid?)u.HospitalProfile.Id : null })
+            .FirstOrDefaultAsync();
+        if (hospital == null || hospital.Role != UserRole.HOSPITAL)
+            throw new UnauthorizedAccessException("Only hospital accounts can perform this action.");
+        if (hospital.Status != UserStatus.Active)
+            throw new InvalidOperationException("Hospital account must be Active.");
+        return hospital.ProfileId;
     }
 
     private async Task EnsureActiveStaffAsync(Guid staffUserId)

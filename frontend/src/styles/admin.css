@@ -1,6 +1,6 @@
 /* ==========================================================================
    Vaxora - Admin Portal Dark Theme & Sidebar Stylesheet
-   Color Identity: Vaxora Logo Blue (#0284c7, #0ea5e9, #38bdf8, #2563eb)
+   Color Identity: Vaxora Logo Blue (#0369a1, #0ea5e9, #38bdf8, #2563eb)
                   Crisp White (#ffffff, #f8fafc) & Deep Black Theme (#030712, #070a13, #0c111e)
    ========================================================================== */
 
@@ -78,7 +78,7 @@
 .admin-nav-section-label {
   font-size: 0.68rem;
   font-weight: 800;
-  color: #64748b;
+  color: #94a3b8;
   letter-spacing: 1px;
   padding: 8px 24px 6px;
   text-transform: uppercase;
@@ -253,7 +253,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.76rem;
-  color: #64748b;
+  color: #94a3b8;
   margin-top: 2px;
 }
 
@@ -309,7 +309,7 @@
   background: #070a13;
   text-align: center;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .admin-dark-footer p {
@@ -365,7 +365,7 @@
 }
 
 .admin-dark-app .doctor-stat-meta {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 /* Main Cards */
@@ -455,7 +455,7 @@
 }
 
 .admin-dark-app .doctor-table-btn:hover {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   border-color: #38bdf8;
 }
@@ -519,7 +519,7 @@
 }
 
 .admin-btn-view:hover:not(:disabled) {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   border-color: #38bdf8;
   box-shadow: 0 0 12px rgba(2, 132, 199, 0.35);
@@ -561,7 +561,7 @@
 }
 
 .admin-dark-app .doctor-filter-btn {
-  color: #94a3b8;
+  color: #475569;
 }
 
 .admin-dark-app .doctor-filter-btn:hover {
@@ -570,7 +570,7 @@
 }
 
 .admin-dark-app .doctor-filter-btn.active {
-  background: #0284c7 !important;
+  background: #0369a1 !important;
   color: #ffffff !important;
   box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
 }
@@ -609,7 +609,7 @@
 
 .admin-dark-app .doctor-obs-item-meta,
 .admin-dark-app .doctor-coldbox-lot {
-  color: #64748b;
+  color: #94a3b8;
 }
 
 .admin-dark-app .doctor-coldbox-number {
@@ -646,7 +646,7 @@
 .admin-dark-app .doctor-form-input:focus,
 .admin-dark-app .doctor-form-select:focus,
 .admin-dark-app .doctor-form-textarea:focus {
-  border-color: #0284c7;
+  border-color: #0369a1;
   outline: none;
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
 }
@@ -791,7 +791,7 @@
 }
 
 .admin-doc-link-btn:hover {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   border-color: #38bdf8;
 }
@@ -821,7 +821,7 @@
 }
 
 .admin-doc-badge-link:hover {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   border-color: #38bdf8;
   box-shadow: 0 0 10px rgba(2, 132, 199, 0.35);
@@ -857,7 +857,7 @@
 /* Toast */
 .admin-dark-app .doctor-toast {
   background: #0c1b33;
-  border: 1px solid #0284c7;
+  border: 1px solid #0369a1;
   color: #ffffff;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
 }
@@ -916,7 +916,7 @@
 }
 
 .admin-brand-tag {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 800;

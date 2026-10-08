@@ -19,7 +19,7 @@
 
 .nurse-avatar-btn svg circle:last-of-type,
 .nurse-avatar-btn svg path {
-  fill: #0284c7;
+  fill: #0369a1;
 }
 
 /* Nurse Dosage Readonly Display (Strictly non-editable) */
@@ -43,7 +43,7 @@
 .nurse-prescribed-tag {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #0284c7;
+  color: #0369a1;
   background: #e0f2fe;
   padding: 2px 6px;
   border-radius: 4px;

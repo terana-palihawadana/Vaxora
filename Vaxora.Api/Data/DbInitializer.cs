@@ -6,6 +6,95 @@ namespace Vaxora.Api.Data;
 
 public static class DbInitializer
 {
+    /// <summary>
+    /// Additive columns/tables applied on every start in case a migration was skipped.
+    /// Runs through ExecuteSqlRaw, which treats { and } as format placeholders, so JSON
+    /// defaults must be written as '{{}}'.
+    /// </summary>
+    public const string SchemaSafetySql = @"
+                    ALTER TABLE ""VaccineSchedules"" ADD COLUMN IF NOT EXISTS ""Price"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""Fee"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentMethod"" VARCHAR(50) NOT NULL DEFAULT 'Free';
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentStatus"" VARCHAR(50) NOT NULL DEFAULT 'Paid';
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentTransactionId"" VARCHAR(100) NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedDosage"" VARCHAR(100) NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedByDoctorUserId"" UUID NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedByDoctorName"" VARCHAR(200) NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""DosageUpdatedAt"" TIMESTAMPTZ NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInAt"" TIMESTAMPTZ NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInByUserId"" UUID NULL;
+                    ALTER TABLE ""Batches"" ADD COLUMN IF NOT EXISTS ""OpenVialDosesRemaining"" INTEGER NULL;
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""PlanJson"" TEXT NOT NULL DEFAULT '{{}}';
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""CompletedStepsJson"" TEXT NOT NULL DEFAULT '[]';
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ToolResultsJson"" TEXT NOT NULL DEFAULT '[]';
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ValidationResultsJson"" TEXT NOT NULL DEFAULT '{{}}';
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ErrorDetails"" VARCHAR(4000) NULL;
+                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""FinalOutcome"" VARCHAR(4000) NULL;
+
+                    CREATE TABLE IF NOT EXISTS ""PatientMedicalHistories"" (
+                        ""Id"" UUID PRIMARY KEY,
+                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
+                        ""RecordType"" VARCHAR(50) NOT NULL,
+                        ""Title"" VARCHAR(200) NOT NULL,
+                        ""Description"" VARCHAR(2000) NULL,
+                        ""Severity"" VARCHAR(50) NOT NULL,
+                        ""Status"" VARCHAR(50) NOT NULL,
+                        ""Icd10Code"" VARCHAR(20) NULL,
+                        ""DiagnosedAt"" TIMESTAMPTZ NOT NULL,
+                        ""ResolvedAt"" TIMESTAMPTZ NULL,
+                        ""RecordedByUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
+                        ""RecordedByName"" VARCHAR(200) NULL,
+                        ""Notes"" VARCHAR(1000) NULL,
+                        ""CreatedAt"" TIMESTAMPTZ NOT NULL,
+                        ""UpdatedAt"" TIMESTAMPTZ NULL
+                    );
+
+                    CREATE TABLE IF NOT EXISTS ""PatientVaccinationRecords"" (
+                        ""Id"" UUID PRIMARY KEY,
+                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
+                        ""VaccineId"" UUID NOT NULL REFERENCES ""Vaccines""(""Id"") ON DELETE RESTRICT,
+                        ""BatchId"" UUID NULL REFERENCES ""Batches""(""Id"") ON DELETE SET NULL,
+                        ""AdministeredByUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
+                        ""AdministeredByName"" VARCHAR(200) NULL,
+                        ""AdministeredAt"" TIMESTAMPTZ NOT NULL,
+                        ""DoseNumber"" INT NOT NULL DEFAULT 1,
+                        ""Route"" VARCHAR(50) NOT NULL,
+                        ""Site"" VARCHAR(50) NULL,
+                        ""LotNumber"" VARCHAR(100) NULL,
+                        ""Notes"" VARCHAR(1000) NULL,
+                        ""AdverseEventReported"" BOOLEAN NOT NULL DEFAULT FALSE,
+                        ""AdverseEventNotes"" VARCHAR(1000) NULL,
+                        ""CreatedAt"" TIMESTAMPTZ NOT NULL
+                    );
+
+                    CREATE TABLE IF NOT EXISTS ""PatientVisits"" (
+                        ""Id"" UUID PRIMARY KEY,
+                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
+                        ""DoctorUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
+                        ""DoctorName"" VARCHAR(200) NULL,
+                        ""NurseUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
+                        ""NurseName"" VARCHAR(200) NULL,
+                        ""HospitalProfileId"" UUID NULL REFERENCES ""HospitalProfiles""(""Id"") ON DELETE SET NULL,
+                        ""AppointmentId"" UUID NULL,
+                        ""VisitDate"" TIMESTAMPTZ NOT NULL,
+                        ""VisitType"" VARCHAR(50) NOT NULL,
+                        ""Status"" VARCHAR(50) NOT NULL,
+                        ""ChiefComplaint"" VARCHAR(1000) NULL,
+                        ""BloodPressure"" VARCHAR(20) NULL,
+                        ""Temperature"" VARCHAR(10) NULL,
+                        ""WeightKg"" VARCHAR(10) NULL,
+                        ""HeightCm"" VARCHAR(10) NULL,
+                        ""HeartRate"" VARCHAR(10) NULL,
+                        ""OxygenSaturation"" VARCHAR(10) NULL,
+                        ""DiagnosisSummary"" VARCHAR(2000) NULL,
+                        ""TreatmentPlan"" VARCHAR(2000) NULL,
+                        ""Notes"" VARCHAR(1000) NULL,
+                        ""FollowUpDate"" TIMESTAMPTZ NULL,
+                        ""CreatedAt"" TIMESTAMPTZ NOT NULL,
+                        ""UpdatedAt"" TIMESTAMPTZ NULL
+                    );
+                ";
+
     public static async Task SeedAsync(IServiceProvider serviceProvider, IConfiguration configuration)
     {
         using var scope = serviceProvider.CreateScope();
@@ -123,89 +212,7 @@ public static class DbInitializer
             // Safe column checks for pricing, agent workflows, and payment integration
             try
             {
-                await context.Database.ExecuteSqlRawAsync(@"
-                    ALTER TABLE ""VaccineSchedules"" ADD COLUMN IF NOT EXISTS ""Price"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""Fee"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentMethod"" VARCHAR(50) NOT NULL DEFAULT 'Free';
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentStatus"" VARCHAR(50) NOT NULL DEFAULT 'Paid';
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentTransactionId"" VARCHAR(100) NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedDosage"" VARCHAR(100) NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedByDoctorUserId"" UUID NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PrescribedByDoctorName"" VARCHAR(200) NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""DosageUpdatedAt"" TIMESTAMPTZ NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInAt"" TIMESTAMPTZ NULL;
-                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInByUserId"" UUID NULL;
-                    ALTER TABLE ""Batches"" ADD COLUMN IF NOT EXISTS ""OpenVialDosesRemaining"" INTEGER NULL;
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""PlanJson"" TEXT NOT NULL DEFAULT '{}';
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""CompletedStepsJson"" TEXT NOT NULL DEFAULT '[]';
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ToolResultsJson"" TEXT NOT NULL DEFAULT '[]';
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ValidationResultsJson"" TEXT NOT NULL DEFAULT '{}';
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""ErrorDetails"" VARCHAR(4000) NULL;
-                    ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""FinalOutcome"" VARCHAR(4000) NULL;
-
-                    CREATE TABLE IF NOT EXISTS ""PatientMedicalHistories"" (
-                        ""Id"" UUID PRIMARY KEY,
-                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
-                        ""RecordType"" VARCHAR(50) NOT NULL,
-                        ""Title"" VARCHAR(200) NOT NULL,
-                        ""Description"" VARCHAR(2000) NULL,
-                        ""Severity"" VARCHAR(50) NOT NULL,
-                        ""Status"" VARCHAR(50) NOT NULL,
-                        ""Icd10Code"" VARCHAR(20) NULL,
-                        ""DiagnosedAt"" TIMESTAMPTZ NOT NULL,
-                        ""ResolvedAt"" TIMESTAMPTZ NULL,
-                        ""RecordedByUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
-                        ""RecordedByName"" VARCHAR(200) NULL,
-                        ""Notes"" VARCHAR(1000) NULL,
-                        ""CreatedAt"" TIMESTAMPTZ NOT NULL,
-                        ""UpdatedAt"" TIMESTAMPTZ NULL
-                    );
-
-                    CREATE TABLE IF NOT EXISTS ""PatientVaccinationRecords"" (
-                        ""Id"" UUID PRIMARY KEY,
-                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
-                        ""VaccineId"" UUID NOT NULL REFERENCES ""Vaccines""(""Id"") ON DELETE RESTRICT,
-                        ""BatchId"" UUID NULL REFERENCES ""Batches""(""Id"") ON DELETE SET NULL,
-                        ""AdministeredByUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
-                        ""AdministeredByName"" VARCHAR(200) NULL,
-                        ""AdministeredAt"" TIMESTAMPTZ NOT NULL,
-                        ""DoseNumber"" INT NOT NULL DEFAULT 1,
-                        ""Route"" VARCHAR(50) NOT NULL,
-                        ""Site"" VARCHAR(50) NULL,
-                        ""LotNumber"" VARCHAR(100) NULL,
-                        ""Notes"" VARCHAR(1000) NULL,
-                        ""AdverseEventReported"" BOOLEAN NOT NULL DEFAULT FALSE,
-                        ""AdverseEventNotes"" VARCHAR(1000) NULL,
-                        ""CreatedAt"" TIMESTAMPTZ NOT NULL
-                    );
-
-                    CREATE TABLE IF NOT EXISTS ""PatientVisits"" (
-                        ""Id"" UUID PRIMARY KEY,
-                        ""PatientProfileId"" UUID NOT NULL REFERENCES ""PatientProfiles""(""Id"") ON DELETE CASCADE,
-                        ""DoctorUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
-                        ""DoctorName"" VARCHAR(200) NULL,
-                        ""NurseUserId"" UUID NULL REFERENCES ""Users""(""Id"") ON DELETE SET NULL,
-                        ""NurseName"" VARCHAR(200) NULL,
-                        ""HospitalProfileId"" UUID NULL REFERENCES ""HospitalProfiles""(""Id"") ON DELETE SET NULL,
-                        ""AppointmentId"" UUID NULL,
-                        ""VisitDate"" TIMESTAMPTZ NOT NULL,
-                        ""VisitType"" VARCHAR(50) NOT NULL,
-                        ""Status"" VARCHAR(50) NOT NULL,
-                        ""ChiefComplaint"" VARCHAR(1000) NULL,
-                        ""BloodPressure"" VARCHAR(20) NULL,
-                        ""Temperature"" VARCHAR(10) NULL,
-                        ""WeightKg"" VARCHAR(10) NULL,
-                        ""HeightCm"" VARCHAR(10) NULL,
-                        ""HeartRate"" VARCHAR(10) NULL,
-                        ""OxygenSaturation"" VARCHAR(10) NULL,
-                        ""DiagnosisSummary"" VARCHAR(2000) NULL,
-                        ""TreatmentPlan"" VARCHAR(2000) NULL,
-                        ""Notes"" VARCHAR(1000) NULL,
-                        ""FollowUpDate"" TIMESTAMPTZ NULL,
-                        ""CreatedAt"" TIMESTAMPTZ NOT NULL,
-                        ""UpdatedAt"" TIMESTAMPTZ NULL
-                    );
-                ");
+                await context.Database.ExecuteSqlRawAsync(SchemaSafetySql);
             }
             catch (Exception exSql)
             {

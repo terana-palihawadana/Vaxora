@@ -288,7 +288,7 @@ export default function AdminAuditLogsTab() {
           <button
             type="button"
             className="doctor-hero-session-pill"
-            style={{ cursor: 'pointer', background: '#0284c7', color: '#ffffff', border: '1px solid #38bdf8', fontWeight: 700 }}
+            style={{ cursor: 'pointer', background: '#0369a1', color: '#ffffff', border: '1px solid #38bdf8', fontWeight: 700 }}
             onClick={handleExportCsv}
           >
             📥 Export Audit Report (.CSV)
@@ -401,6 +401,7 @@ export default function AdminAuditLogsTab() {
 
           {/* Severity Filter */}
           <select
+            aria-label="Filter audit logs by severity"
             className="doctor-form-select"
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
@@ -500,7 +501,7 @@ export default function AdminAuditLogsTab() {
                       <button
                         type="button"
                         className="doctor-table-btn"
-                        style={{ background: '#0284c7', color: '#ffffff', borderColor: '#38bdf8' }}
+                        style={{ background: '#0369a1', color: '#ffffff', borderColor: '#38bdf8' }}
                         onClick={() => setSelectedLog(log)}
                         title="View Full Audit Payload"
                       >
@@ -519,7 +520,7 @@ export default function AdminAuditLogsTab() {
       {selectedLog && (
         <div className="doctor-modal-overlay" onClick={() => setSelectedLog(null)}>
           <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
-            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}>
+            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)' }}>
               <div>
                 <h3 className="doctor-modal-title">Audit Record: {selectedLog.id}</h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)' }}>

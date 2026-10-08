@@ -33,7 +33,7 @@ const statusColor = (status) => {
   if (s === "resolved") return "#10b981";
   if (s === "inreview") return "#b45309";
   if (s === "escalated") return "#dc2626";
-  return "#0284c7";
+  return "#0369a1";
 };
 
 const renderStars = (rating) => {

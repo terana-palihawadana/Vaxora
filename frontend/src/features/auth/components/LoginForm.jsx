@@ -56,7 +56,7 @@ export default function LoginForm({ onSwitchToSignup, onForgotPassword, onSucces
       {!error && notice && (
         <div style={{ 
           backgroundColor: 'rgba(2, 132, 199, 0.1)', 
-          color: '#0284c7', 
+          color: '#0369a1', 
           padding: '10px 14px', 
           borderRadius: '8px', 
           fontSize: '0.85rem', 

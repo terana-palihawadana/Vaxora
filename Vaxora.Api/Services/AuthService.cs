@@ -265,7 +265,7 @@ public class AuthService : IAuthService
             {
                 await _emailService.SendPendingApprovalEmailAsync(
                     user.Email,
-                    $"Dr. {profile.FullName}",
+                    StaffNameFormatter.WithRolePrefix(profile.FullName, "Dr."),
                     regNumber,
                     "Doctor");
             }
@@ -378,7 +378,7 @@ public class AuthService : IAuthService
             {
                 await _emailService.SendPendingApprovalEmailAsync(
                     user.Email,
-                    $"Nurse {profile.FullName}",
+                    StaffNameFormatter.WithRolePrefix(profile.FullName, "Nurse"),
                     regNumber,
                     "Nurse");
             }
@@ -1236,8 +1236,8 @@ public class AuthService : IAuthService
         return user.Role switch
         {
             UserRole.PATIENT => user.PatientProfile?.FullName ?? "Patient",
-            UserRole.DOCTOR => $"Dr. {user.DoctorProfile?.FullName ?? "Doctor"}",
-            UserRole.NURSE => $"Nurse {user.NurseProfile?.FullName ?? "Nurse"}",
+            UserRole.DOCTOR => StaffNameFormatter.WithRolePrefix(user.DoctorProfile?.FullName ?? "Doctor", "Dr."),
+            UserRole.NURSE => StaffNameFormatter.WithRolePrefix(user.NurseProfile?.FullName ?? "Nurse", "Nurse"),
             UserRole.HOSPITAL => user.HospitalProfile?.HospitalName ?? "Hospital",
             UserRole.ADMIN => "System Administrator",
             _ => "User"

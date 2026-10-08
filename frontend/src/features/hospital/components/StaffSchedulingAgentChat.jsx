@@ -162,7 +162,7 @@ const formatMarkdownText = (text, isUser = false) => {
           key={lineIdx}
           style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}
         >
-          <span style={{ color: isUser ? '#ffffff' : '#0284c7', fontSize: '9px', marginTop: '6px' }}>●</span>
+          <span style={{ color: isUser ? '#ffffff' : '#0369a1', fontSize: '9px', marginTop: '6px' }}>●</span>
           <div style={{ flex: 1 }}>{parts}</div>
         </div>
       );
@@ -174,7 +174,7 @@ const formatMarkdownText = (text, isUser = false) => {
           key={lineIdx}
           style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}
         >
-          <span style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0284c7', fontSize: '13px' }}>
+          <span style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0369a1', fontSize: '13px' }}>
             {itemNumber}.
           </span>
           <div style={{ flex: 1 }}>{parts}</div>
@@ -641,7 +641,7 @@ export default function StaffSchedulingAgentChat({
       {/* Header — same pattern as BookingAgentChat */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+          background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
           color: '#ffffff',
           padding: '16px 20px',
           display: 'flex',
@@ -761,7 +761,7 @@ export default function StaffSchedulingAgentChat({
                   maxWidth: '85%',
                   padding: '14px 18px',
                   borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: isUser ? '#0284c7' : msg.isError ? '#fef2f2' : '#ffffff',
+                  background: isUser ? '#0369a1' : msg.isError ? '#fef2f2' : '#ffffff',
                   color: isUser ? '#ffffff' : msg.isError ? '#991b1b' : '#1e293b',
                   border: isUser ? 'none' : msg.isError ? '1px solid #fecaca' : '1px solid #e2e8f0',
                   boxShadow: isUser
@@ -1164,7 +1164,7 @@ export default function StaffSchedulingAgentChat({
           style={{
             padding: '10px 20px',
             borderRadius: '10px',
-            background: isLoading || !inputMessage.trim() ? '#94a3b8' : '#0284c7',
+            background: isLoading || !inputMessage.trim() ? '#94a3b8' : '#0369a1',
             color: '#ffffff',
             border: 'none',
             fontWeight: 600,

@@ -199,7 +199,7 @@ export default function DoctorProfileTab() {
                 src={personalInfo.profilePhotoUrl}
                 alt={personalInfo.name || 'Doctor'}
                 className="doctor-profile-uploaded-img"
-                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0284c7' }}
+                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0369a1' }}
               />
             ) : (
               <svg
@@ -306,7 +306,7 @@ export default function DoctorProfileTab() {
               <div className="doctor-profile-field-row">
                 <span className="doctor-profile-field-label">VAXORA ID</span>
                 <span className="doctor-profile-field-colon">:</span>
-                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: '#0284c7' }}>
+                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: '#0369a1' }}>
                   {personalInfo.id || (loading ? 'Loading...' : 'N/A')}
                 </span>
               </div>
@@ -473,7 +473,7 @@ export default function DoctorProfileTab() {
             <>
               <div className="doctor-prof-row">
                 <strong>SLMC Medical Board Reg: </strong>
-                <span style={{ color: '#0284c7', fontWeight: 700 }}>{personalInfo.slmcNumber}</span>
+                <span style={{ color: '#0369a1', fontWeight: 700 }}>{personalInfo.slmcNumber}</span>
               </div>
 
               <div className="doctor-prof-row">

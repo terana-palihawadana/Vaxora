@@ -531,7 +531,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
                   {nextAppointment.doctorName && (
                     <span className="appointment-meta-icon">
                       <IconDoctor size={14} />
-                      Dr. {nextAppointment.doctorName}
+                      Dr. {nextAppointment.doctorName.replace(/^(?:(?:dr\.|dr\s|doctor\s)\s*)+/i, '')}
                     </span>
                   )}
                 </div>

@@ -28,14 +28,14 @@ const statusColor = (status) => {
   if (s === "confirmed" || s === "completed") return "#10b981";
   if (s === "cancelled") return "#ef4444";
   if (s === "pendingpayment" || s === "pending") return "#b45309";
-  return "#0284c7";
+  return "#0369a1";
 };
 
 const severityColor = (severity) => {
   const s = String(severity || "").toLowerCase();
   if (s === "critical" || s === "severe") return "#dc2626";
   if (s === "moderate") return "#b45309";
-  if (s === "mild") return "#0284c7";
+  if (s === "mild") return "#0369a1";
   return "#64748b";
 };
 
@@ -311,7 +311,7 @@ export default function PatientProfileTab() {
                       height: "150px",
                       borderRadius: "50%",
                       objectFit: "cover",
-                      border: "3px solid #0284c7",
+                      border: "3px solid #0369a1",
                     }}
                   />
                 ) : (
@@ -369,7 +369,7 @@ export default function PatientProfileTab() {
                     <span
                       style={{
                         fontSize: "0.8rem",
-                        color: "#10b981",
+                        color: "#047857",
                         fontWeight: 600,
                       }}
                     >
@@ -416,7 +416,7 @@ export default function PatientProfileTab() {
                     <span className="profile-field-colon">:</span>
                     <span
                       className="profile-field-value"
-                      style={{ fontWeight: 700, color: "#0284c7" }}
+                      style={{ fontWeight: 700, color: "#0369a1" }}
                     >
                       {profileData.id || (loading ? "Loading..." : "N/A")}
                     </span>
@@ -532,7 +532,7 @@ export default function PatientProfileTab() {
                         style={{
                           padding: "20px",
                           textAlign: "center",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         Loading medical history…
@@ -546,7 +546,7 @@ export default function PatientProfileTab() {
                           padding: "20px",
                           textAlign: "center",
                           fontStyle: "italic",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         No medical history on file yet.
@@ -580,7 +580,7 @@ export default function PatientProfileTab() {
                               <span
                                 style={{
                                   fontSize: "0.78rem",
-                                  color: "#64748b",
+                                  color: "#475569",
                                 }}
                               >
                                 {rec.description}
@@ -654,7 +654,7 @@ export default function PatientProfileTab() {
                         style={{
                           padding: "20px",
                           textAlign: "center",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         Loading appointments…
@@ -668,7 +668,7 @@ export default function PatientProfileTab() {
                           padding: "20px",
                           textAlign: "center",
                           fontStyle: "italic",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         No appointments scheduled yet.
@@ -761,7 +761,7 @@ export default function PatientProfileTab() {
                         style={{
                           padding: "20px",
                           textAlign: "center",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         Loading vaccination history…
@@ -775,7 +775,7 @@ export default function PatientProfileTab() {
                           padding: "20px",
                           textAlign: "center",
                           fontStyle: "italic",
-                          color: "#64748b",
+                          color: "#475569",
                         }}
                       >
                         No vaccination records on file yet.
@@ -791,7 +791,7 @@ export default function PatientProfileTab() {
                               style={{
                                 marginLeft: "8px",
                                 fontSize: "0.78rem",
-                                color: "#64748b",
+                                color: "#475569",
                               }}
                             >
                               (Dose {rec.doseNumber})

@@ -227,7 +227,7 @@
 .profile-dropdown-id {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
 }
 
 .profile-dropdown-divider {
@@ -308,7 +308,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+  background: linear-gradient(135deg, #1d4ed8 0%, #0369a1 100%);
   color: #ffffff;
   font-weight: 700;
   font-size: 0.84rem;
@@ -331,7 +331,7 @@
 
 .patient-id-badge {
   font-size: 0.72rem;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
 }
 
@@ -649,7 +649,7 @@
 
 .appointment-meta-icon svg {
   flex-shrink: 0;
-  color: #64748b;
+  color: #475569;
 }
 
 /* ==========================================================================
@@ -669,7 +669,7 @@
 .patient-empty-state {
   padding: 28px 16px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
   font-size: 0.92rem;
   margin: 0;
 }
@@ -755,7 +755,7 @@
 
 .patient-tracker-date {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
 }
 
@@ -858,7 +858,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.9rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .appointment-date-time-bar {
@@ -941,7 +941,7 @@
 
 .schedule-target {
   font-size: 0.78rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .schedule-status-tag {
@@ -1112,7 +1112,7 @@
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
 }
 
@@ -1275,7 +1275,7 @@
 }
 
 .book-form-select:disabled {
-  color: #94a3b8;
+  color: #475569;
   cursor: not-allowed;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
@@ -1284,13 +1284,13 @@
 }
 
 .book-form-input:disabled {
-  color: #94a3b8;
+  color: #475569;
   cursor: not-allowed;
   background: transparent;
 }
 
 .book-form-label.disabled {
-  color: #94a3b8;
+  color: #475569;
 }
 
 .book-form-input {
@@ -1341,7 +1341,7 @@
 
 .field-helper-hint {
   font-size: 0.8rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 2px;
 }
 
@@ -1351,7 +1351,7 @@
 }
 
 .field-helper-hint.hint-warning {
-  color: #d97706;
+  color: #92400e;
   font-weight: 600;
 }
 
@@ -1398,7 +1398,7 @@
 }
 
 .slot-list-row.is-full {
-  color: #94a3b8;
+  color: #475569;
   cursor: not-allowed;
 }
 
@@ -1545,7 +1545,7 @@
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
 }
 
 .appointments-refresh-btn {
@@ -1592,7 +1592,7 @@
   background: #ffffff;
   border: 1px solid #d4dce8;
   border-radius: 10px;
-  color: #64748b;
+  color: #475569;
 }
 
 .appointments-filter-search input {
@@ -1617,7 +1617,7 @@
   background: #ffffff;
   border: 1px solid #d4dce8;
   border-radius: 10px;
-  color: #64748b;
+  color: #475569;
   font-size: 0.78rem;
   font-weight: 600;
 }
@@ -1797,7 +1797,7 @@
   border-radius: 12px;
   border: 1.5px solid #cbd5e1;
   background: #f8fafc;
-  color: #64748b;
+  color: #475569;
   font-size: 0.78rem;
   font-weight: 700;
   line-height: 1;
@@ -1813,12 +1813,12 @@
 .apt-action-muted.is-cancelled {
   border-color: transparent;
   background: transparent;
-  color: #94a3b8;
+  color: #475569;
 }
 
 .empty-appointments-cell {
   background-color: #f1f5f9 !important;
-  color: #64748b !important;
+  color: #475569 !important;
   font-style: italic;
   padding: 24px !important;
 }
@@ -2005,7 +2005,7 @@
 }
 
 .feedback-mockup-input::placeholder {
-  color: #64748b;
+  color: #475569;
   font-family: 'Lora', 'Playfair Display', Georgia, serif;
 }
 
@@ -2068,7 +2068,7 @@
 }
 
 .feedback-mockup-textarea::placeholder {
-  color: #64748b;
+  color: #475569;
   font-family: 'Lora', 'Playfair Display', Georgia, serif;
 }
 
@@ -2715,7 +2715,7 @@
 }
 
 .patient-mockup-table thead tr th {
-  background-color: #7892b8;
+  background-color: #4a6894;
   color: #ffffff;
   font-family: 'Lora', 'Playfair Display', Georgia, serif;
   font-size: 1.1rem;
@@ -3002,7 +3002,7 @@
 
 .cal-trigger-button:disabled {
   background: transparent !important;
-  color: #94a3b8 !important;
+  color: #475569 !important;
   cursor: not-allowed;
 }
 
@@ -3074,7 +3074,7 @@
   text-align: center;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 6px;
   text-transform: uppercase;
 }
@@ -3277,7 +3277,7 @@
   gap: 6px;
   padding: 7px 15px;
   background: #ffffff;
-  color: #0284c7;
+  color: #0369a1;
   border: 1.5px solid #bae6fd;
   border-radius: 9999px;
   font-size: 0.8rem;
@@ -3292,9 +3292,9 @@
 }
 
 .cal-change-btn:hover {
-  background: #0284c7;
+  background: #0369a1;
   color: #ffffff;
-  border-color: #0284c7;
+  border-color: #0369a1;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
 }

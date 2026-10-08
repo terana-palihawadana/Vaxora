@@ -110,7 +110,7 @@ export default function AdminUsersTab() {
               <span className="icon-shade icon-shade-blue"><IconUsers size={22} /></span>
               National User Directory
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>
               Manage, filter, and inspect accounts for all registered doctors, nurses, hospitals, and citizens.
             </p>
           </div>
@@ -181,8 +181,9 @@ export default function AdminUsersTab() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#64748b' }}>Status:</label>
+            <label style={{ fontSize: '0.82rem', fontWeight: 600, color: '#94a3b8' }}>Status:</label>
             <select
+              aria-label="Filter users by status"
               className="doctor-filter-date-input"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -228,7 +229,7 @@ export default function AdminUsersTab() {
                 </tr>
               ) : filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
                     No user accounts found matching your filters.
                   </td>
                 </tr>
@@ -309,7 +310,7 @@ export default function AdminUsersTab() {
                         <button
                           type="button"
                           className="doctor-table-btn"
-                          style={{ background: '#0284c7', color: '#ffffff', borderColor: '#38bdf8' }}
+                          style={{ background: '#0369a1', color: '#ffffff', borderColor: '#38bdf8' }}
                           onClick={() => {
                             setSelectedUser(u);
                             setIsDetailModalOpen(true);
@@ -352,7 +353,7 @@ export default function AdminUsersTab() {
       {isDetailModalOpen && selectedUser && (
         <div className="doctor-modal-overlay" onClick={() => setIsDetailModalOpen(false)}>
           <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
-            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}>
+            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)' }}>
               <div>
                 <h3 className="doctor-modal-title">Account Profile &amp; Credentials</h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)' }}>

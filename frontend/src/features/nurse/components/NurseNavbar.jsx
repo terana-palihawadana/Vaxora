@@ -119,10 +119,10 @@ export default function NurseNavbar() {
                   src={user.profilePhotoUrl}
                   alt={user.name || 'Nurse'}
                   className="navbar-avatar-img"
-                  style={{ borderColor: '#0284c7' }}
+                  style={{ borderColor: '#0369a1' }}
                 />
               ) : (
-                <div className="navbar-avatar-fallback" style={{ background: '#e0f2fe', color: '#0284c7', borderColor: '#38bdf8' }}>
+                <div className="navbar-avatar-fallback" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#38bdf8' }}>
                   <IconNurse size={20} />
                 </div>
               )}
@@ -134,7 +134,7 @@ export default function NurseNavbar() {
                   <div className="doctor-dropdown-name">{user?.name || 'Nurse Profile'}</div>
                   <div className="doctor-dropdown-meta">Senior Immunization Nurse</div>
                   {user?.registrationNumber && (
-                    <div className="doctor-dropdown-meta" style={{ color: '#0284c7', fontWeight: 600 }}>
+                    <div className="doctor-dropdown-meta" style={{ color: '#0369a1', fontWeight: 600 }}>
                       Reg: {user.registrationNumber}
                     </div>
                   )}

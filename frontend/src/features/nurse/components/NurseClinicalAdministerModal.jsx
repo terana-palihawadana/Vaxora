@@ -90,7 +90,7 @@ export default function NurseClinicalAdministerModal({
   return (
     <div className="doctor-modal-overlay" onClick={submitting ? undefined : onClose}>
       <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}>
+        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)' }}>
           <div>
             <h3 className="doctor-modal-title">Clinical Administration &amp; Verification</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.9)' }}>
@@ -127,7 +127,7 @@ export default function NurseClinicalAdministerModal({
                 <span style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '3px 8px', borderRadius: '6px' }}>
                   {patient.vaccine}
                 </span>
-                <div style={{ fontSize: '0.78rem', color: '#0284c7', marginTop: '4px', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>
                   Prescribed: {patient.dose}
                 </div>
               </div>
@@ -251,7 +251,7 @@ export default function NurseClinicalAdministerModal({
             <button
               type="submit"
               className="doctor-btn-submit"
-              style={{ background: '#0284c7' }}
+              style={{ background: '#0369a1' }}
               disabled={usableLots.length === 0 || submitting}
             >
               {submitting ? 'Confirming…' : 'Confirm Dose & Transfer to Observation'}

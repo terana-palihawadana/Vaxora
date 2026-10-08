@@ -596,7 +596,7 @@ export default function HospitalAppointmentsTab() {
                 <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1d1854' }}>
                   Recurrence Frequency:
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                <span style={{ fontSize: '0.8rem', color: '#475569' }}>
                   (Choose single day or weekly repeating days)
                 </span>
               </div>
@@ -666,9 +666,10 @@ export default function HospitalAppointmentsTab() {
             <div className="schedule-inputs-row">
               {/* Vaccine Type Dropdown */}
               <div className="schedule-input-group">
-                <label className="schedule-input-label">Vaccine Type</label>
+                <label htmlFor="schedule-vaccineType" className="schedule-input-label">Vaccine Type</label>
                 <select
                   name="vaccineType"
+                  id="schedule-vaccineType"
                   value={scheduleForm.vaccineType}
                   onChange={handleScheduleChange}
                   className="schedule-input-field schedule-select-field"
@@ -691,9 +692,10 @@ export default function HospitalAppointmentsTab() {
 
               {/* Booth Dropdown — filtered to booths that offer the selected vaccine */}
               <div className="schedule-input-group">
-                <label className="schedule-input-label">Booth</label>
+                <label htmlFor="schedule-boothId" className="schedule-input-label">Booth</label>
                 <select
                   name="boothId"
+                  id="schedule-boothId"
                   value={scheduleForm.boothId}
                   onChange={handleScheduleChange}
                   className="schedule-input-field schedule-select-field"
@@ -727,10 +729,11 @@ export default function HospitalAppointmentsTab() {
 
               {/* Times first — seats/session depend on the window before date range is capped */}
               <div className="schedule-input-group">
-                <label className="schedule-input-label">Start Time</label>
+                <label htmlFor="schedule-startTime" className="schedule-input-label">Start Time</label>
                 <input
                   type="time"
                   name="startTime"
+                  id="schedule-startTime"
                   value={scheduleForm.startTime}
                   min={
                     (scheduleForm.scheduleType === 'Weekly'
@@ -746,10 +749,11 @@ export default function HospitalAppointmentsTab() {
               </div>
 
               <div className="schedule-input-group">
-                <label className="schedule-input-label">End Time</label>
+                <label htmlFor="schedule-endTime" className="schedule-input-label">End Time</label>
                 <input
                   type="time"
                   name="endTime"
+                  id="schedule-endTime"
                   value={scheduleForm.endTime}
                   min={scheduleForm.startTime || undefined}
                   onChange={handleScheduleChange}
@@ -761,10 +765,11 @@ export default function HospitalAppointmentsTab() {
               {/* Date Inputs based on Recurrence */}
               {scheduleForm.scheduleType === 'OneTime' ? (
                 <div className="schedule-input-group">
-                  <label className="schedule-input-label">Specific Date</label>
+                  <label htmlFor="schedule-specificDate" className="schedule-input-label">Specific Date</label>
                   <input
                     type="date"
                     name="specificDate"
+                    id="schedule-specificDate"
                     value={scheduleForm.specificDate}
                     min={todayStr}
                     onChange={handleScheduleChange}
@@ -811,7 +816,7 @@ export default function HospitalAppointmentsTab() {
               <div className="schedule-input-group">
                 <label className="schedule-input-label">
                   Fee / person
-                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 'normal', marginLeft: '6px' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 'normal', marginLeft: '6px' }}>
                     (from formulary)
                   </span>
                 </label>
@@ -866,14 +871,14 @@ export default function HospitalAppointmentsTab() {
                     border: '1px solid rgba(15, 23, 42, 0.06)',
                   }}
                 >
-                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#64748b', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     {label}
                   </div>
                   <div style={{ fontSize: '1.15rem', fontWeight: 750, color: '#0f172a', marginTop: '2px' }}>
                     {value}
                   </div>
                   {hint ? (
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px', fontWeight: 500 }}>
                       {hint}
                     </div>
                   ) : null}
@@ -1008,7 +1013,7 @@ export default function HospitalAppointmentsTab() {
                       <td>{item.formattedTime || `${item.startTime} - ${item.endTime}`}</td>
                       <td>
                         {item.price && Number(item.price) > 0 ? (
-                          <span style={{ fontWeight: 700, color: '#0284c7' }}>
+                          <span style={{ fontWeight: 700, color: '#075985' }}>
                             LKR {Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </span>
                         ) : (
@@ -1115,7 +1120,7 @@ export default function HospitalAppointmentsTab() {
                       <td>
                         <div style={{ fontWeight: 600, color: '#1d1854' }}>{item.patientName || item.pName || 'Patient'}</div>
                         {item.patientPhone && (
-                          <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '2px' }}>
                             Tel: {item.patientPhone}
                           </div>
                         )}

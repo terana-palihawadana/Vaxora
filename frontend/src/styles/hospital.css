@@ -726,7 +726,7 @@
 .hospital-cover-toolbar-copy p {
   margin: 4px 0 0;
   font-size: 0.88rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .hospital-cover-toolbar-actions {
@@ -762,7 +762,7 @@
 .hospital-cover-empty {
   padding: 48px 20px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
   background: #ffffff;
   border: 1px dashed #cbd5e1;
   border-radius: 14px;
@@ -896,7 +896,7 @@
 .hospital-cover-rank-note {
   margin: 6px 0 0;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .hospital-cover-status--neutral {
@@ -916,7 +916,7 @@
 .hospital-cover-replacement {
   margin: 2px 0 0;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .hospital-cover-note {
@@ -1016,7 +1016,7 @@
 
 .hospital-cover-suggestion-copy span {
   font-size: 0.78rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .hospital-cover-suggestion-copy em {
@@ -1228,7 +1228,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: #475569;
   line-height: 1.3;
 }
 
@@ -1250,7 +1250,7 @@
 
 .hospital-stat-meta {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -1491,7 +1491,7 @@
 }
 
 .queue-contact-reveal-btn:disabled {
-  color: #94a3b8;
+  color: #475569;
   cursor: not-allowed;
   text-decoration: none;
 }
@@ -1527,7 +1527,7 @@
 .queue-scope-btn {
   border: none;
   background: transparent;
-  color: #64748b;
+  color: #475569;
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.78rem;
@@ -1647,7 +1647,7 @@
 
 .hospital-queue-table th {
   background: #f8fafc;
-  color: #64748b;
+  color: #475569;
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1766,7 +1766,7 @@
   display: block;
   margin-top: 2px;
   font-size: 0.72rem;
-  color: #64748b;
+  color: #475569;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -1790,7 +1790,7 @@
 
 .queue-dose-meta {
   font-size: 0.74rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -1813,7 +1813,7 @@
 
 .queue-booth-tag.is-unassigned {
   background: #f8fafc;
-  color: #64748b;
+  color: #475569;
   border-color: #e2e8f0;
   font-weight: 500;
 }
@@ -2139,7 +2139,7 @@
   justify-content: space-between;
   gap: 8px;
   font-size: 0.72rem;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 6px;
   min-width: 0;
 }
@@ -2255,7 +2255,7 @@
 
 .booth-stat-pill.is-idle {
   background: #f8fafc;
-  color: #64748b;
+  color: #475569;
   border-color: #e2e8f0;
 }
 
@@ -2348,7 +2348,7 @@
   gap: 6px;
   font-size: 0.76rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
 }
 
 .booth-status-dot {
@@ -2442,7 +2442,7 @@
 
 .staff-role-desc {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .booth-stats-row {
@@ -2450,7 +2450,7 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #475569;
   border-top: 1px solid #e6f2ef;
   padding-top: 8px;
 }
@@ -2463,7 +2463,7 @@
 .booth-roster-line {
   margin: 8px 0 0;
   font-size: 0.78rem;
-  color: #64748b;
+  color: #475569;
   line-height: 1.35;
 }
 
@@ -2525,7 +2525,7 @@
   background: none;
   border: none;
   font-size: 1.4rem;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   line-height: 1;
   padding: 4px;
@@ -2865,7 +2865,7 @@
 }
 
 .hospital-appointments-mockup-table thead tr th {
-  background-color: #7892b8;
+  background-color: #4a6894;
   color: #ffffff;
   font-family: 'Lora', 'Playfair Display', Georgia, serif;
   font-size: 1.15rem;
@@ -3307,7 +3307,7 @@ select.schedule-input-field {
 }
 
 .btn-cancel-schedule {
-  background-color: #f87171;
+  background-color: #dc2626;
   color: #ffffff;
   font-family: 'Lora', 'Playfair Display', Georgia, serif;
   font-size: 0.95rem;
@@ -3395,7 +3395,7 @@ select.schedule-input-field {
 }
 
 .inventory-subtitle {
-  color: #64748b;
+  color: #475569;
   font-size: 0.95rem;
   margin: 0;
   max-width: 680px;
@@ -3463,7 +3463,7 @@ select.schedule-input-field {
 
 .formulary-sub {
   font-size: 0.86rem;
-  color: #64748b;
+  color: #475569;
   margin: 4px 0 0;
   line-height: 1.45;
   max-width: 520px;
@@ -3522,7 +3522,7 @@ select.schedule-input-field {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #64748b;
+  color: #475569;
   flex-shrink: 0;
 }
 
@@ -3543,7 +3543,7 @@ select.schedule-input-field {
 .formulary-label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -3610,7 +3610,7 @@ select.schedule-input-field {
 .registered-pills-label {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -3618,7 +3618,7 @@ select.schedule-input-field {
 .formulary-empty {
   margin: 0;
   font-size: 0.88rem;
-  color: #64748b;
+  color: #475569;
   line-height: 1.45;
 }
 
@@ -3673,7 +3673,7 @@ select.schedule-input-field {
   background: #f1f5f9;
   border: none;
   border-radius: 999px;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   flex-shrink: 0;
   padding: 0;
@@ -3844,7 +3844,7 @@ select.schedule-input-field {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 2px;
 }
 
@@ -3857,7 +3857,7 @@ select.schedule-input-field {
 
 .inventory-stat-sub {
   font-size: 0.78rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 4px;
 }
 
@@ -3890,7 +3890,7 @@ select.schedule-input-field {
 
 .cold-vaults-sub {
   font-size: 0.86rem;
-  color: #64748b;
+  color: #475569;
   margin: 4px 0 0;
   line-height: 1.45;
   max-width: 520px;
@@ -3985,7 +3985,7 @@ select.schedule-input-field {
 
 .vault-type {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   display: block;
   margin-top: 2px;
   line-height: 1.35;
@@ -4027,7 +4027,7 @@ select.schedule-input-field {
 .temp-target {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
 }
 
 .cold-vault-footer {
@@ -4036,7 +4036,7 @@ select.schedule-input-field {
   gap: 8px;
   flex-wrap: wrap;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   border-top: 1px solid #e8eef5;
   padding-top: 10px;
 }
@@ -4134,7 +4134,7 @@ select.schedule-input-field {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #64748b;
+  color: #475569;
   pointer-events: none;
   display: inline-flex;
 }
@@ -4149,7 +4149,7 @@ select.schedule-input-field {
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -4310,7 +4310,7 @@ select.schedule-input-field {
 }
 
 .mfr-text {
-  color: #64748b;
+  color: #475569;
 }
 
 .category-tag {
@@ -4338,7 +4338,7 @@ select.schedule-input-field {
 
 .temp-badge {
   font-size: 0.72rem;
-  color: #0284c7;
+  color: #0369a1;
   font-weight: 600;
 }
 
@@ -4358,7 +4358,7 @@ select.schedule-input-field {
 
 .cap-total {
   font-size: 0.76rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .pct-text {
@@ -4412,7 +4412,7 @@ select.schedule-input-field {
 
 .doses-cell small {
   font-size: 0.72rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .expiry-cell {
@@ -4584,7 +4584,7 @@ select.schedule-input-field {
   align-items: center;
   justify-content: space-between;
   font-size: 0.8rem;
-  color: #64748b;
+  color: #475569;
   margin-bottom: 12px;
 }
 
@@ -4619,7 +4619,7 @@ select.schedule-input-field {
 
 .doses-sub-line {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 4px;
 }
 
@@ -5008,7 +5008,7 @@ select.schedule-input-field {
 
 .shift-week-calendar-corner-sub {
   font-size: 0.72rem;
-  color: #64748b;
+  color: #475569;
 }
 
 .shift-week-calendar-day-head {
@@ -5054,7 +5054,7 @@ select.schedule-input-field {
 
 .shift-week-calendar-total-head {
   font-weight: 800;
-  color: #64748b;
+  color: #475569;
   font-size: 0.78rem;
   text-align: center;
 }
@@ -5177,7 +5177,7 @@ select.schedule-input-field {
 
 .shift-week-card-booth {
   font-size: 0.68rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 4px;
   line-height: 1.35;
   word-break: break-word;
@@ -5317,7 +5317,7 @@ select.schedule-input-field {
 }
 
 .suggest-week-filter.is-active {
-  border-color: #0284c7;
+  border-color: #0369a1;
   background: #e0f2fe;
   color: #0369a1;
 }
@@ -5370,7 +5370,7 @@ select.schedule-input-field {
 .suggest-week-modal-empty {
   padding: 48px 20px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
   background: #ffffff;
   border-radius: 12px;
@@ -5399,7 +5399,7 @@ select.schedule-input-field {
 }
 
 .suggest-week-modal-waiting p {
-  color: #64748b;
+  color: #475569;
   font-size: 0.9rem;
   margin: 0 0 20px;
 }
@@ -5495,7 +5495,7 @@ select.schedule-input-field {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #64748b;
+  color: #475569;
 }
 
 .suggest-week-calendar-date {
@@ -5600,7 +5600,7 @@ select.schedule-input-field {
 }
 
 .suggest-week-card.is-selected {
-  border-color: #0284c7;
+  border-color: #0369a1;
   background: #f0f9ff;
   box-shadow: 0 0 0 1px #7dd3fc;
 }
@@ -5622,8 +5622,8 @@ select.schedule-input-field {
 }
 
 .suggest-week-card.is-selected .suggest-week-card-check {
-  border-color: #0284c7;
-  background: #0284c7;
+  border-color: #0369a1;
+  background: #0369a1;
   color: #ffffff;
 }
 
@@ -5635,7 +5635,7 @@ select.schedule-input-field {
 
 .suggest-week-card-meta {
   font-size: 0.7rem;
-  color: #64748b;
+  color: #475569;
   margin-top: 2px;
   line-height: 1.3;
 }
@@ -5647,7 +5647,7 @@ select.schedule-input-field {
 .suggest-week-card-decline {
   border: 1px solid #cbd5e1;
   background: #ffffff;
-  color: #64748b;
+  color: #475569;
   border-radius: 4px;
   padding: 3px 8px;
   font-size: 0.7rem;
@@ -5696,7 +5696,7 @@ select.schedule-input-field {
   align-items: center;
   gap: 6px;
   font-size: 0.75rem;
-  color: #64748b;
+  color: #475569;
   font-weight: 600;
 }
 
@@ -5941,7 +5941,7 @@ select.schedule-input-field {
 .inventory-empty-state {
   padding: 56px 24px;
   text-align: center;
-  color: #64748b;
+  color: #475569;
 }
 
 .inventory-empty-state h3 {

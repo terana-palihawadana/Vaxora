@@ -64,7 +64,7 @@ const formatMarkdownText = (text, isUser = false) => {
     if (isBullet) {
       return (
         <div key={lineIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}>
-          <span style={{ color: isUser ? '#ffffff' : '#0284c7', fontSize: '9px', marginTop: '6px' }}>●</span>
+          <span style={{ color: isUser ? '#ffffff' : '#0369a1', fontSize: '9px', marginTop: '6px' }}>●</span>
           <div style={{ flex: 1 }}>{parts}</div>
         </div>
       );
@@ -73,7 +73,7 @@ const formatMarkdownText = (text, isUser = false) => {
     if (itemNumber) {
       return (
         <div key={lineIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}>
-          <span style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0284c7', fontSize: '13px' }}>{itemNumber}.</span>
+          <span style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0369a1', fontSize: '13px' }}>{itemNumber}.</span>
           <div style={{ flex: 1 }}>{parts}</div>
         </div>
       );
@@ -205,7 +205,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
     }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
         color: '#ffffff',
         padding: '16px 20px',
         display: 'flex',
@@ -314,7 +314,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                 maxWidth: '85%',
                 padding: '14px 18px',
                 borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: isUser ? '#0284c7' : (msg.isError ? '#fef2f2' : '#ffffff'),
+                background: isUser ? '#0369a1' : (msg.isError ? '#fef2f2' : '#ffffff'),
                 color: isUser ? '#ffffff' : (msg.isError ? '#991b1b' : '#1e293b'),
                 border: isUser ? 'none' : (msg.isError ? '1px solid #fecaca' : '1px solid #e2e8f0'),
                 boxShadow: isUser ? '0 2px 8px rgba(2, 132, 199, 0.2)' : '0 2px 6px rgba(0, 0, 0, 0.04)',
@@ -329,7 +329,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                 <div style={{
                   maxWidth: '90%',
                   background: '#ffffff',
-                  border: '2px solid #0284c7',
+                  border: '2px solid #0369a1',
                   borderRadius: '12px',
                   padding: '16px',
                   boxShadow: '0 4px 14px rgba(2, 132, 199, 0.1)',
@@ -340,7 +340,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                     alignItems: 'center',
                     gap: '8px',
                     fontWeight: 700,
-                    color: '#0284c7',
+                    color: '#0369a1',
                     marginBottom: '12px',
                     fontSize: '14px'
                   }}>
@@ -439,7 +439,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                         marginTop: '10px',
                         padding: '8px 14px',
                         borderRadius: '6px',
-                        background: '#0284c7',
+                        background: '#0369a1',
                         color: '#ffffff',
                         border: 'none',
                         fontSize: '12px',
@@ -534,7 +534,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
           style={{
             padding: '10px 20px',
             borderRadius: '10px',
-            background: isLoading || !inputMessage.trim() ? '#94a3b8' : '#0284c7',
+            background: isLoading || !inputMessage.trim() ? '#94a3b8' : '#0369a1',
             color: '#ffffff',
             border: 'none',
             fontWeight: 600,

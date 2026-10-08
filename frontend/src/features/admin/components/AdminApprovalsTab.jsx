@@ -142,7 +142,7 @@ export default function AdminApprovalsTab() {
               <span className="icon-shade icon-shade-amber"><IconShield size={22} /></span>
               Doctor, Nurse &amp; Hospital Approval Queue
             </div>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>
               All Doctors, Nurses, and Hospitals must be verified and approved before accessing clinical tools.
             </p>
           </div>
@@ -212,7 +212,7 @@ export default function AdminApprovalsTab() {
         </div>
 
         {/* Applications Table */}
-        <div className="doctor-table-wrapper">
+        <div className="doctor-table-wrapper" tabIndex={0} role="region" aria-label="Pending verifications table">
           <table className="doctor-table">
             <thead>
               <tr>
@@ -237,7 +237,7 @@ export default function AdminApprovalsTab() {
                 </tr>
               ) : filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '36px', color: '#94a3b8' }}>
                     No applications currently pending verification.
                   </td>
                 </tr>
@@ -316,7 +316,7 @@ export default function AdminApprovalsTab() {
                           {req.registrationNumber}
                         </span>
                       ) : (
-                        <span style={{ color: '#64748b', fontSize: '0.8rem' }}>—</span>
+                        <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>—</span>
                       )}
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>
@@ -341,7 +341,7 @@ export default function AdminApprovalsTab() {
                             📄 {req.type === 'doctor' ? 'SLMC Certificate' : req.type === 'nurse' ? 'SLNC Card' : 'Registration Doc'} ↗
                           </a>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
                             📄 Document Attached
                           </span>
                         )}
@@ -454,7 +454,7 @@ export default function AdminApprovalsTab() {
       {isInspectModalOpen && selectedRequest && (
         <div className="doctor-modal-overlay" onClick={() => setIsInspectModalOpen(false)}>
           <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
-            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}>
+            <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)' }}>
               <div>
                 <h3 className="doctor-modal-title">Verification Review: {selectedRequest.name}</h3>
                 <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)' }}>
