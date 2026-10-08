@@ -270,4 +270,229 @@ public class InventoryServiceTests
 
         Assert.Contains("hospital", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    // ==================== RestockBatchAsync ====================
+
+    [Fact]
+    public async Task Restock_CreatesActiveBatchAndRestockTransaction()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        AddVaccine(ctx);
+        await ctx.SaveChangesAsync();
+
+        var item = await CreateService(ctx).RestockBatchAsync(user.Id, new Dtos.RestockBatchDto
+        {
+            VaccineName = "pfizer",
+            LotNumber = " LOT-R1 ",
+            Quantity = 40
+        });
+
+        var batch = Assert.Single(ctx.Batches);
+        Assert.Equal(hospital.Id, batch.HospitalProfileId);
+        Assert.Equal("LOT-R1", batch.BatchNumber);
+        Assert.Equal(40, batch.QuantityAvailable);
+        Assert.Equal(BatchStatus.Active, batch.Status);
+        Assert.Equal(40, item.Available);
+        Assert.Single(ctx.Vaccines);
+        Assert.Single(ctx.HospitalFormularies);
+        Assert.Equal(TransactionType.Restock, Assert.Single(ctx.InventoryTransactions).Type);
+    }
+
+    [Fact]
+    public async Task Restock_ForNonHospitalUser_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).RestockBatchAsync(Guid.NewGuid(), new Dtos.RestockBatchDto
+            {
+                VaccineName = "Pfizer",
+                LotNumber = "LOT-X",
+                Quantity = 10
+            }));
+        Assert.Empty(ctx.Batches);
+    }
+
+    // ==================== LogWastageAsync ====================
+
+    [Fact]
+    public async Task LogWastage_ReducesStockAndDepletesAtZero()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 5);
+        await ctx.SaveChangesAsync();
+
+        await CreateService(ctx).LogWastageAsync(user.Id, batch.Id,
+            new Dtos.WastageDto { Quantity = 5, Reason = "cold_chain_excursion" });
+
+        Assert.Equal(0, batch.QuantityAvailable);
+        Assert.Equal(BatchStatus.Depleted, batch.Status);
+        var tx = Assert.Single(ctx.InventoryTransactions);
+        Assert.Equal(TransactionType.Wastage, tx.Type);
+        Assert.Equal(WastageReason.ColdChainExcursion, tx.WastageReason);
+    }
+
+    [Fact]
+    public async Task LogWastage_MoreThanAvailable_ThrowsAndKeepsStock()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 3);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).LogWastageAsync(user.Id, batch.Id,
+                new Dtos.WastageDto { Quantity = 4, Reason = "vial_breakage" }));
+
+        Assert.Equal(3, batch.QuantityAvailable);
+        Assert.Empty(ctx.InventoryTransactions);
+    }
+
+    [Fact]
+    public async Task LogWastage_OnAnotherHospitalsBatch_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, _) = AddHospital(ctx);
+        var (_, other) = AddHospital(ctx, "other@test.com", "VAX-H-9002");
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, other.Id, vaccine.Id, available: 10);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).LogWastageAsync(user.Id, batch.Id,
+                new Dtos.WastageDto { Quantity = 1, Reason = "vial_breakage" }));
+
+        Assert.Equal(10, batch.QuantityAvailable);
+    }
+
+    // ==================== AdjustStockAsync ====================
+
+    [Fact]
+    public async Task AdjustStock_PositiveDelta_ReactivatesDepletedBatch()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 0, received: 10, status: BatchStatus.Depleted);
+        await ctx.SaveChangesAsync();
+
+        await CreateService(ctx).AdjustStockAsync(user.Id, batch.Id, new Dtos.AdjustStockDto { Delta = 15 });
+
+        Assert.Equal(15, batch.QuantityAvailable);
+        Assert.Equal(15, batch.QuantityReceived);
+        Assert.Equal(BatchStatus.Active, batch.Status);
+    }
+
+    [Fact]
+    public async Task AdjustStock_BelowZero_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 2);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).AdjustStockAsync(user.Id, batch.Id, new Dtos.AdjustStockDto { Delta = -3 }));
+
+        Assert.Equal(2, batch.QuantityAvailable);
+    }
+
+    // ==================== IssueStockAsync ====================
+
+    [Fact]
+    public async Task IssueStock_ReducesStockAndLogsIssue()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 10);
+        await ctx.SaveChangesAsync();
+
+        var item = await CreateService(ctx).IssueStockAsync(user.Id, batch.Id, new Dtos.IssueStockDto { Quantity = 4 });
+
+        Assert.Equal(6, item.Available);
+        Assert.Equal(TransactionType.Issue, Assert.Single(ctx.InventoryTransactions).Type);
+    }
+
+    [Fact]
+    public async Task IssueStock_MoreThanAvailable_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 2);
+        await ctx.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).IssueStockAsync(user.Id, batch.Id, new Dtos.IssueStockDto { Quantity = 3 }));
+
+        Assert.Contains("Insufficient stock", ex.Message);
+        Assert.Equal(2, batch.QuantityAvailable);
+    }
+
+    [Fact]
+    public async Task IssueStock_FromExpiredBatch_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        var batch = AddBatch(ctx, hospital.Id, vaccine.Id, available: 10, expiry: DateTime.UtcNow.AddDays(-1));
+        await ctx.SaveChangesAsync();
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).IssueStockAsync(user.Id, batch.Id, new Dtos.IssueStockDto { Quantity = 1 }));
+
+        Assert.Contains("expired", ex.Message);
+        Assert.Equal(10, batch.QuantityAvailable);
+    }
+
+    // ==================== Formulary ====================
+
+    [Fact]
+    public async Task RegisterFormulary_TwiceForSameVaccine_UpdatesPriceWithoutDuplicate()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, _) = AddHospital(ctx);
+        await ctx.SaveChangesAsync();
+        var service = CreateService(ctx);
+
+        await service.RegisterFormularyAsync(user.Id, new Dtos.RegisterFormularyDto { VaccineName = "BCG", Price = 500 });
+        var entry = await service.RegisterFormularyAsync(user.Id, new Dtos.RegisterFormularyDto { VaccineName = "bcg", Price = 750 });
+
+        Assert.Single(ctx.HospitalFormularies);
+        Assert.Equal(750, entry.Price);
+    }
+
+    [Fact]
+    public async Task UpdateFormularyPrice_ForMissingEntry_ThrowsKeyNotFound()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, _) = AddHospital(ctx);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            CreateService(ctx).UpdateFormularyPriceAsync(user.Id, Guid.NewGuid(), new Dtos.UpdateFormularyPriceDto { Price = 100 }));
+    }
+
+    [Fact]
+    public async Task RemoveFormulary_WithStockOnHand_Throws()
+    {
+        await using var ctx = TestDb.CreateContext();
+        var (user, hospital) = AddHospital(ctx);
+        var vaccine = AddVaccine(ctx);
+        AddBatch(ctx, hospital.Id, vaccine.Id, available: 5);
+        var entry = new HospitalFormulary { HospitalProfileId = hospital.Id, VaccineId = vaccine.Id };
+        ctx.HospitalFormularies.Add(entry);
+        await ctx.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            CreateService(ctx).RemoveFormularyAsync(user.Id, entry.Id));
+
+        Assert.Single(ctx.HospitalFormularies);
+    }
 }
