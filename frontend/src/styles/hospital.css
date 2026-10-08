@@ -632,15 +632,19 @@
 }
 
 .hospital-staff-hero-btn.primary {
-  background: var(--color-primary);
+  box-shadow: var(--shadow-btn);
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
-  border: 1px solid var(--color-primary-hover);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .hospital-staff-hero-btn.primary:hover {
-  background: var(--color-primary);
   border-color: var(--color-primary);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 .hospital-staff-hero-btn.secondary {
@@ -2602,20 +2606,22 @@
 }
 
 .btn-modal-submit {
-  background: var(--color-primary);
+  padding: var(--btn-pad-md);
+  font-size: var(--btn-size-md);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  transition: all var(--transition-fast);
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
   border: none;
-  padding: 8px 18px;
-  border-radius: var(--radius-sm);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(var(--rgb-primary), 0.3);
-  transition: all var(--transition-fast);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-modal-submit:hover {
-  background: var(--color-primary-dark);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 /* ==========================================================================
@@ -3284,22 +3290,23 @@ select.schedule-input-field {
 }
 
 .btn-add-schedule {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 0.95rem;
-  font-weight: 700;
-  padding: 9px 24px;
-  border: none;
-  border-radius: 10px;
+  font-size: var(--btn-size-md);
+  padding: var(--btn-pad-md);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(var(--rgb-primary), 0.3);
+  box-shadow: var(--shadow-btn);
   transition: all var(--transition-fast);
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-add-schedule:hover {
-  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 .schedule-section-heading {
@@ -3575,23 +3582,25 @@ select.schedule-input-field {
 }
 
 .btn-register-vaccine {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border: none;
-  border-radius: 12px;
-  padding: 10px 18px;
-  font-size: 0.88rem;
-  font-weight: 700;
+  padding: var(--btn-pad-md);
+  font-size: var(--btn-size-md);
   cursor: pointer;
-  box-shadow: 0 6px 14px -8px rgba(var(--rgb-primary), 0.55);
+  box-shadow: var(--shadow-btn);
   transition: background var(--transition-fast), transform var(--transition-fast);
   white-space: nowrap;
   height: 42px;
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-register-vaccine:hover {
-  background: var(--color-primary);
   transform: translateY(-1px);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 .registered-pills-wrap {
@@ -3700,6 +3709,13 @@ select.schedule-input-field {
 
   .btn-register-vaccine {
     width: 100%;
+    background: var(--btn-primary-bg);
+    color: var(--color-text-inverse);
+    border: none;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
+    box-shadow: var(--shadow-btn);
   }
 }
 
@@ -3750,17 +3766,22 @@ select.schedule-input-field {
 
 .btn-restock-primary,
 .hospital-inventory-content .btn-restock-primary {
-  background: var(--color-primary);
   border-color: var(--color-primary);
+  box-shadow: var(--shadow-btn);
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
-  box-shadow: 0 8px 18px -8px rgba(var(--rgb-primary), 0.55);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-restock-primary:hover,
 .hospital-inventory-content .btn-restock-primary:hover {
-  background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-text-inverse);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 .hospital-inventory-content .btn-inventory-action {
@@ -4509,21 +4530,24 @@ select.schedule-input-field {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background: var(--color-primary);
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-text-inverse);
-  font-size: 0.74rem;
-  font-weight: 700;
-  border-radius: 9px;
+  padding: var(--btn-pad-sm);
+  font-size: var(--btn-size-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-table-audit:hover {
-  background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-text-inverse);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Cards Grid View */
@@ -4652,18 +4676,21 @@ select.schedule-input-field {
 }
 
 .btn-card-restock {
-  background: var(--color-primary);
-  border: 1px solid var(--color-primary);
-  color: var(--color-text-inverse);
-  padding: 8px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  padding: var(--btn-pad-sm);
+  font-size: var(--btn-size-sm);
   cursor: pointer;
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-card-restock:hover {
-  background: var(--color-primary-dark);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Footer Notice */
@@ -4971,6 +4998,13 @@ select.schedule-input-field {
   .btn-modal-cancel,
   .btn-modal-submit {
     width: 100%;
+    background: var(--btn-primary-bg);
+    color: var(--color-text-inverse);
+    border: none;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
+    box-shadow: var(--shadow-btn);
   }
 }
 

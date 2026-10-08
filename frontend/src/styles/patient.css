@@ -598,16 +598,21 @@
 }
 
 .btn-banner-action--primary {
-  background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
-  color: var(--color-text-inverse);
   border-color: var(--color-primary);
-  box-shadow: 0 4px 14px rgba(var(--rgb-primary), 0.28);
+  box-shadow: var(--shadow-btn);
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-banner-action--primary:hover {
-  background: var(--gradient-primary);
   color: var(--color-text-inverse);
   border-color: var(--color-primary-hover);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 @media (max-width: 900px) {
@@ -1491,23 +1496,23 @@
 }
 
 .btn-book-appointment {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  font-family: var(--font-body);
-  font-size: 1.02rem;
-  font-weight: 700;
-  padding: 11px 34px;
-  border: none;
-  border-radius: 9px;
+  font-size: var(--btn-size-lg);
+  padding: var(--btn-pad-lg);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--rgb-primary), 0.35);
+  box-shadow: var(--shadow-btn);
   transition: all var(--transition-smooth);
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-book-appointment:hover:not(:disabled) {
-  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--rgb-primary), 0.45);
+  box-shadow: var(--shadow-btn-hover);
+  background: var(--btn-primary-bg-hover);
 }
 
 .btn-book-appointment:disabled {
@@ -2084,23 +2089,23 @@
 }
 
 .btn-feedback-submit {
-  background-color: var(--color-primary);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: var(--btn-size-lg);
   height: 44px;
-  border: none;
-  border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--rgb-primary), 0.35);
+  box-shadow: var(--shadow-btn);
   transition: all var(--transition-smooth);
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-feedback-submit:hover {
-  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--rgb-primary), 0.45);
+  box-shadow: var(--shadow-btn-hover);
+  background: var(--btn-primary-bg-hover);
 }
 
 .feedback-success-box {
@@ -2232,22 +2237,23 @@
 }
 
 .btn-profile-edit {
-  background-color: var(--color-primary);
+  padding: var(--btn-pad-sm);
+  font-size: var(--btn-size-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-fast);
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
-  padding: 7px 22px;
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(var(--rgb-primary), 0.3);
-  transition: all var(--transition-fast);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-profile-edit:hover {
-  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-profile-export {
@@ -3373,23 +3379,24 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-  color: var(--color-text-inverse);
-  border: none;
-  border-radius: 9px;
-  font-size: 0.9rem;
-  font-weight: 700;
+  padding: var(--btn-pad-md);
+  font-size: var(--btn-size-md);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--rgb-primary), 0.25);
+  box-shadow: var(--shadow-btn);
   transition: all 0.2s ease;
   white-space: nowrap;
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .btn-careplan-download:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--color-primary-hover) 0%, var(--color-primary) 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(var(--rgb-primary), 0.35);
+  box-shadow: var(--shadow-btn-hover);
+  background: var(--btn-primary-bg-hover);
 }
 
 .btn-careplan-download:active:not(:disabled) {

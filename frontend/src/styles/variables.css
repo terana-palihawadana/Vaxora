@@ -84,6 +84,19 @@
   --table-head-weight: 600;
   --table-head-tracking: 0.05em;
 
+  /* Buttons */
+  --btn-radius: 10px;
+  --btn-font: var(--font-heading);
+  --btn-weight: 600;
+  --btn-primary-bg: var(--gradient-primary);
+  --btn-primary-bg-hover: linear-gradient(180deg, #087f78 0%, #055a56 100%);
+  --btn-pad-sm: 7px 16px;
+  --btn-pad-md: 10px 22px;
+  --btn-pad-lg: 12px 30px;
+  --btn-size-sm: 0.85rem;
+  --btn-size-md: 0.92rem;
+  --btn-size-lg: 1rem;
+
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);
 

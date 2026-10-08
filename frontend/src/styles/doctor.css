@@ -1864,19 +1864,30 @@
 }
 
 .doctor-btn-submit {
-  background: var(--gradient-primary);
+  padding: var(--btn-pad-md);
+  cursor: pointer;
+  box-shadow: var(--shadow-btn);
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
   border: none;
-  font-weight: 700;
-  padding: 10px 22px;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--rgb-primary), 0.25);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+}
+
+.doctor-btn-submit:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
 }
 
 .doctor-btn-submit.danger {
   background: var(--color-error);
   box-shadow: 0 4px 12px rgba(var(--rgb-error), 0.25);
+}
+
+.doctor-btn-submit.danger:hover:not(:disabled) {
+  background: var(--color-error);
+  filter: brightness(0.92);
 }
 
 /* Toast notification */
@@ -2048,22 +2059,23 @@
 }
 
 .doctor-btn-edit-pill {
-  background-color: var(--color-primary);
+  padding: var(--btn-pad-sm);
+  font-size: var(--btn-size-sm);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+  background: var(--btn-primary-bg);
   color: var(--color-text-inverse);
   border: none;
-  border-radius: 8px;
-  padding: 7px 24px;
-  font-family: var(--font-body);
-  font-size: 0.92rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(var(--rgb-primary), 0.3);
-  transition: all 0.2s ease;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .doctor-btn-edit-pill:hover {
-  background-color: var(--color-primary-hover);
   transform: translateY(-1px);
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-sm);
 }
 
 .doctor-btn-export-icon {
