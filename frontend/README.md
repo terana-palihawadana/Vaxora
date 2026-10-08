@@ -16,3 +16,9 @@ Note: This will impact Vite dev & build performances.
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Design tokens
+
+All colors live in `src/styles/variables.css` and mirror the mobile palette in `mobile/lib/core/theme/app_colors.dart`. Use `var(--color-*)` in CSS and inline styles instead of hex values.
+
+`npm run lint:colors` fails if a hardcoded hex color appears anywhere else in `src` (the admin portal and the jsPDF care plan export are exempt). ESLint reports the same thing in JS and JSX files.
