@@ -11,7 +11,7 @@ namespace Vaxora.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Only create Feedbacks. Do not touch VaccineSchedules here — EF previously
+            // Only create Feedbacks. Do not touch VaccineSchedules here - EF previously
             // emitted an unrelated BoothId FK repair that breaks CI fresh DBs where
             // AddVaccineScheduleBooth is baselined and BoothId was never added.
             migrationBuilder.CreateTable(
