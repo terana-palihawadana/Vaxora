@@ -971,15 +971,7 @@ export default function DoctorPatientsTab() {
                       Loading medical history…
                     </p>
                   ) : !hasMedicalHistory ? (
-                    <div
-                      style={{
-                        padding: 24,
-                        textAlign: "center",
-                        fontSize: "0.9rem",
-                        color: "var(--color-text-muted)",
-                        fontStyle: "italic",
-                      }}
-                    >
+                    <div className="empty-state">
                       No medical history on file. Use the &quot;+ Add Medical
                       History&quot; button above to record a diagnosis, allergy,
                       medication, or surgery.

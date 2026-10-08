@@ -3097,11 +3097,11 @@
 
 .empty-table-cell {
   background-color: var(--color-surface-subtle) !important;
-  color: var(--color-text-body) !important;
   font-family: var(--font-body);
-  font-size: 1rem;
-  font-style: italic;
-  padding: 24px !important;
+  color: var(--empty-text) !important;
+  font-size: var(--empty-size);
+  font-style: normal;
+  padding: var(--empty-pad) !important;
   text-align: center;
 }
 
@@ -3658,9 +3658,10 @@ select.schedule-input-field {
 
 .formulary-empty {
   margin: 0;
-  font-size: 0.88rem;
-  color: var(--color-text-body);
   line-height: 1.45;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
 }
 
 .registered-pills-list {
@@ -6079,6 +6080,8 @@ select.schedule-input-field {
 
 .inventory-empty-state p {
   margin: 0;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
 }
 
 .hospital-inventory-content .inventory-custom-table thead tr th {

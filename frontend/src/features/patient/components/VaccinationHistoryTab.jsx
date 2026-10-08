@@ -229,7 +229,7 @@ export default function VaccinationHistoryTab() {
                     <tr>
                       <td
                         colSpan={5}
-                        style={{ padding: "20px", fontStyle: "italic" }}
+                        className="empty-table-cell"
                       >
                         No vaccination records on file yet.
                       </td>

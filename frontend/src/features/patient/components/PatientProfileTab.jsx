@@ -541,13 +541,7 @@ export default function PatientProfileTab() {
                   ) : sortedMedicalHistory.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
-                        style={{
-                          padding: "20px",
-                          textAlign: "center",
-                          fontStyle: "italic",
-                          color: "var(--color-text-body)",
-                        }}
+                        colSpan={4} className="empty-table-cell"
                       >
                         No medical history on file yet.
                       </td>
@@ -663,13 +657,7 @@ export default function PatientProfileTab() {
                   ) : sortedAppointments.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
-                        style={{
-                          padding: "20px",
-                          textAlign: "center",
-                          fontStyle: "italic",
-                          color: "var(--color-text-body)",
-                        }}
+                        colSpan={5} className="empty-table-cell"
                       >
                         No appointments scheduled yet.
                       </td>
@@ -770,13 +758,7 @@ export default function PatientProfileTab() {
                   ) : sortedVaccinations.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={4}
-                        style={{
-                          padding: "20px",
-                          textAlign: "center",
-                          fontStyle: "italic",
-                          color: "var(--color-text-body)",
-                        }}
+                        colSpan={4} className="empty-table-cell"
                       >
                         No vaccination records on file yet.
                       </td>

@@ -674,21 +674,22 @@
 }
 
 .patient-empty-state {
-  padding: 28px 16px;
-  text-align: center;
-  color: var(--color-text-body);
-  font-size: 0.92rem;
   margin: 0;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
+  text-align: center;
+  padding: var(--empty-pad);
 }
 
 .patient-empty-state--dashed {
-  background: var(--color-bg);
-  border: 1px dashed var(--color-border-card);
-  border-radius: var(--radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  background: var(--empty-bg);
+  border: 1px dashed var(--empty-border);
+  border-radius: var(--radius-md);
 }
 
 .patient-empty-state--dashed p {
@@ -1837,9 +1838,11 @@
 
 .empty-appointments-cell {
   background-color: var(--color-surface-subtle) !important;
-  color: var(--color-text-body) !important;
-  font-style: italic;
   padding: 24px !important;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
+  text-align: center;
 }
 
 /* ==========================================================================

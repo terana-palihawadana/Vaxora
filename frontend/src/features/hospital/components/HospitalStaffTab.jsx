@@ -412,15 +412,15 @@ export default function HospitalStaffTab() {
       <div className="booths-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))' }}>
         {loading ? (
           <div
-            className="hospital-section-card"
-            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}
+            className="hospital-section-card empty-state-text"
+            style={{ gridColumn: '1 / -1' }}
           >
             Loading staff directory...
           </div>
         ) : filteredStaff.length === 0 ? (
           <div
-            className="hospital-section-card"
-            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}
+            className="hospital-section-card empty-state-text"
+            style={{ gridColumn: '1 / -1' }}
           >
             {staffList.length === 0
               ? 'No staff yet. Invite an approved doctor or nurse with their Vaxora ID to get started.'

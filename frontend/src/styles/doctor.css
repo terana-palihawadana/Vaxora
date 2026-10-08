@@ -1676,11 +1676,13 @@
 .staff-today-slots-empty {
   margin: 0;
   padding: 14px 12px;
-  color: var(--color-text-muted);
-  font-size: 0.88rem;
-  background: var(--color-bg);
-  border: 1px dashed var(--color-border-light);
-  border-radius: 12px;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
+  text-align: center;
+  background: var(--empty-bg);
+  border: 1px dashed var(--empty-border);
+  border-radius: var(--radius-md);
 }
 
 .staff-today-slots-list {
@@ -4305,10 +4307,11 @@
 }
 
 .ph-table-empty {
-  text-align: center !important;
   padding: 24px !important;
-  color: var(--color-text-placeholder);
-  font-style: italic;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
+  text-align: center;
 }
 
 .ph-dosage-view,
@@ -4366,12 +4369,13 @@
 /* Patient History � appointments-page inspired helpers */
 .doctor-appointments-mockup-table .empty-table-cell {
   background-color: var(--color-surface-subtle);
-  color: var(--color-text-body);
   font-family: var(--font-body);
-  font-size: 1rem;
   font-weight: 600;
-  padding: 28px 16px;
   text-align: center;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  font-style: normal;
+  padding: var(--empty-pad);
 }
 
 .ph-appointments-section-label {

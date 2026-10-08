@@ -213,3 +213,25 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* 10. Shared empty states */
+.empty-state {
+  margin: 0;
+  padding: var(--empty-pad);
+  text-align: center;
+  font-size: var(--empty-size);
+  font-style: normal;
+  line-height: var(--leading-normal);
+  color: var(--empty-text);
+  background: var(--empty-bg);
+  border: 1px dashed var(--empty-border);
+  border-radius: var(--radius-md);
+}
+
+.empty-state-text {
+  padding: 40px 20px;
+  text-align: center;
+  font-size: var(--empty-size);
+  font-style: normal;
+  color: var(--empty-text);
+}

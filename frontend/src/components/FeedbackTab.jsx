@@ -401,14 +401,7 @@ export default function FeedbackTab() {
             Loading your feedback history…
           </p>
         ) : myFeedbacks.length === 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              color: "var(--color-text-muted)",
-              fontStyle: "italic",
-              padding: 24,
-            }}
-          >
+          <p className="empty-state">
             You haven't submitted any feedback yet.
           </p>
         ) : (

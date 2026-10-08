@@ -837,7 +837,7 @@ export default function HospitalDashboardOverview() {
                   </tr>
                 ) : filteredQueue.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-placeholder)' }}>
+                    <td colSpan={5} className="empty-table-cell">
                       No patients in queue for {viewScope === 'today' ? "today's session" : 'selected filters'}.
                       {viewScope === 'today' && (
                         <button
@@ -1033,7 +1033,7 @@ export default function HospitalDashboardOverview() {
                 {inventoryError}
               </p>
             ) : inventory.length === 0 ? (
-              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px' }}>
+              <p className="empty-state-text">
                 No vaccine batches logged in database. Click "+ Restock" to register a batch.
               </p>
             ) : (

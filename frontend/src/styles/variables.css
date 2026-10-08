@@ -114,6 +114,13 @@
   --pill-pad: 6px 14px;
   --pill-size: 0.84rem;
 
+  /* Empty states */
+  --empty-text: var(--color-text-muted);
+  --empty-size: 0.92rem;
+  --empty-bg: var(--color-surface-subtle);
+  --empty-border: var(--color-border-card);
+  --empty-pad: 28px 20px;
+
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);
 

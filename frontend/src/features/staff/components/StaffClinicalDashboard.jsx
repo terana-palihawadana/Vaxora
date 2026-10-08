@@ -1130,7 +1130,7 @@ export default function StaffClinicalDashboard({
               <tbody>
                 {filteredPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
+                    <td colSpan={6} className="empty-table-cell">
                       {statsLoading
                         ? "Loading today's appointments..."
                         : patients.length === 0
