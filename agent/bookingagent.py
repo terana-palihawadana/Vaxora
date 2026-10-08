@@ -159,6 +159,29 @@ CLINICAL_ADVICE_PATTERNS = [
 ]
 
 
+# Approval messages sent by the "Confirm & Book" / "Confirm Cancellation" buttons
+# in the web and mobile clients.
+BOOKING_APPROVAL_PATTERN = r"\bi\s+approve\s+and\s+confirm\s+(the\s+)?booking\b"
+CANCELLATION_APPROVAL_PATTERN = r"\bi\s+approve\s+and\s+confirm\s+(the\s+)?cancellation\b"
+
+# Write tools that may only run after the patient approved the matching proposal.
+APPROVAL_GATED_TOOLS = {
+    "book_appointment": "booking",
+    "cancel_appointment": "cancellation",
+}
+
+
+def detect_user_approval(text: str) -> Optional[str]:
+    """Return 'booking' or 'cancellation' when the message is an explicit patient approval."""
+    if not text:
+        return None
+    if re.search(BOOKING_APPROVAL_PATTERN, text, re.IGNORECASE):
+        return "booking"
+    if re.search(CANCELLATION_APPROVAL_PATTERN, text, re.IGNORECASE):
+        return "cancellation"
+    return None
+
+
 def check_prompt_injection(text: str) -> Optional[str]:
     if not text:
         return None
@@ -209,9 +232,36 @@ class BookingAgent:
             data = resp.json()
             return data["choices"][0]["message"]
 
-    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any], token: Optional[str]) -> Any:
+    async def execute_tool(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        token: Optional[str],
+        approval: Optional[str] = None,
+    ) -> Any:
+        """
+        `approval` is the kind of action ('booking' / 'cancellation') the patient
+        explicitly approved in their latest message, or None. Booking and
+        cancellation writes are refused unless it matches.
+        """
         logger.info(f"[{self.name}] Tool Call: {tool_name} with args: {arguments}")
-        
+
+        required_approval = APPROVAL_GATED_TOOLS.get(tool_name)
+        if required_approval and approval != required_approval:
+            logger.warning(f"[{self.name}] Blocked {tool_name}: no explicit patient {required_approval} approval")
+            proposal_tool = (
+                "propose_booking_for_approval" if required_approval == "booking"
+                else "propose_cancellation_for_approval"
+            )
+            return {
+                "success": False,
+                "blocked": True,
+                "error": (
+                    f"'{tool_name}' requires explicit patient {required_approval} approval. "
+                    f"Call {proposal_tool} first and wait for the patient to confirm."
+                ),
+            }
+
         if tool_name == "get_current_date_time":
             return await tool_get_current_date_time(token=token)
         elif tool_name == "autonomous_find_and_propose":
@@ -245,6 +295,14 @@ class BookingAgent:
                 prop["appointment_date"] = _clean_date_string(prop["appointment_date"])
             if "time_slot" in prop:
                 prop["time_slot"] = _clean_slot_string(prop["time_slot"])
+            validation = validate_booking_proposal(prop)
+            if not validation["valid"]:
+                # Tell the model why, so it can fix the proposal instead of showing it.
+                return {
+                    "success": False,
+                    "error": "Proposal rejected by validation: " + "; ".join(validation["issues"]),
+                    "validation": validation,
+                }
             return {
                 "success": True,
                 "status": "proposal_pending_user_approval",
@@ -317,6 +375,10 @@ class BookingAgent:
                 break
 
         is_cancellation = any(kw in last_user_message.lower() for kw in ["cancel", "delete appointment", "revoke"])
+
+        # Only the latest user message can approve a write, and each approval
+        # authorises a single successful booking/cancellation call.
+        approval = detect_user_approval(last_user_message)
 
         if is_cancellation:
             plan = [
@@ -446,6 +508,7 @@ class BookingAgent:
         cancellation_proposal_data = None
         booking_result = None
         cancellation_result = None
+        rejected_validation = None
         completed_steps = []
         tool_results = []
 
@@ -503,7 +566,9 @@ class BookingAgent:
                     else:
                         fn_args = fn_args_raw or {}
 
-                    tool_output = await self.execute_tool(fn_name, fn_args, token)
+                    tool_output = await self.execute_tool(fn_name, fn_args, token, approval=approval)
+                    if fn_name in APPROVAL_GATED_TOOLS and isinstance(tool_output, dict) and tool_output.get("success"):
+                        approval = None
 
                     # Update structured plan status based on tool execution
                     if is_cancellation:
@@ -543,7 +608,10 @@ class BookingAgent:
                             logger.warning(f"Failed to record tool call to state store: {se}")
 
                     if fn_name == "propose_booking_for_approval":
-                        proposal_data = fn_args
+                        if tool_output.get("success"):
+                            proposal_data = tool_output.get("proposal")
+                        elif tool_output.get("validation"):
+                            rejected_validation = tool_output.get("validation")
                     elif fn_name == "autonomous_find_and_propose" and tool_output.get("proposal"):
                         proposal_data = tool_output.get("proposal")
                     elif fn_name == "propose_cancellation_for_approval" and tool_output.get("proposal"):
@@ -564,17 +632,23 @@ class BookingAgent:
 
         final_content = msg.get("content") or msg.get("reasoning") or "I have processed your booking request."
 
-        # Deterministic validation
+        # Deterministic validation: a proposal that fails validation is never
+        # shown to the patient for approval.
         validation_result = {"valid": True, "issues": []}
         if proposal_data:
             validation_result = validate_booking_proposal(proposal_data)
             if not validation_result.get("valid"):
                 logger.warning(f"Booking proposal failed validation: {validation_result.get('issues')}")
+                proposal_data = None
         elif cancellation_proposal_data:
             c_issues = []
             if not cancellation_proposal_data.get("appointment_id"):
                 c_issues.append("Missing appointment_id in cancellation proposal")
             validation_result = {"valid": len(c_issues) == 0, "issues": c_issues}
+            if c_issues:
+                cancellation_proposal_data = None
+        elif rejected_validation:
+            validation_result = rejected_validation
 
         proposals_list = []
         if proposal_data:
@@ -584,13 +658,27 @@ class BookingAgent:
 
         has_proposals = len(proposals_list) > 0
         approval_required = has_proposals
-        final_outcome = "AwaitingApproval" if has_proposals else ("Completed" if (booking_result or cancellation_result or not tool_calls) else "Completed")
+        proposal_rejected = not has_proposals and not validation_result.get("valid", True)
+        if has_proposals:
+            final_outcome = "AwaitingApproval"
+        elif proposal_rejected:
+            final_outcome = "SafeFailure"
+            final_content = (
+                "I couldn't prepare a valid appointment proposal: "
+                + "; ".join(validation_result.get("issues") or [])
+                + ". Please try a different date, time slot, or hospital."
+            )
+        else:
+            final_outcome = "Completed"
 
         # Persist final state to durable store
         if state_store and workflow_id:
             try:
                 state_store.set_validation(workflow_id, [validation_result])
-                state_store.set_approval(workflow_id, "awaiting_approval" if has_proposals else "completed")
+                state_store.set_approval(
+                    workflow_id,
+                    "awaiting_approval" if has_proposals else ("failed" if proposal_rejected else "completed"),
+                )
                 state_store.set_outcome(workflow_id, final_outcome)
                 state_store.set_plan(workflow_id, plan)
             except Exception as se:
