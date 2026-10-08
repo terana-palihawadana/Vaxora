@@ -249,13 +249,18 @@ builder.Services.AddSwaggerGen(c =>
 var app = builder.Build();
 
 // 8. Auto-Seed Initial Admin Account and Migration Setup
-try
+// Skip seeding in the "Testing" environment — WebApplicationFactory uses EF Core
+// InMemory, which cannot execute raw SQL or migrations.
+if (!app.Environment.IsEnvironment("Testing"))
 {
-    await DbInitializer.SeedAsync(app.Services, app.Configuration);
-}
-catch (Exception ex)
-{
-    app.Logger.LogError(ex, "Failed to execute database seeding.");
+    try
+    {
+        await DbInitializer.SeedAsync(app.Services, app.Configuration);
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Failed to execute database seeding.");
+    }
 }
 
 // 9. Configure HTTP Request Pipeline
@@ -295,3 +300,5 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy", service = "
 app.MapControllers();
 
 app.Run();
+
+public partial class Program { }
