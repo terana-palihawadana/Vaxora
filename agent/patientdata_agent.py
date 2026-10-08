@@ -227,12 +227,21 @@ class PatientDataAgent:
         considered 'no clinical data'.
         """
         def _list_len(payload: Any, *keys: str) -> int:
+            # The API returns timelines as objects with the list nested inside
+            # (e.g. {"records": [...]} or {"visits": [...]}), and some endpoints
+            # return a bare list, so look one level down as well.
+            if isinstance(payload, list):
+                return len(payload)
             if not isinstance(payload, dict):
                 return 0
             for k in keys:
                 v = payload.get(k)
                 if isinstance(v, list):
                     return len(v)
+                if isinstance(v, dict):
+                    nested = _list_len(v, *keys)
+                    if nested:
+                        return nested
             return 0
 
         mh = tool_results.get("get_medical_history") or {}
