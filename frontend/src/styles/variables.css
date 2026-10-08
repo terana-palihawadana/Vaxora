@@ -76,6 +76,14 @@
   /* Star Ratings */
   --color-rating: #f59e0b;
 
+  /* Tables */
+  --table-head-bg: var(--color-soft-panel);
+  --table-head-text: var(--color-primary-dark);
+  --table-head-border: var(--color-border-card);
+  --table-head-size: 0.75rem;
+  --table-head-weight: 600;
+  --table-head-tracking: 0.05em;
+
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);
 

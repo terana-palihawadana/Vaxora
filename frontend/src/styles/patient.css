@@ -972,14 +972,16 @@
 }
 
 .portal-table th {
-  background: var(--color-bg);
-  color: var(--color-text-body);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   padding: 14px 18px;
-  border-bottom: 1.5px solid var(--color-border-light);
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .portal-table td {
@@ -1690,13 +1692,16 @@
 }
 
 .custom-appointments-table thead tr th {
-  background-color: var(--color-text-placeholder);
-  color: var(--color-text-title);
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
   padding: 13px 18px;
-  border-right: 4px solid var(--color-surface);
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .custom-appointments-table thead tr th:first-child {
@@ -2715,14 +2720,16 @@
 }
 
 .patient-mockup-table thead tr th {
-  background-color: var(--color-text-muted);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 700;
   padding: 12px 14px;
-  border-right: 3px solid var(--color-surface);
-  letter-spacing: 0.01em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .patient-mockup-table thead tr th:last-child {
@@ -2904,8 +2911,16 @@
   }
 
   .patient-mockup-table thead tr th {
-    font-size: 0.95rem;
     padding: 10px 10px;
+    background: var(--table-head-bg);
+    color: var(--table-head-text);
+    font-family: var(--font-heading);
+    font-size: var(--table-head-size);
+    font-weight: var(--table-head-weight);
+    letter-spacing: var(--table-head-tracking);
+    text-transform: uppercase;
+    border-right: none;
+    border-bottom: 1px solid var(--table-head-border);
   }
 
   .patient-mockup-table tbody tr td {

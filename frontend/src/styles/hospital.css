@@ -1646,21 +1646,23 @@
 }
 
 .hospital-queue-table th {
-  background: var(--color-bg);
-  color: var(--color-text-body);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   height: var(--queue-head-height);
   padding: 8px 12px;
-  border-bottom: 1px solid var(--color-border-light);
   position: sticky;
   top: 0;
   z-index: 1;
   white-space: nowrap;
   box-sizing: border-box;
   vertical-align: middle;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .hospital-queue-table th:nth-child(1),
@@ -2865,14 +2867,16 @@
 }
 
 .hospital-appointments-mockup-table thead tr th {
-  background-color: var(--color-text-muted);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
   padding: 13px 16px;
-  border-right: 3px solid var(--color-surface);
-  letter-spacing: 0.01em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .hospital-appointments-mockup-table thead tr th:last-child {
@@ -4237,16 +4241,16 @@ select.schedule-input-field {
 }
 
 .inventory-custom-table thead tr th {
-  background-color: var(--color-soft-panel);
-  color: var(--color-primary);
-  font-family: var(--font-heading);
-  font-size: 0.78rem;
-  font-weight: 700;
   padding: 12px 14px;
-  border-right: none;
-  letter-spacing: 0.04em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
   text-transform: uppercase;
-  border-bottom: 1px solid var(--color-border-card);
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .inventory-custom-table thead tr th.is-left,
@@ -4898,8 +4902,16 @@ select.schedule-input-field {
 
   .hospital-appointments-mockup-table thead tr th,
   .inventory-custom-table thead tr th {
-    font-size: 0.95rem;
     padding: 10px 8px;
+    background: var(--table-head-bg);
+    color: var(--table-head-text);
+    font-family: var(--font-heading);
+    font-size: var(--table-head-size);
+    font-weight: var(--table-head-weight);
+    letter-spacing: var(--table-head-tracking);
+    text-transform: uppercase;
+    border-right: none;
+    border-bottom: 1px solid var(--table-head-border);
   }
 
   .hospital-appointments-mockup-table tbody tr td,
@@ -5781,8 +5793,15 @@ select.schedule-input-field {
 }
 
 .hospital-appointments-mockup-table thead tr th {
-  font-size: 0.82rem;
-  letter-spacing: 0;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .hospital-appointments-mockup-table tbody tr td {
@@ -5955,12 +5974,15 @@ select.schedule-input-field {
 }
 
 .hospital-inventory-content .inventory-custom-table thead tr th {
-  background: var(--color-soft-panel);
-  color: var(--color-primary);
-  border-color: var(--color-border-card);
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
   font-family: var(--font-heading);
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .hospital-inventory-content .inventory-custom-table tbody tr td {
@@ -6242,8 +6264,15 @@ select.schedule-input-field {
    ============================================ */
 .hospital-inventory-content .inventory-custom-table thead tr th {
   padding: 14px;
-  font-size: 0.72rem;
-  letter-spacing: 0.06em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .hospital-inventory-content .inventory-custom-table tbody tr td {

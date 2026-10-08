@@ -1260,14 +1260,16 @@
 }
 
 .doctor-table th {
-  background-color: var(--color-bg);
-  color: var(--color-text-body);
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--color-border-light);
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .doctor-table td {
@@ -2655,14 +2657,16 @@
 }
 
 .patient-mockup-table thead tr th {
-  background-color: var(--color-text-muted);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 1.1rem;
-  font-weight: 700;
   padding: 12px 14px;
-  border-right: 3px solid var(--color-surface);
-  letter-spacing: 0.01em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .patient-mockup-table thead tr th:last-child {
@@ -2860,14 +2864,16 @@
 }
 
 .doctor-appointments-mockup-table thead tr th {
-  background-color: var(--color-text-muted);
-  color: var(--color-text-inverse);
-  font-family: var(--font-heading);
-  font-size: 1.15rem;
-  font-weight: 700;
   padding: 13px 16px;
-  border-right: 3px solid var(--color-surface);
-  letter-spacing: 0.01em;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .doctor-appointments-mockup-table thead tr th:last-child {
@@ -2991,8 +2997,16 @@
   }
 
   .doctor-appointments-mockup-table thead tr th {
-    font-size: 0.95rem;
     padding: 10px 8px;
+    background: var(--table-head-bg);
+    color: var(--table-head-text);
+    font-family: var(--font-heading);
+    font-size: var(--table-head-size);
+    font-weight: var(--table-head-weight);
+    letter-spacing: var(--table-head-tracking);
+    text-transform: uppercase;
+    border-right: none;
+    border-bottom: 1px solid var(--table-head-border);
   }
 
   .doctor-appointments-mockup-table tbody tr td {
@@ -4655,11 +4669,15 @@
 }
 
 .staff-workspace-page .doctor-appointments-mockup-table thead th {
-  background: var(--color-soft-panel);
-  color: var(--color-text-body);
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  letter-spacing: 0;
+  background: var(--table-head-bg);
+  color: var(--table-head-text);
+  font-family: var(--font-heading);
+  font-size: var(--table-head-size);
+  font-weight: var(--table-head-weight);
+  letter-spacing: var(--table-head-tracking);
+  text-transform: uppercase;
+  border-right: none;
+  border-bottom: 1px solid var(--table-head-border);
 }
 
 .staff-workspace-page .doctor-appointments-mockup-table tbody td {
