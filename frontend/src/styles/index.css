@@ -31,7 +31,7 @@
   min-height: 40px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #2563eb;
+  border: 2px solid var(--color-primary);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   display: block;
   transition: transform 0.2s ease, border-color 0.2s ease;
@@ -43,12 +43,12 @@
   min-width: 40px;
   min-height: 40px;
   border-radius: 50%;
-  background: #e2e8f0;
-  color: #1e4a9e;
+  background: var(--color-soft-panel-deep);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #94a3b8;
+  border: 2px solid var(--color-border-card);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
@@ -75,35 +75,35 @@
 
 .icon-shade-blue,
 .section-title-icon {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--color-info-bg);
+  color: var(--color-info);
 }
 
 .icon-shade-teal,
 .section-title-icon--teal,
 .cold-chain-icon {
-  background: #f0fdfa;
-  color: #0d9488;
+  background: var(--color-soft-panel);
+  color: var(--color-primary);
 }
 
 .icon-shade-amber {
-  background: #fffbeb;
-  color: #d97706;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 
 .icon-shade-purple {
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: var(--color-ai-bg);
+  color: var(--color-ai);
 }
 
 .icon-shade-green {
-  background: #ecfdf5;
-  color: #059669;
+  background: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .icon-shade-slate {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--color-surface-subtle);
+  color: var(--color-text-body);
 }
 
 .section-title-icon {
@@ -127,7 +127,7 @@
 .navbar-user-name {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--color-text-title);
   line-height: 1.2;
   max-width: 170px;
   white-space: nowrap;
@@ -138,7 +138,7 @@
 .navbar-user-sub {
   font-size: 0.72rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--color-text-muted);
   line-height: 1.2;
   max-width: 170px;
   white-space: nowrap;

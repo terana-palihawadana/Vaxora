@@ -18,6 +18,9 @@
   --color-accent: #168b91;
   --color-accent-teal: #087f78;
   --color-primary-soft: rgba(8, 127, 120, 0.1);
+  /* RGB triplets for translucent shades: rgba(var(--rgb-primary), 0.3) */
+  --rgb-primary: 8, 127, 120;
+  --rgb-primary-dark: 18, 56, 75;
   --gradient-primary: linear-gradient(180deg, #0b8279 0%, #066d68 100%);
 
   /* Neutral & Surface Colors */
