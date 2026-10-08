@@ -53,6 +53,10 @@ class ApiConstants {
   static const String updateProfilePhoto = '/auth/profile/photo';
   static const String patientVaccinations = '/patient-vaccinations';
   static const String patientMedicalHistory = '/patient-medical-history';
+  // Feedback endpoints
+  static const String feedback = '/feedback';
+  static const String myFeedback = '/feedback/my';
+  static String feedbackById(String id) => '/feedback/$id';
   static const String availableSchedules = '/schedule/available';
   static const String vaccines = '/inventory/vaccines';
 
@@ -66,17 +70,21 @@ class ApiConstants {
   static const String inventorySummary = '/inventory/summary';
   static const String inventoryVaults = '/inventory/vaults';
   static const String inventoryFormulary = '/inventory/formulary';
-static String formularyEntry(String id) => '/inventory/formulary/$id';
-// same path — the HTTP method changes, not the URL
-static const String inventoryRestock = '/inventory/batches';
+  static String formularyEntry(String id) => '/inventory/formulary/$id';
+  // same path — the HTTP method changes, not the URL
+  static const String inventoryRestock = '/inventory/batches';
 
   // Inventory AI draft execution (approval-gated)
-  static const String inventoryAgentExecuteDraft = '/inventory/agent/execute-draft';
+  static const String inventoryAgentExecuteDraft =
+      '/inventory/agent/execute-draft';
   static const String inventoryAgentWorkflows = '/inventory/agent/workflows';
 
-  static String batchIssue(String batchId) => '/inventory/batches/$batchId/issue';
-  static String batchWastage(String batchId) => '/inventory/batches/$batchId/wastage';
-  static String batchAudit(String batchId) => '/inventory/batches/$batchId/audit';
+  static String batchIssue(String batchId) =>
+      '/inventory/batches/$batchId/issue';
+  static String batchWastage(String batchId) =>
+      '/inventory/batches/$batchId/wastage';
+  static String batchAudit(String batchId) =>
+      '/inventory/batches/$batchId/audit';
 
   // Staff management (doctor / nurse)
   static const String staffMyAffiliations = '/staff/my-affiliations';

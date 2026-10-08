@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/services/storage_service.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/presentation/screens/login_screen.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
 import '../../../staff/presentation/widgets/network_avatar.dart';
 import '../../../staff/presentation/widgets/staff_common_widgets.dart';
+import '../../data/models/medical_history_model.dart';
+import '../../data/repositories/patient_repository.dart';
 
 class PatientProfileScreen extends StatefulWidget {
   const PatientProfileScreen({super.key});
@@ -30,10 +33,18 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
   String _status = 'ACTIVE';
   String? _photoUrl;
 
+  // Medical history state
+  PatientMedicalHistoryTimelineModel? _medicalHistory;
+  bool _isLoadingMedicalHistory = true;
+
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _loadAll();
+  }
+
+  Future<void> _loadAll() async {
+    await Future.wait([_loadUserProfile(), _loadMedicalHistory()]);
   }
 
   Future<void> _loadUserProfile() async {
@@ -58,6 +69,36 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     }
   }
 
+  Future<void> _loadMedicalHistory() async {
+    setState(() => _isLoadingMedicalHistory = true);
+    try {
+      // The backend wants the patientProfileId (a GUID). Read it from the
+      // cached raw user JSON — field name varies by signup version.
+      final rawUser = await StorageService.getUser();
+      final profileId =
+          rawUser?['profileDetails']?['id']?.toString() ??
+          rawUser?['patientProfileId']?.toString() ??
+          rawUser?['profileId']?.toString();
+
+      if (profileId == null || profileId.isEmpty) {
+        if (mounted) setState(() => _isLoadingMedicalHistory = false);
+        return;
+      }
+
+      final timeline = await PatientRepository.getMedicalHistoryTimeline(
+        profileId,
+      );
+      if (mounted) {
+        setState(() {
+          _medicalHistory = timeline;
+          _isLoadingMedicalHistory = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLoadingMedicalHistory = false);
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -78,9 +119,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         parsedDob = DateTime.tryParse(_dobController.text.trim());
       }
 
-      // Use the returned UserModel so we can refresh the fields from the
-      // server-side state. This also ensures patientProfileId / nicNumber
-      // aren't lost after the PUT (the response may be partial).
       final updated = await AuthRepository.updateProfile(
         fullName: _nameController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
@@ -187,14 +225,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
         ),
         title: const Text(
           'Delete Account Permanently?',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: AppColors.error,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.error),
         ),
         content: const Text(
           'This will permanently delete your Vaxora patient account, personal records, and vaccination history. This action cannot be undone.',
-          style: TextStyle(fontSize: 13.5, color: StaffSurfaces.textSecondary, height: 1.4),
+          style: TextStyle(
+            fontSize: 13.5,
+            color: StaffSurfaces.textSecondary,
+            height: 1.4,
+          ),
         ),
         actions: [
           TextButton(
@@ -222,13 +261,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
                   (route) => false,
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: AppColors.error,
-                    content: Text('Your Vaxora account has been permanently deleted.'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
                 );
               } catch (e) {
                 if (!mounted) return;
@@ -291,56 +323,33 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
               children: [
-                // 1. Profile Avatar & Badges Header Card
+                // 1. Avatar header
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: StaffSurfaces.card(),
                   child: Column(
                     children: [
-                      Stack(
-                        children: [
-                          Container(
-                            width: 88,
-                            height: 88,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: StaffSurfaces.cardBorder,
-                              ),
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: NetworkAvatar(
-                              url: _photoUrl,
-                              size: 88,
-                              fallback: Container(
-                                color: StaffSurfaces.softPanelDeep,
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  Icons.person,
-                                  size: 54,
-                                  color: StaffSurfaces.brandSoft,
-                                ),
-                              ),
+                      Container(
+                        width: 88,
+                        height: 88,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: StaffSurfaces.cardBorder),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: NetworkAvatar(
+                          url: _photoUrl,
+                          size: 88,
+                          fallback: Container(
+                            color: StaffSurfaces.softPanelDeep,
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.person,
+                              size: 54,
+                              color: StaffSurfaces.brandSoft,
                             ),
                           ),
-                          if (_isEditing)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: StaffSurfaces.cta,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.camera_alt,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -372,7 +381,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 2. Personal Information Fields
+                // 2. Personal Info
                 _buildSectionCard(
                   title: 'Personal Information',
                   icon: Icons.badge_outlined,
@@ -410,7 +419,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // 3. Clinical & Health Profile
+                // 3. Medical & Clinical Registry (existing static)
                 _buildSectionCard(
                   title: 'Medical & Clinical Registry',
                   icon: Icons.medical_services_outlined,
@@ -424,16 +433,15 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                       'Immunization Record',
                       'National Health Database Verified',
                     ),
-                    const Divider(color: StaffSurfaces.divider, height: 16),
-                    _buildStaticRow(
-                      'Clinical Notes',
-                      'Eligible for national immunization schedules',
-                    ),
                   ],
                 ),
                 const SizedBox(height: 16),
 
-                // 4. Emergency Contact
+                // 4. NEW — Medical History card
+                _buildMedicalHistoryCard(),
+                const SizedBox(height: 16),
+
+                // 5. Emergency Contact
                 _buildSectionCard(
                   title: 'Emergency Contact',
                   icon: Icons.contact_phone_outlined,
@@ -454,7 +462,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 ),
                 const SizedBox(height: 20),
 
-                // 5. Action Buttons (Export & Logout)
+                // 6. Actions
                 OutlinedButton.icon(
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -513,6 +521,233 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
             ),
     );
   }
+
+  // ============================================================
+  // Medical History card
+  // ============================================================
+
+  Widget _buildMedicalHistoryCard() {
+    final records =
+        _medicalHistory?.records ?? const <PatientMedicalHistoryRecordModel>[];
+
+    // Group by record type for a scannable layout
+    final groups = <String, List<PatientMedicalHistoryRecordModel>>{};
+    for (final r in records) {
+      groups.putIfAbsent(r.recordType, () => []).add(r);
+    }
+    const groupOrder = [
+      'Diagnosis',
+      'Allergy',
+      'Medication',
+      'Surgery',
+      'Other',
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: StaffSurfaces.card(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.monitor_heart_outlined,
+                size: 18,
+                color: const Color(0xFF0E7490),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'Medical History',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: StaffSurfaces.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              if (!_isLoadingMedicalHistory && _medicalHistory != null)
+                Text(
+                  '${_medicalHistory!.totalRecords} record'
+                  '${_medicalHistory!.totalRecords == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: StaffSurfaces.textSecondary,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          if (_isLoadingMedicalHistory)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+            )
+          else if (records.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No medical history on file yet.',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: StaffSurfaces.textSecondary,
+                ),
+              ),
+            )
+          else
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final groupKey in groupOrder)
+                  if ((groups[groupKey] ?? []).isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4, bottom: 6),
+                      child: Text(
+                        '$groupKey'.toUpperCase(),
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.6,
+                          color: StaffSurfaces.textSecondary,
+                        ),
+                      ),
+                    ),
+                    for (final rec in groups[groupKey]!)
+                      _buildMedicalHistoryRow(rec),
+                    const SizedBox(height: 8),
+                  ],
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedicalHistoryRow(PatientMedicalHistoryRecordModel rec) {
+    final severityColor = _severityColor(rec.severity);
+    final statusColor = _historyStatusColor(rec.status);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: StaffSurfaces.softPanel,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: StaffSurfaces.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            rec.title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: StaffSurfaces.textPrimary,
+            ),
+          ),
+          if (rec.icd10Code != null && rec.icd10Code!.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              'ICD-10: ${rec.icd10Code}',
+              style: const TextStyle(
+                fontSize: 10.5,
+                color: StaffSurfaces.textMutedSoft,
+              ),
+            ),
+          ],
+          if (rec.description != null && rec.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              rec.description!,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: StaffSurfaces.textSecondary,
+                height: 1.35,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: severityColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  rec.severity.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                    color: severityColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  rec.status,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'critical':
+      case 'severe':
+        return const Color(0xFFDC2626);
+      case 'moderate':
+        return const Color(0xFFB45309);
+      case 'mild':
+        return const Color(0xFF0284C7);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  Color _historyStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'chronic':
+        return const Color(0xFFB45309);
+      case 'resolved':
+      case 'inremission':
+        return const Color(0xFF10B981);
+      default:
+        return const Color(0xFF64748B);
+    }
+  }
+
+  // ============================================================
+  // Shared helpers
+  // ============================================================
 
   Widget _buildSectionCard({
     required String title,
