@@ -102,6 +102,7 @@ internal static class TestDb
         User createdBy)
     {
         var today = StaffDutyHelper.HospitalToday();
+        // Cover the whole hospital-local day so tests don't flake around midnight.
         var shift = new StaffShift
         {
             AffiliationId = affiliation.Id,
@@ -235,3 +236,4 @@ internal sealed class FakeVaccinationCardService : IVaccinationCardService
         DateTime issuanceDate) =>
         new byte[] { 0x25, 0x50, 0x44, 0x46 }; // %PDF
 }
+
