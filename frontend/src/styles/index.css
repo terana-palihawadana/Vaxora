@@ -151,3 +151,65 @@
     display: none;
   }
 }
+
+/* 9. Shared buttons and danger zone (profile pages) */
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--btn-pad-md);
+  font-family: var(--btn-font);
+  font-size: var(--btn-size-md);
+  font-weight: var(--btn-weight);
+  color: var(--color-text-inverse);
+  background: var(--color-error);
+  border: none;
+  border-radius: var(--btn-radius);
+  box-shadow: 0 4px 12px rgba(var(--rgb-error), 0.25);
+  cursor: pointer;
+  transition: filter var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+  box-shadow: 0 6px 16px rgba(var(--rgb-error), 0.3);
+}
+
+.danger-zone-card,
+.staff-workspace-page .danger-zone-card.doctor-profile-card,
+.danger-zone-card.hospital-staff-section {
+  margin-top: var(--space-2);
+  padding: var(--space-6);
+  background: var(--color-error-bg);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.danger-zone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+}
+
+.danger-zone-title {
+  margin: 0 0 6px;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--color-error);
+}
+
+.danger-zone-text {
+  margin: 0;
+  max-width: 600px;
+  font-size: var(--text-sm);
+  color: var(--color-text-body);
+}
+
+.panel-link-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

@@ -648,14 +648,19 @@
 }
 
 .hospital-staff-hero-btn.secondary {
-  background: rgba(255, 255, 255, 0.92);
-  color: var(--color-text-title);
-  border: 1px solid var(--color-border-card);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .hospital-staff-hero-btn.secondary:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-card);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .hospital-staff-hero-btn:disabled {
@@ -1405,16 +1410,20 @@
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border-card);
-  background: var(--color-surface);
-  color: var(--color-text-body);
   cursor: pointer;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-inventory-refresh:hover:not(:disabled) {
-  border-color: var(--color-border-card);
-  background: var(--color-bg);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .btn-inventory-refresh:disabled {
@@ -1427,19 +1436,20 @@
   align-items: center;
   justify-content: center;
   padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--color-border-card);
-  background: var(--color-soft-panel);
-  color: var(--color-primary);
   font-size: 0.86rem;
-  font-weight: 600;
   cursor: pointer;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-soft-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-inventory-restock:hover {
-  background: var(--color-soft-panel);
-  border-color: var(--color-border-card);
-  color: var(--color-primary);
+  background: var(--btn-soft-bg-hover);
+  color: var(--color-primary-hover);
 }
 
 @media (max-width: 700px) {
@@ -1556,20 +1566,21 @@
   align-items: center;
   justify-content: center;
   padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--color-info-border);
-  background: var(--color-info-bg);
-  color: var(--color-primary);
   font-size: 0.86rem;
-  font-weight: 600;
   cursor: pointer;
   flex-shrink: 0;
   margin-left: auto;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-soft-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-queue-walkin:hover {
-  background: var(--color-info-bg);
-  border-color: var(--color-info-border);
+  background: var(--btn-soft-bg-hover);
   color: var(--color-primary-hover);
 }
 
@@ -3036,13 +3047,8 @@
 }
 
 .btn-hospital-cancel-action {
-  background-color: var(--color-error);
-  color: var(--color-text-inverse);
-  border: none;
   padding: 5px 12px;
-  border-radius: 6px;
   font-size: 0.82rem;
-  font-weight: 700;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -3053,12 +3059,19 @@
   box-sizing: border-box;
   transition: all 0.2s ease;
   box-shadow: 0 1px 3px rgba(var(--rgb-error), 0.3);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border: none;
 }
 
 .btn-hospital-cancel-action:hover {
-  background-color: var(--color-error);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(var(--rgb-error), 0.4);
+  background: var(--color-error);
+  filter: brightness(0.92);
 }
 
 .mockup-undo-btn {
@@ -3482,20 +3495,23 @@ select.schedule-input-field {
 
 .btn-toggle-registry {
   flex-shrink: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-card);
-  color: var(--color-text-body);
   font-size: 0.8rem;
-  font-weight: 600;
   padding: 8px 12px;
-  border-radius: 10px;
   cursor: pointer;
   transition: all var(--transition-fast);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-toggle-registry:hover {
-  background: var(--color-bg);
-  border-color: var(--color-border-card);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .formulary-card-body {
@@ -3733,16 +3749,16 @@ select.schedule-input-field {
   gap: 8px;
   min-height: 44px;
   padding: 10px 18px;
-  border-radius: 12px;
-  font-family: inherit;
   font-size: 0.88rem;
-  font-weight: 700;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast), transform var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
-  border: 1.5px solid var(--color-primary);
-  background: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 6px 16px -8px rgba(var(--rgb-primary), 0.4);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-inventory-action svg {
@@ -3750,11 +3766,11 @@ select.schedule-input-field {
 }
 
 .btn-inventory-action:hover {
-  background: var(--color-soft-panel);
-  border-color: var(--color-primary);
-  color: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 10px 20px -10px rgba(var(--rgb-primary), 0.5);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .btn-inventory-action:disabled {
@@ -3787,8 +3803,10 @@ select.schedule-input-field {
 .hospital-inventory-content .btn-inventory-action {
   min-height: 44px;
   padding: 10px 18px;
-  border-radius: 12px;
   font-size: 0.88rem;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 /* Metric Cards */
@@ -4723,21 +4741,23 @@ select.schedule-input-field {
 }
 
 .btn-sync-registry {
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
   padding: 8px 16px;
-  border-radius: 12px;
   font-size: 0.84rem;
-  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 6px 14px -8px rgba(var(--rgb-primary), 0.4);
   transition: all var(--transition-fast);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .btn-sync-registry:hover {
-  background: var(--color-soft-panel);
+  background: var(--btn-secondary-bg-hover);
   color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 /* ==========================================================================
@@ -4848,6 +4868,13 @@ select.schedule-input-field {
   .btn-inventory-action {
     width: 100%;
     justify-content: center;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    box-shadow: none;
   }
 
   .cold-vaults-grid {
@@ -4988,6 +5015,13 @@ select.schedule-input-field {
 
   .btn-sync-registry {
     width: 100%;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    box-shadow: none;
   }
 
   .modal-footer {
@@ -5691,14 +5725,21 @@ select.schedule-input-field {
 }
 
 .suggest-week-card-decline {
-  border: 1px solid var(--color-border-card);
-  background: var(--color-surface);
-  color: var(--color-text-body);
-  border-radius: 4px;
   padding: 3px 8px;
   font-size: 0.7rem;
-  font-weight: 700;
   cursor: pointer;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--color-surface);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+  box-shadow: none;
+}
+
+.suggest-week-card-decline:hover:not(:disabled) {
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 .suggest-week-card-decline:disabled {
@@ -5929,8 +5970,10 @@ select.schedule-input-field {
 .hospital-inventory-content .btn-inventory-action {
   min-height: 40px;
   padding: 9px 14px;
-  border-radius: 12px;
   font-size: 0.84rem;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .hospital-inventory-content .vaccine-formulary-card,
@@ -6073,6 +6116,9 @@ select.schedule-input-field {
   .hospital-inventory-content .btn-inventory-action {
     flex: 1 1 145px;
     justify-content: center;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
   }
 
   .hospital-inventory-content .inventory-toolbar {
@@ -6118,12 +6164,13 @@ select.schedule-input-field {
   min-height: 46px;
   padding: 12px 22px;
   font-size: 0.9rem;
-  font-weight: 800;
-  border-radius: 12px;
   letter-spacing: 0.01em;
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.16) inset,
     0 10px 22px -12px rgba(var(--rgb-primary), 0.6);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-restock-primary:hover {
@@ -6142,12 +6189,13 @@ select.schedule-input-field {
   min-height: 40px;
   padding: 10px 18px 10px 28px;
   font-size: 0.84rem;
-  font-weight: 700;
-  border-radius: 10px;
-  background: var(--color-surface);
-  border: 1.5px solid var(--color-primary);
-  color: var(--color-primary);
-  box-shadow: 0 4px 12px -8px rgba(var(--rgb-primary), 0.4);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-inventory-ai::before {
@@ -6164,11 +6212,11 @@ select.schedule-input-field {
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-inventory-ai:hover {
-  background: var(--color-soft-panel);
-  border-color: var(--color-primary);
-  color: var(--color-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 8px 18px -8px rgba(var(--rgb-primary), 0.5);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 /* ============================================
@@ -6179,20 +6227,21 @@ select.schedule-input-field {
   min-height: 40px;
   padding: 10px 16px;
   font-size: 0.84rem;
-  font-weight: 600;
-  border-radius: 10px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-card);
-  color: var(--color-text-body);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
   box-shadow: none;
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-wastage-secondary:hover:not(:disabled) {
-  background: var(--color-bg);
-  border-color: var(--color-border-card);
-  color: var(--color-text-title);
   transform: translateY(-1px);
   box-shadow: 0 4px 10px -6px rgba(var(--rgb-primary-dark), 0.15);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-wastage-secondary:disabled {
@@ -6207,18 +6256,19 @@ select.schedule-input-field {
   min-height: 40px;
   padding: 10px 12px;
   font-size: 0.84rem;
-  font-weight: 600;
-  border-radius: 10px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--color-text-body);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
   box-shadow: none;
 }
 
 .hospital-inventory-content .btn-inventory-action.btn-export-neutral:hover {
-  background: var(--color-surface);
-  border-color: var(--color-border-light);
-  color: var(--color-text-title);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 /* ============================================
@@ -6343,10 +6393,20 @@ select.schedule-input-field {
   .hospital-inventory-content .btn-inventory-action {
     width: 100%;
     justify-content: center;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
   }
 
   .hospital-inventory-content .btn-inventory-action.btn-inventory-ai {
     padding-left: 18px;
+    border-radius: var(--btn-radius);
+    font-family: var(--btn-font);
+    font-weight: var(--btn-weight);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    border: 1px solid var(--btn-secondary-border);
+    box-shadow: none;
   }
 
   .hospital-inventory-content .btn-inventory-action.btn-inventory-ai::before {

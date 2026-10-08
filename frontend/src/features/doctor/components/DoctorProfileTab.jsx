@@ -537,49 +537,21 @@ export default function DoctorProfileTab() {
 
         {/* Danger Zone Card */}
         <div
-          className="doctor-profile-card"
-          style={{
-            borderColor: 'rgba(var(--rgb-error), 0.35)',
-            background: 'linear-gradient(180deg, rgba(var(--rgb-error), 0.05) 0%, rgba(var(--rgb-primary-dark), 0.4) 100%)',
-            borderRadius: '16px',
-            padding: '24px',
-            marginTop: '8px',
-          }}
+          className="danger-zone-card doctor-profile-card"
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
+          <div className="danger-zone-row"
           >
             <div>
-              <h4 style={{ margin: '0 0 6px', color: 'var(--color-error)', fontSize: '1.05rem', fontWeight: 700 }}>
+              <h4 className="danger-zone-title">
                 Danger Zone
               </h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-placeholder)', maxWidth: '600px' }}>
+              <p className="danger-zone-text">
                 Permanently delete your Vaxora doctor profile, credentials, and verification records. This action cannot be undone.
               </p>
             </div>
-            <button
+            <button className="btn-danger"
               type="button"
               onClick={() => setIsDeleteModalOpen(true)}
-              style={{
-                background: 'var(--color-error)',
-                color: 'var(--color-text-inverse)',
-                border: '1px solid var(--color-error)',
-                borderRadius: '8px',
-                padding: '10px 18px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 2px 8px rgba(var(--rgb-error), 0.3)',
-              }}
             >
               <IconTrash size={16} /> Delete Account
             </button>

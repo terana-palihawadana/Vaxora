@@ -96,6 +96,12 @@
   --btn-size-sm: 0.85rem;
   --btn-size-md: 0.92rem;
   --btn-size-lg: 1rem;
+  --btn-secondary-bg: var(--color-surface);
+  --btn-secondary-bg-hover: var(--color-soft-panel);
+  --btn-secondary-text: var(--color-primary);
+  --btn-secondary-border: var(--color-border-card);
+  --btn-soft-bg: var(--color-soft-panel);
+  --btn-soft-bg-hover: var(--color-soft-panel-deep);
 
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);

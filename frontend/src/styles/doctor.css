@@ -585,61 +585,80 @@
 }
 
 .doctor-btn-call-next {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  border: 1.5px solid var(--color-info-border);
-  font-weight: 600;
   font-size: 0.88rem;
   padding: 10px 16px;
-  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: none;
   transition: all 0.2s ease;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
 }
 
 .doctor-btn-call-next:hover {
-  background: var(--color-info-bg);
-  border-color: var(--color-info-border);
   transform: none;
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .doctor-hero-banner .doctor-btn-call-next {
-  background-color: var(--color-surface);
-  color: var(--color-primary);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
+}
+
+.doctor-hero-banner .doctor-btn-call-next:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 .doctor-btn-report-aefi {
-  background: var(--color-surface);
-  color: var(--color-error);
-  border: 1.5px solid var(--color-error-border);
-  font-weight: 600;
   font-size: 0.88rem;
   padding: 10px 16px;
-  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--color-surface);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+  box-shadow: none;
 }
 
 .doctor-btn-report-aefi:hover {
   background: var(--color-error-bg);
-  border-color: var(--color-error-border);
+  color: var(--color-error);
 }
 
 .doctor-hero-banner .doctor-btn-report-aefi {
-  background: rgba(var(--rgb-error), 0.15);
-  color: var(--color-text-inverse);
-  border: 1.5px solid rgba(254, 202, 202, 0.4);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  background: var(--color-surface);
+  color: var(--color-error);
+  border: 1px solid var(--color-error-border);
+  box-shadow: none;
 }
 
 .doctor-hero-banner .doctor-btn-report-aefi:hover {
-  background: rgba(var(--rgb-error), 0.3);
-  border-color: rgba(254, 202, 202, 0.8);
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 
 /* Duty controls: neutral so they never read as clinical alerts. */
