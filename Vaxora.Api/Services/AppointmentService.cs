@@ -266,12 +266,7 @@ public class AppointmentService : IAppointmentService
 
         if (matchingSchedules.Count == 0)
         {
-            // Default fallback 1-hour session 09:00 - 10:00 if no active schedule configured
-            matchingSchedules.Add(new VaccineSchedule
-            {
-                StartTime = "09:00",
-                EndTime = "11:00"
-            });
+            return new List<TimeSlotDto>();
         }
 
         // Fetch already booked appointments for this hospital and date (not cancelled)
@@ -282,10 +277,6 @@ public class AppointmentService : IAppointmentService
                         a.Status != "Cancelled" &&
                         a.Status != "Rejected")
             .ToListAsync();
-
-        var bookedCounts = bookedAppointments
-            .GroupBy(a => a.TimeSlot.Trim(), StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
         var capacity = ScheduleStockPlanner.PatientsPerSlot;
         var slots = new List<TimeSlotDto>();
@@ -300,6 +291,10 @@ public class AppointmentService : IAppointmentService
         foreach (var sch in matchingSchedules)
         {
             var scheduleSlots = Generate20MinSlots(sch.StartTime, sch.EndTime);
+            var scheduleBookedCounts = bookedAppointments
+                .Where(a => a.VaccineScheduleId == sch.Id || (a.VaccineScheduleId == null && string.Equals(a.VaccineName, sch.VaccineName, StringComparison.OrdinalIgnoreCase)))
+                .GroupBy(a => a.TimeSlot.Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
             foreach (var slot in scheduleSlots)
             {
@@ -311,7 +306,7 @@ public class AppointmentService : IAppointmentService
                     continue;
                 }
 
-                bookedCounts.TryGetValue(slot.Slot, out var count);
+                scheduleBookedCounts.TryGetValue(slot.Slot, out var count);
                 slot.Capacity = capacity;
                 slot.BookedCount = count;
                 slot.IsBooked = count >= capacity;
@@ -321,7 +316,7 @@ public class AppointmentService : IAppointmentService
 
         return slots
             .GroupBy(s => s.Slot)
-            .Select(g => g.First())
+            .Select(g => g.FirstOrDefault(slot => !slot.IsBooked) ?? g.First())
             .OrderBy(s => s.StartTime)
             .ToList();
     }
@@ -335,7 +330,11 @@ public class AppointmentService : IAppointmentService
             return;
         }
 
-        var lockKey = $"slot:{appointment.HospitalUserId}:{appointment.AppointmentDate:yyyyMMdd}:{appointment.TimeSlot}";
+        var targetScheduleId = appointment.VaccineScheduleId;
+        var lockKey = targetScheduleId.HasValue
+            ? $"slot:{appointment.HospitalUserId}:{targetScheduleId.Value}:{appointment.AppointmentDate:yyyyMMdd}:{appointment.TimeSlot}"
+            : $"slot:{appointment.HospitalUserId}:{appointment.AppointmentDate:yyyyMMdd}:{appointment.TimeSlot}";
+
         var strategy = _context.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
@@ -345,6 +344,7 @@ public class AppointmentService : IAppointmentService
 
             var booked = await _context.Appointments
                 .CountAsync(a => a.HospitalUserId == appointment.HospitalUserId &&
+                                 (targetScheduleId != null ? a.VaccineScheduleId == targetScheduleId : true) &&
                                  a.AppointmentDate == appointment.AppointmentDate &&
                                  a.TimeSlot == appointment.TimeSlot &&
                                  a.Status != "Cancelled" &&
@@ -389,23 +389,7 @@ public class AppointmentService : IAppointmentService
 
         EnsureAppointmentNotInPast(dto.AppointmentDate, dto.TimeSlot);
 
-        // Capacity: up to PatientsPerSlot concurrent patients per 20-minute band
-        var slotCapacity = ScheduleStockPlanner.PatientsPerSlot;
-        var existingInSlot = await _context.Appointments
-            .CountAsync(a => a.HospitalUserId == resolvedHospitalUserId &&
-                             a.AppointmentDate == dto.AppointmentDate &&
-                             a.TimeSlot == dto.TimeSlot &&
-                             a.Status != "Cancelled" &&
-                             a.Status != "Rejected");
-
-        if (existingInSlot >= slotCapacity)
-        {
-            throw new InvalidOperationException(
-                $"The slot '{dto.TimeSlot}' on {dto.AppointmentDate:yyyy-MM-dd} is full " +
-                $"({slotCapacity} patients). Please select a different time slot.");
-        }
-
-        // Find matching active schedule for doctor/nurse attribution and fee calculation
+        // Find matching active schedule for doctor/nurse attribution, window validation, and fee calculation
         VaccineSchedule? schedule = null;
         var vName = dto.VaccineName.Trim().ToLowerInvariant();
 
@@ -414,6 +398,12 @@ public class AppointmentService : IAppointmentService
         {
             schedule = await _context.VaccineSchedules
                 .FirstOrDefaultAsync(s => s.Id == dto.VaccineScheduleId.Value && s.Status == "Active");
+
+            if (schedule == null || (schedule.HospitalUserId != resolvedHospitalUserId &&
+                (hospital.HospitalProfile == null || schedule.HospitalProfileId != hospital.HospitalProfile.Id)))
+            {
+                throw new InvalidOperationException("The specified vaccine schedule does not belong to the selected hospital or is not active.");
+            }
         }
 
         // 2. Second priority: match schedule by hospital, matching vaccine name, and date/recurrence
@@ -438,6 +428,35 @@ public class AppointmentService : IAppointmentService
                 .FirstOrDefaultAsync(s => (s.HospitalUserId == resolvedHospitalUserId || (hospital.HospitalProfile != null && s.HospitalProfileId == hospital.HospitalProfile.Id)) &&
                                           s.Status == "Active" &&
                                           (s.VaccineName.ToLower() == vName || s.VaccineName.ToLower().Contains(vName)));
+        }
+
+        // Validate that requested time slot falls inside the clinic session window if schedule exists
+        if (schedule != null && !string.IsNullOrWhiteSpace(schedule.StartTime) && !string.IsNullOrWhiteSpace(schedule.EndTime))
+        {
+            var validSlots = Generate20MinSlots(schedule.StartTime, schedule.EndTime);
+            if (!validSlots.Any(s => string.Equals(s.Slot, dto.TimeSlot.Trim(), StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException(
+                    $"The selected time slot '{dto.TimeSlot}' is outside the scheduled clinic window ({schedule.StartTime} - {schedule.EndTime}) or invalid.");
+            }
+        }
+
+        // Capacity: up to PatientsPerSlot concurrent patients per 20-minute band per session
+        var targetScheduleId = schedule?.Id ?? (dto.VaccineScheduleId.HasValue && dto.VaccineScheduleId.Value != Guid.Empty ? dto.VaccineScheduleId.Value : (Guid?)null);
+        var slotCapacity = ScheduleStockPlanner.PatientsPerSlot;
+        var existingInSlot = await _context.Appointments
+            .CountAsync(a => a.HospitalUserId == resolvedHospitalUserId &&
+                             (targetScheduleId != null ? a.VaccineScheduleId == targetScheduleId : true) &&
+                             a.AppointmentDate == dto.AppointmentDate &&
+                             a.TimeSlot == dto.TimeSlot.Trim() &&
+                             a.Status != "Cancelled" &&
+                             a.Status != "Rejected");
+
+        if (existingInSlot >= slotCapacity)
+        {
+            throw new InvalidOperationException(
+                $"The slot '{dto.TimeSlot}' on {dto.AppointmentDate:yyyy-MM-dd} is full " +
+                $"({slotCapacity} patients). Please select a different time slot.");
         }
 
         var patientName = patient.PatientProfile?.FullName;
