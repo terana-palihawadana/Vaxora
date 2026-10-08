@@ -181,7 +181,7 @@ export default function NurseProfileTab() {
                 src={personalInfo.profilePhotoUrl}
                 alt={personalInfo.name || 'Nurse'}
                 className="doctor-profile-uploaded-img"
-                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0284c7' }}
+                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0369a1' }}
               />
             ) : (
               <svg
@@ -191,10 +191,10 @@ export default function NurseProfileTab() {
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <circle cx="100" cy="100" r="100" fill="#e0f2fe" />
-                <circle cx="100" cy="80" r="38" fill="#0284c7" />
+                <circle cx="100" cy="80" r="38" fill="#0369a1" />
                 <path
                   d="M40 174C40 140.863 66.863 118 100 118C133.137 118 160 140.863 160 174"
-                  fill="#0284c7"
+                  fill="#0369a1"
                 />
               </svg>
             )}
@@ -288,7 +288,7 @@ export default function NurseProfileTab() {
               <div className="doctor-profile-field-row">
                 <span className="doctor-profile-field-label">VAXORA ID</span>
                 <span className="doctor-profile-field-colon">:</span>
-                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: '#0284c7' }}>
+                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: '#0369a1' }}>
                   {personalInfo.id || (loading ? 'Loading...' : 'N/A')}
                 </span>
               </div>
@@ -417,7 +417,7 @@ export default function NurseProfileTab() {
             <>
               <div className="doctor-prof-row">
                 <strong>SLNC Nursing Board Reg: </strong>
-                <span style={{ color: '#0284c7', fontWeight: 700 }}>{personalInfo.slncNumber}</span>
+                <span style={{ color: '#0369a1', fontWeight: 700 }}>{personalInfo.slncNumber}</span>
               </div>
 
               <div className="doctor-prof-row">

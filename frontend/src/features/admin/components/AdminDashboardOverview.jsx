@@ -147,7 +147,7 @@ export default function AdminDashboardOverview() {
           <button
             type="button"
             className="doctor-btn-call-next"
-            style={{ background: '#0284c7', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            style={{ background: '#0369a1', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             onClick={() => navigate('/admin/approvals')}
           >
             <IconClipboard size={16} /> Review Approvals ({pendingCount})
@@ -237,7 +237,7 @@ export default function AdminDashboardOverview() {
             <button
               type="button"
               className="doctor-table-btn"
-              style={{ background: '#0284c7', color: '#fff', borderColor: '#0ea5e9' }}
+              style={{ background: '#0369a1', color: '#fff', borderColor: '#0ea5e9' }}
               onClick={() => navigate('/admin/users')}
             >
               View All Centers ↗
@@ -318,7 +318,7 @@ export default function AdminDashboardOverview() {
                       <span className="doctor-obs-item-meta">
                         {req.regNumber} • {req.hospital}
                       </span>
-                      <span style={{ fontSize: '0.74rem', color: '#64748b', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.74rem', color: '#94a3b8', marginTop: '2px' }}>
                         Submitted: {req.date}
                       </span>
                     </div>
@@ -326,7 +326,7 @@ export default function AdminDashboardOverview() {
                       <button
                         type="button"
                         className="doctor-table-btn"
-                        style={{ background: '#0284c7', color: '#fff', fontSize: '0.78rem', borderColor: '#0ea5e9' }}
+                        style={{ background: '#0369a1', color: '#fff', fontSize: '0.78rem', borderColor: '#0ea5e9' }}
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate('/admin/approvals');

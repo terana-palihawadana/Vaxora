@@ -671,7 +671,7 @@ export default function HospitalShiftsPanel() {
               alignItems: 'center',
               gap: '8px',
               padding: '9px 18px',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+              background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '10px',

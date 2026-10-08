@@ -216,7 +216,7 @@ export default function HospitalProfileTab() {
                 <img
                   src={hospitalInfo.logoUrl}
                   alt={hospitalInfo.name || 'Hospital'}
-                  style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0284c7' }}
+                  style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0369a1' }}
                 />
               ) : (
                 <svg
@@ -280,7 +280,7 @@ export default function HospitalProfileTab() {
                     style={{
                       fontSize: '0.8rem',
                       fontWeight: 700,
-                      color: hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? '#10b981' : '#f59e0b',
+                      color: hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? '#047857' : '#b45309',
                     }}
                   >
                     ● Status: {hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? 'Accredited / Verified' : 'Under Review'}
@@ -325,7 +325,7 @@ export default function HospitalProfileTab() {
                 <div className="profile-field-row">
                   <span className="profile-field-label">VAXORA CODE</span>
                   <span className="profile-field-colon">:</span>
-                  <span className="profile-field-value" style={{ fontWeight: 700, color: '#0284c7' }}>
+                  <span className="profile-field-value" style={{ fontWeight: 700, color: '#0369a1' }}>
                     {hospitalInfo.id || (loading ? 'Loading...' : 'N/A')}
                   </span>
                 </div>
@@ -440,7 +440,7 @@ export default function HospitalProfileTab() {
                         </span>
                       </a>
                     ) : (
-                      <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Registration Document on File</span>
+                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Registration Document on File</span>
                     )}
 
                     {hospitalInfo.mohDocKey && (
@@ -510,7 +510,7 @@ export default function HospitalProfileTab() {
                   {nurse.photoUrl ? (
                     <img src={nurse.photoUrl} alt={nurse.name} className="hospital-staff-silhouette" style={{ objectFit: 'cover' }} />
                   ) : (
-                    <IconNurse size={40} style={{ color: '#0284c7' }} />
+                    <IconNurse size={40} style={{ color: '#0369a1' }} />
                   )}
                 </div>
                 <span className="hospital-staff-name">{nurse.name}</span>
@@ -556,7 +556,7 @@ export default function HospitalProfileTab() {
               <h4 style={{ margin: '0 0 6px', color: '#ef4444', fontSize: '1.05rem', fontWeight: 700 }}>
                 Danger Zone
               </h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', maxWidth: '600px' }}>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', maxWidth: '600px' }}>
                 Permanently delete your hospital facility account, staff rosters, vaults, and inventory registrations. This action cannot be undone.
               </p>
             </div>

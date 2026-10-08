@@ -153,12 +153,13 @@ export default function PatientSignupForm({ onSuccess }) {
 
       {/* Date of Birth Field */}
       <div className="auth-input-group">
-        <label className="auth-label" style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600, marginBottom: '4px', display: 'block' }}>
+        <label htmlFor="signup-dateOfBirth" className="auth-label" style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600, marginBottom: '4px', display: 'block' }}>
           Date of Birth *
         </label>
         <input
           type="date"
           name="dateOfBirth"
+          id="signup-dateOfBirth"
           value={formData.dateOfBirth}
           onChange={handleChange}
           required

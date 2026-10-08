@@ -770,6 +770,7 @@ export default function HospitalDashboardOverview() {
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="queue-filter-select"
+                aria-label="Filter queue by status"
               >
                 <option value="all">All Statuses</option>
                 <option value="awaiting_payment">Awaiting payment</option>

@@ -462,6 +462,7 @@ export default function AdminFeedbackTab() {
           </div>
 
           <select
+            aria-label="Filter feedback by role"
             className="doctor-form-select"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
@@ -475,6 +476,7 @@ export default function AdminFeedbackTab() {
           </select>
 
           <select
+            aria-label="Filter feedback by category"
             className="doctor-form-select"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
@@ -490,6 +492,7 @@ export default function AdminFeedbackTab() {
           </select>
 
           <select
+            aria-label="Filter feedback by rating"
             className="doctor-form-select"
             value={ratingFilter}
             onChange={(e) => setRatingFilter(e.target.value)}
@@ -548,7 +551,7 @@ export default function AdminFeedbackTab() {
                       >
                         {item.id.substring(0, 8)}
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                      <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
                         {formatDateTime(item.createdAt)}
                       </div>
                     </td>
@@ -578,7 +581,7 @@ export default function AdminFeedbackTab() {
                         <div
                           style={{
                             fontSize: "0.75rem",
-                            color: "#64748b",
+                            color: "#94a3b8",
                             marginTop: 3,
                           }}
                         >
@@ -671,7 +674,7 @@ export default function AdminFeedbackTab() {
                           type="button"
                           className="doctor-table-btn"
                           style={{
-                            background: "#0284c7",
+                            background: "#0369a1",
                             color: "#ffffff",
                             borderColor: "#38bdf8",
                           }}
@@ -815,7 +818,7 @@ export default function AdminFeedbackTab() {
                     )}
                   {!selectedFeedback.isAnonymous &&
                     selectedFeedback.submitterPhone && (
-                      <div style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                      <div style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
                         {selectedFeedback.submitterPhone}
                       </div>
                     )}
@@ -840,7 +843,7 @@ export default function AdminFeedbackTab() {
                   <div
                     style={{
                       fontSize: "0.75rem",
-                      color: "#64748b",
+                      color: "#94a3b8",
                       marginTop: 4,
                     }}
                   >

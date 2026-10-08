@@ -141,7 +141,7 @@ export default function ReviewsSection() {
                             style={{
                               marginTop: 8,
                               fontSize: "0.72rem",
-                              color: "#94a3b8",
+                              color: "#64748b",
                             }}
                           >
                             {item.category}

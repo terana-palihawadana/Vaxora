@@ -615,7 +615,7 @@ export default function HospitalInventoryTab() {
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
-            <div className="filter-pill-group" role="tablist" aria-label="Stock filters">
+            <div className="filter-pill-group" role="group" aria-label="Stock filters">
               <button type="button" className={`filter-pill ${statusFilter === 'all' ? 'active' : ''}`} onClick={() => setStatusFilter('all')}>All ({inventory.length})</button>
               <button type="button" className={`filter-pill ${statusFilter === 'low' ? 'active' : ''}`} onClick={() => setStatusFilter('low')}>Low stock ({lowStockCount})</button>
               <button type="button" className={`filter-pill ${statusFilter === 'sufficient' ? 'active' : ''}`} onClick={() => setStatusFilter('sufficient')}>Healthy ({healthyCount})</button>

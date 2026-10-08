@@ -797,7 +797,7 @@ export default function AppointmentsTab() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '9px 18px',
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '10px',
@@ -1203,7 +1203,7 @@ export default function AppointmentsTab() {
                     <div style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.6px', color: selectedFee > 0 ? '#0369a1' : '#15803d', fontWeight: 800 }}>
                       Vaccination Fee (Configured by Hospital)
                     </div>
-                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: selectedFee > 0 ? '#0284c7' : '#16a34a', marginTop: '2px' }}>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: selectedFee > 0 ? '#0369a1' : '#16a34a', marginTop: '2px' }}>
                       {selectedFee > 0 ? `Rs. ${selectedFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Free (0 Rs - Fully Subsidized)'}
                     </div>
                   </div>
@@ -1437,7 +1437,7 @@ export default function AppointmentsTab() {
                         </td>
                         <td className="td-location">{apt.hospitalName || apt.location}</td>
                         <td style={{ textAlign: 'center' }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: feeNum > 0 ? '#0284c7' : '#16a34a' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: feeNum > 0 ? '#0369a1' : '#16a34a' }}>
                             {feeNum > 0 ? `LKR ${feeNum.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Free'}
                           </div>
                           <div style={{ marginTop: '3px' }}>
@@ -1461,7 +1461,7 @@ export default function AppointmentsTab() {
                                     disabled={isProcessingPayment}
                                     style={{
                                       padding: '3px 8px',
-                                      backgroundColor: '#0284c7',
+                                      backgroundColor: '#0369a1',
                                       color: '#ffffff',
                                       border: 'none',
                                       borderRadius: '4px',

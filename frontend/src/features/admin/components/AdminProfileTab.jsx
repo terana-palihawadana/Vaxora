@@ -161,7 +161,7 @@ export default function AdminProfileTab() {
         <div
           className="doctor-toast"
           style={{
-            borderColor: notificationType === 'error' ? '#ef4444' : '#0284c7',
+            borderColor: notificationType === 'error' ? '#ef4444' : '#0369a1',
             background: '#0c1b33',
           }}
         >
@@ -205,7 +205,7 @@ export default function AdminProfileTab() {
               <button
                 type="button"
                 className="doctor-btn-edit-pill"
-                style={{ background: '#0284c7', color: '#ffffff', borderColor: '#38bdf8' }}
+                style={{ background: '#0369a1', color: '#ffffff', borderColor: '#38bdf8' }}
                 disabled={loading || saving}
                 onClick={() => {
                   if (isEditing) handleSave();
@@ -255,7 +255,7 @@ export default function AdminProfileTab() {
                 <span className="doctor-profile-field-colon">:</span>
                 <span className="doctor-profile-field-value" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
                   {personalInfo.email || 'admin@vaxora.health.gov.lk'}
-                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>(Primary Login ID)</span>
+                  <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>(Primary Login ID)</span>
                 </span>
               </div>
 
@@ -314,7 +314,7 @@ export default function AdminProfileTab() {
             className="doctor-hero-session-pill"
             style={{
               cursor: 'pointer',
-              background: '#0284c7',
+              background: '#0369a1',
               color: '#ffffff',
               border: '1px solid #38bdf8',
               fontWeight: 700,
@@ -342,7 +342,7 @@ export default function AdminProfileTab() {
             <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>
               ••••••••••••••••
             </div>
-            <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '6px' }}>
+            <div style={{ fontSize: '0.76rem', color: '#94a3b8', marginTop: '6px' }}>
               Password rotation verified against last set master password
             </div>
           </div>
@@ -360,7 +360,7 @@ export default function AdminProfileTab() {
             <div style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.95rem' }}>
               Colombo, Sri Lanka (MOH IT Gateway)
             </div>
-            <div style={{ fontSize: '0.76rem', color: '#64748b', marginTop: '6px' }}>
+            <div style={{ fontSize: '0.76rem', color: '#94a3b8', marginTop: '6px' }}>
               Superadmin Console • Verified Database Auth
             </div>
           </div>
@@ -755,7 +755,7 @@ export default function AdminProfileTab() {
                   style={{
                     padding: '10px 24px',
                     borderRadius: '10px',
-                    background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                    background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
                     border: '1px solid #38bdf8',
                     color: '#ffffff',
                     fontSize: '0.88rem',
