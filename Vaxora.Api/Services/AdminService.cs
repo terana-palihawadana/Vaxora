@@ -480,36 +480,53 @@ public class AdminService : IAdminService
 
     public async Task<AdminDashboardStatsDto> GetDashboardStatsAsync()
     {
-        var totalUsers = await _context.Users.CountAsync();
-        var patientCount = await _context.Users.CountAsync(u => u.Role == UserRole.PATIENT);
-        var doctorCount = await _context.Users.CountAsync(u => u.Role == UserRole.DOCTOR);
-        var nurseCount = await _context.Users.CountAsync(u => u.Role == UserRole.NURSE);
-        var hospitalCount = await _context.Users.CountAsync(u => u.Role == UserRole.HOSPITAL);
-        var adminCount = await _context.Users.CountAsync(u => u.Role == UserRole.ADMIN);
+        // One grouped query for all role counts instead of one COUNT per role.
+        var roleCounts = await _context.Users
+            .GroupBy(u => u.Role)
+            .Select(g => new { Role = g.Key, Count = g.Count() })
+            .ToListAsync();
+        int CountFor(UserRole role) => roleCounts.FirstOrDefault(r => r.Role == role)?.Count ?? 0;
+        var totalUsers = roleCounts.Sum(r => r.Count);
+        var patientCount = CountFor(UserRole.PATIENT);
+        var doctorCount = CountFor(UserRole.DOCTOR);
+        var nurseCount = CountFor(UserRole.NURSE);
+        var hospitalCount = CountFor(UserRole.HOSPITAL);
+        var adminCount = CountFor(UserRole.ADMIN);
 
-        var totalDoses = await _context.PatientVaccinationRecords.CountAsync();
         var todayUtc = DateTime.UtcNow.Date;
-        var todayDoses = await _context.PatientVaccinationRecords.CountAsync(r => r.AdministeredAt >= todayUtc);
+        var doseCounts = await _context.PatientVaccinationRecords
+            .GroupBy(_ => 1)
+            .Select(g => new { Total = g.Count(), Today = g.Count(r => r.AdministeredAt >= todayUtc) })
+            .FirstOrDefaultAsync();
+        var totalDoses = doseCounts?.Total ?? 0;
+        var todayDoses = doseCounts?.Today ?? 0;
 
         var pendingVerifications = await GetPendingVerificationsAsync();
 
-        // Query registered hospitals and their live telemetry
+        // Registered hospitals with their booth count and vault reading in a single query,
+        // instead of two extra queries per hospital.
         var hospitalProfiles = await _context.HospitalProfiles
-            .Include(h => h.User)
             .OrderByDescending(h => h.VerifiedAt ?? DateTime.MinValue)
             .Take(10)
+            .Select(h => new
+            {
+                h.Id,
+                h.HospitalName,
+                h.Province,
+                h.District,
+                h.HospitalType,
+                h.VerificationStatus,
+                ActiveBooths = _context.HospitalBooths.Count(b => b.HospitalUserId == h.UserId && b.IsActive),
+                VaultTemp = _context.ColdVaults
+                    .Where(cv => cv.HospitalProfileId == h.Id)
+                    .Select(cv => cv.CurrentTemp)
+                    .FirstOrDefault()
+            })
             .ToListAsync();
 
         var hospitalTelemetry = new List<AdminHospitalTelemetryDto>();
         foreach (var hp in hospitalProfiles)
         {
-            var activeBooths = await _context.HospitalBooths
-                .CountAsync(b => b.HospitalUserId == hp.UserId && b.IsActive);
-
-            var vault = await _context.ColdVaults
-                .Where(cv => cv.HospitalProfileId == hp.Id)
-                .FirstOrDefaultAsync();
-
             hospitalTelemetry.Add(new AdminHospitalTelemetryDto
             {
                 Id = hp.Id,
@@ -517,9 +534,9 @@ public class AdminService : IAdminService
                 Province = hp.Province ?? "Western",
                 District = hp.District ?? "Colombo",
                 HospitalType = hp.HospitalType ?? "General Center",
-                ActiveBooths = activeBooths,
+                ActiveBooths = hp.ActiveBooths,
                 DosesToday = todayDoses > 0 ? (int)Math.Ceiling((double)todayDoses / Math.Max(1, hospitalProfiles.Count)) : 0,
-                Temp = vault?.CurrentTemp ?? "3.8°C",
+                Temp = hp.VaultTemp ?? "3.8°C",
                 Status = hp.VerificationStatus == VerificationStatus.Approved ? "Optimal" : hp.VerificationStatus.ToString()
             });
         }
