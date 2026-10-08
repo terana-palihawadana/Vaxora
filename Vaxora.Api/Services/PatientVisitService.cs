@@ -311,9 +311,9 @@ public class PatientVisitService : IPatientVisitService
 
         string name;
         if (user.DoctorProfile?.FullName is { Length: > 0 } docName)
-            name = $"Dr. {docName}";
+            name = StaffNameFormatter.WithRolePrefix(docName, "Dr.");
         else if (user.NurseProfile?.FullName is { Length: > 0 } nurseName)
-            name = $"Nurse {nurseName}";
+            name = StaffNameFormatter.WithRolePrefix(nurseName, "Nurse");
         else
             name = user.Email;
 

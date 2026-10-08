@@ -171,8 +171,8 @@ public class PatientVaccinationService : IPatientVaccinationService
 
         if (user == null) return ("System", "system@vaxora.local");
 
-        var name = user.DoctorProfile?.FullName is { Length: > 0 } docName ? $"Dr. {docName}"
-            : user.NurseProfile?.FullName is { Length: > 0 } nurseName ? $"Nurse {nurseName}"
+        var name = user.DoctorProfile?.FullName is { Length: > 0 } docName ? StaffNameFormatter.WithRolePrefix(docName, "Dr.")
+            : user.NurseProfile?.FullName is { Length: > 0 } nurseName ? StaffNameFormatter.WithRolePrefix(nurseName, "Nurse")
             : user.HospitalProfile?.HospitalName
             ?? user.Email;
 

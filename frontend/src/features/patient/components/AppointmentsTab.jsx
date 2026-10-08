@@ -1425,7 +1425,7 @@ export default function AppointmentsTab() {
                           <div style={{ fontWeight: 600 }}>{apt.vaccineName || apt.vaccine}</div>
                           {apt.doctorName && (
                             <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                              Dr. {apt.doctorName}
+                              Dr. {apt.doctorName.replace(/^(?:(?:dr\.|dr\s|doctor\s)\s*)+/i, '')}
                             </div>
                           )}
                         </td>

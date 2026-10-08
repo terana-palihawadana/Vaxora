@@ -4,9 +4,8 @@ import NurseAefiReportModal from './NurseAefiReportModal';
 import nurseHomeHero from '../../../assets/images/nurse-home-hero.jpg';
 
 function formatNurseName(user) {
-  const raw = (user?.name || '').trim();
+  const raw = (user?.name || '').trim().replace(/^(?:(?:dr\.|dr\s|doctor\s|nurse\s)\s*)+/i, '').trim();
   if (!raw) return 'Nurse';
-  if (/^nurse\s/i.test(raw)) return raw;
   return `Nurse ${raw}`;
 }
 

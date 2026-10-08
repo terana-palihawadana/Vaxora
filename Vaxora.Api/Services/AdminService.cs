@@ -61,7 +61,7 @@ public class AdminService : IAdminService
 
             if (user.Role == UserRole.DOCTOR && user.DoctorProfile != null)
             {
-                item.Name = $"Dr. {user.DoctorProfile.FullName}";
+                item.Name = StaffNameFormatter.WithRolePrefix(user.DoctorProfile.FullName, "Dr.");
                 item.LicenseOrRegNumber = user.DoctorProfile.SlmcNumber;
                 item.HospitalAffiliationOrType = user.DoctorProfile.Specialization ?? "General Practitioner";
                 item.ProfilePhotoOrLogoUrl = user.DoctorProfile.ProfilePhotoUrl;
@@ -74,7 +74,7 @@ public class AdminService : IAdminService
             }
             else if (user.Role == UserRole.NURSE && user.NurseProfile != null)
             {
-                item.Name = $"Nurse {user.NurseProfile.FullName}";
+                item.Name = StaffNameFormatter.WithRolePrefix(user.NurseProfile.FullName, "Nurse");
                 item.LicenseOrRegNumber = user.NurseProfile.SlncNumber;
                 item.HospitalAffiliationOrType = "Nursing Staff";
                 item.ProfilePhotoOrLogoUrl = user.NurseProfile.ProfilePhotoUrl;
@@ -125,12 +125,12 @@ public class AdminService : IAdminService
 
         if (targetUser.Role == UserRole.DOCTOR)
         {
-            recipientName = $"Dr. {targetUser.DoctorProfile?.FullName ?? "Doctor"}";
+            recipientName = StaffNameFormatter.WithRolePrefix(targetUser.DoctorProfile?.FullName ?? "Doctor", "Dr.");
             roleTitle = "Doctor";
         }
         else if (targetUser.Role == UserRole.NURSE)
         {
-            recipientName = $"Nurse {targetUser.NurseProfile?.FullName ?? "Nurse"}";
+            recipientName = StaffNameFormatter.WithRolePrefix(targetUser.NurseProfile?.FullName ?? "Nurse", "Nurse");
             roleTitle = "Nurse";
         }
         else if (targetUser.Role == UserRole.HOSPITAL)
@@ -339,8 +339,8 @@ public class AdminService : IAdminService
                 var regNum = targetUser.RegistrationNumber ?? "N/A";
                 string recName = targetUser.Role switch
                 {
-                    UserRole.DOCTOR => $"Dr. {targetUser.DoctorProfile?.FullName ?? "Doctor"}",
-                    UserRole.NURSE => $"Nurse {targetUser.NurseProfile?.FullName ?? "Nurse"}",
+                    UserRole.DOCTOR => StaffNameFormatter.WithRolePrefix(targetUser.DoctorProfile?.FullName ?? "Doctor", "Dr."),
+                    UserRole.NURSE => StaffNameFormatter.WithRolePrefix(targetUser.NurseProfile?.FullName ?? "Nurse", "Nurse"),
                     UserRole.HOSPITAL => targetUser.HospitalProfile?.HospitalName ?? "Hospital",
                     _ => "Healthcare Professional"
                 };
@@ -411,8 +411,8 @@ public class AdminService : IAdminService
             string name = u.Role switch
             {
                 UserRole.PATIENT => u.PatientProfile?.FullName ?? "Citizen",
-                UserRole.DOCTOR => $"Dr. {u.DoctorProfile?.FullName ?? "Doctor"}",
-                UserRole.NURSE => $"Nurse {u.NurseProfile?.FullName ?? "Nurse"}",
+                UserRole.DOCTOR => StaffNameFormatter.WithRolePrefix(u.DoctorProfile?.FullName ?? "Doctor", "Dr."),
+                UserRole.NURSE => StaffNameFormatter.WithRolePrefix(u.NurseProfile?.FullName ?? "Nurse", "Nurse"),
                 UserRole.HOSPITAL => u.HospitalProfile?.HospitalName ?? "Hospital",
                 UserRole.ADMIN => "System Administrator",
                 _ => "User"
