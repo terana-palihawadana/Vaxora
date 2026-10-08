@@ -235,3 +235,60 @@
   font-style: normal;
   color: var(--empty-text);
 }
+
+/* 11. Focus and interaction
+   Keyboard focus is always visible, even where a component removed the
+   browser outline. Text fields get the teal focus ring instead. */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid var(--color-border-focus) !important;
+  outline-offset: 2px;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+  border-color: var(--color-border-focus) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+/* Fields inside a wrapper that draws its own focus ring */
+.date-input-wrap input:focus-visible,
+.select-dropdown-wrap select:focus-visible {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.date-input-wrap:focus-within,
+.select-dropdown-wrap:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--color-primary);
+}
+
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--color-border-focus) !important;
+  outline-offset: 2px;
+}
+
+/* Clickable cards lift slightly on hover */
+.staff-shift-week-card--action,
+.shift-week-card-action,
+.suggest-week-card {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.staff-shift-week-card--action:hover:not(:disabled),
+.shift-week-card-action:hover:not(:disabled),
+.suggest-week-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+}
