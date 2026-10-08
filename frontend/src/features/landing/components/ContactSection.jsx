@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import logo from '../../../assets/images/logo.png';
-import contactArrow from '../../../assets/icons/contact_arrow.svg';
+import { IconArrowRight } from '../../../shared/icons/AppIcons';
 
 export default function ContactSection({ onArrowClick }) {
   const [formData, setFormData] = useState({
@@ -49,7 +49,7 @@ export default function ContactSection({ onArrowClick }) {
               onClick={onArrowClick}
               aria-label="Proceed to contact form"
             >
-              <img src={contactArrow} alt="Forward arrow" className="arrow-icon" />
+              <IconArrowRight className="arrow-icon" />
             </button>
           </div>
         </div>

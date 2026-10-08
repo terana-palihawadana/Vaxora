@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import previousIcon from "../../../assets/icons/previous.svg";
-import nextIcon from "../../../assets/icons/next.svg";
+import { IconChevronLeft, IconChevronRight } from "../../../shared/icons/AppIcons";
 import { feedbackService } from "../../../shared/services/feedbackService";
 import { deferEffectCallback } from "../../../shared/utils/deferEffectCallback.js";
 
@@ -100,11 +99,7 @@ export default function ReviewsSection() {
               onClick={handlePrevReview}
               aria-label="Previous reviews"
             >
-              <img
-                src={previousIcon}
-                alt="Previous"
-                className="carousel-arrow"
-              />
+              <IconChevronLeft className="carousel-arrow" />
             </button>
 
             <div className="carousel-viewport">
@@ -160,7 +155,7 @@ export default function ReviewsSection() {
               onClick={handleNextReview}
               aria-label="Next reviews"
             >
-              <img src={nextIcon} alt="Next" className="carousel-arrow" />
+              <IconChevronRight className="carousel-arrow" />
             </button>
           </div>
 
