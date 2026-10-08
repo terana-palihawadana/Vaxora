@@ -333,12 +333,12 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
       )}
 
       {error && (
-        <div className="doctor-toast" role="alert" style={{ background: '#fef2f2', color: '#b91c1c' }}>
+        <div className="doctor-toast" role="alert" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {error}
           <button
             type="button"
             onClick={() => setError('')}
-            style={{ marginLeft: 12, border: 'none', background: 'none', cursor: 'pointer', color: '#b91c1c' }}
+            style={{ marginLeft: 12, border: 'none', background: 'none', cursor: 'pointer', color: 'var(--color-error)' }}
           >
             Dismiss
           </button>
@@ -378,9 +378,9 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
         </h2>
 
         {loading ? (
-          <p style={{ color: '#64748b' }}>Loading affiliations...</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>Loading affiliations...</p>
         ) : affiliations.length === 0 ? (
-          <p style={{ color: '#64748b' }}>
+          <p style={{ color: 'var(--color-text-muted)' }}>
             You are not affiliated with any hospital yet. Accept an invitation to join a roster.
           </p>
         ) : (
@@ -390,10 +390,10 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
                   <HospitalAvatar logoUrl={item.hospitalLogoUrl} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-text-title)', lineHeight: 1.4 }}>
                       {item.hospitalName || 'Hospital'}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 8 }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 8 }}>
                       Joined: {item.respondedAt ? new Date(item.respondedAt).toLocaleDateString() : '—'}
                     </div>
                   </div>
@@ -449,7 +449,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
         </p>
 
         {loading ? (
-          <p style={{ color: '#64748b' }}>Loading shifts...</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>Loading shifts...</p>
         ) : (
           <div className="staff-shift-week-calendar">
             <div className="staff-shift-week-calendar-scroll">
@@ -671,9 +671,9 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
         </h2>
 
         {loading ? (
-          <p style={{ color: '#64748b' }}>Loading invitations...</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>Loading invitations...</p>
         ) : invitations.length === 0 ? (
-          <p style={{ color: '#64748b' }}>No pending hospital invitations.</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>No pending hospital invitations.</p>
         ) : (
           <div style={{ display: 'grid', gap: '14px' }}>
             {invitations.map((item) => (
@@ -681,10 +681,10 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
                   <HospitalAvatar logoUrl={item.hospitalLogoUrl} />
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--color-text-title)', lineHeight: 1.4 }}>
                       {item.hospitalName || 'Hospital invitation'}
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: 8 }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', marginTop: 8 }}>
                       Invited: {item.invitedAt ? new Date(item.invitedAt).toLocaleString() : '—'}
                     </div>
                   </div>
@@ -777,7 +777,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
               </div>
 
               {coverError ? (
-                <p role="alert" style={{ color: '#b91c1c', fontWeight: 600, margin: '0 0 8px' }}>
+                <p role="alert" style={{ color: 'var(--color-error)', fontWeight: 600, margin: '0 0 8px' }}>
                   {coverError}
                 </p>
               ) : null}

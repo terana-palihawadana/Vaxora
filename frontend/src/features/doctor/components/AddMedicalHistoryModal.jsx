@@ -143,8 +143,8 @@ export default function AddMedicalHistoryModal({
             {/* Patient summary bar */}
             <div
               style={{
-                background: '#f8fafc',
-                border: '1.5px solid #e2e8f0',
+                background: 'var(--color-bg)',
+                border: '1.5px solid var(--color-border-light)',
                 borderRadius: '12px',
                 padding: '14px 18px',
                 marginBottom: '18px',
@@ -160,7 +160,7 @@ export default function AddMedicalHistoryModal({
                 <span
                   style={{
                     fontWeight: 800,
-                    color: '#1e1b4b',
+                    color: 'var(--color-text-title)',
                     fontSize: '1.05rem',
                     marginLeft: '10px',
                   }}
@@ -170,7 +170,7 @@ export default function AddMedicalHistoryModal({
                 <div
                   style={{
                     fontSize: '0.8rem',
-                    color: '#64748b',
+                    color: 'var(--color-text-muted)',
                     marginTop: '3px',
                   }}
                 >
@@ -183,9 +183,9 @@ export default function AddMedicalHistoryModal({
               <div
                 role="alert"
                 style={{
-                  background: '#fef2f2',
-                  color: '#b91c1c',
-                  border: '1px solid #fecaca',
+                  background: 'var(--color-error-bg)',
+                  color: 'var(--color-error)',
+                  border: '1px solid var(--color-error-border)',
                   borderRadius: '10px',
                   padding: '10px 14px',
                   marginBottom: '14px',

@@ -77,7 +77,7 @@ export default function NurseAefiReportModal({ isOpen, onClose, onSubmitReport, 
   return (
     <div className="doctor-modal-overlay" onClick={submitting ? undefined : onClose}>
       <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' }}>
+        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, var(--color-error) 0%, var(--color-error) 100%)' }}>
           <div>
             <h3 className="doctor-modal-title">Report Adverse Event (AEFI)</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.9)' }}>
@@ -195,8 +195,8 @@ export default function NurseAefiReportModal({ isOpen, onClose, onSubmitReport, 
               </div>
             </div>
 
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '12px 14px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#991b1b', cursor: 'pointer' }}>
+            <div style={{ background: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: '10px', padding: '12px 14px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-error)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={aefiData.notifyDoctor}
@@ -208,7 +208,7 @@ export default function NurseAefiReportModal({ isOpen, onClose, onSubmitReport, 
             </div>
 
             {error ? (
-              <p style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '0.85rem' }}>{error}</p>
+              <p style={{ margin: '12px 0 0', color: 'var(--color-error)', fontSize: '0.85rem' }}>{error}</p>
             ) : null}
           </div>
 

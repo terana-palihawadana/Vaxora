@@ -135,13 +135,13 @@ export default function DoctorNavbar() {
                   <div className="doctor-dropdown-name">{user?.name || 'Dr. Medical Practitioner'}</div>
                   <div className="doctor-dropdown-meta">{user?.profileDetails?.specialization || 'Consultant Specialist'}</div>
                   {user?.registrationNumber && (
-                    <div className="doctor-dropdown-meta" style={{ color: '#2563eb', fontWeight: 600 }}>
+                    <div className="doctor-dropdown-meta" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                       Reg: {user.registrationNumber}
                     </div>
                   )}
                 </div>
 
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '6px 0 10px' }} />
+                <div style={{ height: '1px', background: 'var(--color-surface-subtle)', margin: '6px 0 10px' }} />
 
                 <button
                   type="button"
@@ -210,7 +210,7 @@ export default function DoctorNavbar() {
                 </button>
               );
             })}
-            <div style={{ height: '1px', background: '#e2e8f0', margin: '6px 0' }} />
+            <div style={{ height: '1px', background: 'var(--color-soft-panel-deep)', margin: '6px 0' }} />
             <button
               type="button"
               className="portal-mobile-nav-btn"

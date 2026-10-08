@@ -67,11 +67,11 @@ export default function ClinicalPrescribeModal({ isOpen, onClose, patient, onSav
                 disabled={saving}
                 required
               />
-              <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+              <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                 The nurse will confirm and administer exactly this dose.
               </p>
             </div>
-            {error && <p style={{ color: '#b91c1c', fontSize: '0.82rem' }}>{error}</p>}
+            {error && <p style={{ color: 'var(--color-error)', fontSize: '0.82rem' }}>{error}</p>}
           </div>
           <div className="doctor-modal-footer">
             <button type="button" className="doctor-btn-cancel" onClick={onClose} disabled={saving}>

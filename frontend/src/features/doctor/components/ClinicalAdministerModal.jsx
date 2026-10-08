@@ -107,8 +107,8 @@ export default function ClinicalAdministerModal({
         <form onSubmit={handleSubmit}>
           <div className="doctor-modal-body">
             <div style={{
-              background: '#f8fafc',
-              border: '1.5px solid #e2e8f0',
+              background: 'var(--color-bg)',
+              border: '1.5px solid var(--color-border-light)',
               borderRadius: '12px',
               padding: '14px 18px',
               marginBottom: '18px',
@@ -118,18 +118,18 @@ export default function ClinicalAdministerModal({
             }}>
               <div>
                 <span className="doctor-token-pill">{patient.token}</span>
-                <span style={{ fontWeight: 800, color: '#1e1b4b', fontSize: '1.05rem', marginLeft: '10px' }}>
+                <span style={{ fontWeight: 800, color: 'var(--color-text-title)', fontSize: '1.05rem', marginLeft: '10px' }}>
                   {patient.name}
                 </span>
-                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '3px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '3px' }}>
                   NIC: {patient.nic}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700, background: '#dcfce7', padding: '3px 8px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-success)', fontWeight: 700, background: 'var(--color-success-bg)', padding: '3px 8px', borderRadius: '6px' }}>
                   {patient.vaccine}
                 </span>
-                <div style={{ fontSize: '0.78rem', color: '#15803d', marginTop: '4px' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-success)', marginTop: '4px' }}>
                   {patient.dose}
                 </div>
               </div>
@@ -155,7 +155,7 @@ export default function ClinicalAdministerModal({
                   ))}
                 </select>
                 {usableLots.length === 0 && (
-                  <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#b45309' }}>
+                  <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--color-warning)' }}>
                     No usable stock for this vaccine. Restock inventory before certifying.
                   </p>
                 )}
@@ -173,7 +173,7 @@ export default function ClinicalAdministerModal({
                   title="Locked once administration starts — return the patient to the queue to change it"
                 />
                 {!isDoctor && (
-                  <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                  <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                     Prescribed by {patient.prescribedBy || 'the doctor'}. Contact the doctor to change it.
                   </p>
                 )}
@@ -212,8 +212,8 @@ export default function ClinicalAdministerModal({
               </div>
             </div>
 
-            <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px 14px', margin: '14px 0' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#065f46', cursor: 'pointer', marginBottom: '8px' }}>
+            <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '10px', padding: '12px 14px', margin: '14px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer', marginBottom: '8px' }}>
                 <input
                   type="checkbox"
                   checked={formData.doseConfirmed}
@@ -222,7 +222,7 @@ export default function ClinicalAdministerModal({
                 />
                 Prescribed dose checked against the doctor&apos;s order ({patient?.dose || 'not set'})
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#065f46', cursor: 'pointer', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer', marginBottom: '8px' }}>
                 <input
                   type="checkbox"
                   checked={formData.consentConfirmed}
@@ -231,7 +231,7 @@ export default function ClinicalAdministerModal({
                 />
                 Informed patient consent confirmed &amp; no acute fever/contraindications
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#065f46', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={formData.vitalsConfirmed}

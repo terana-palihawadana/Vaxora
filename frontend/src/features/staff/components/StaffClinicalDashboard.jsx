@@ -857,11 +857,11 @@ export default function StaffClinicalDashboard({
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Scheduled Slot</span>
-              <div style={{ fontWeight: 700, color: '#1e1b4b', fontSize: '1rem' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Scheduled Slot</span>
+              <div style={{ fontWeight: 700, color: 'var(--color-text-title)', fontSize: '1rem' }}>
                 {activePatient.time}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                 {activePatient.appointmentStatus || '—'}
               </div>
             </div>
@@ -994,11 +994,11 @@ export default function StaffClinicalDashboard({
             </button>
           </div>
           {activePatient.status !== 'consulting' ? (
-            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
               Spotlight actions apply only while this patient is in active consultation.
             </p>
           ) : !activePaymentSettled ? (
-            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: '#b45309', fontSize: '0.85rem', fontWeight: 600 }}>
+            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: 'var(--color-warning)', fontSize: '0.85rem', fontWeight: 600 }}>
               Payment not settled — hospital desk must Mark paid at the counter before administration.
             </p>
           ) : null}
@@ -1130,7 +1130,7 @@ export default function StaffClinicalDashboard({
               <tbody>
                 {filteredPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
                       {statsLoading
                         ? "Loading today's appointments..."
                         : patients.length === 0

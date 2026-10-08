@@ -198,7 +198,7 @@ export default function NursePatientsTab() {
         <div
           className="appointment-alert-pill"
           role="alert"
-          style={{ background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}
+          style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)', borderColor: 'var(--color-error-border)' }}
         >
           {error}
         </div>
@@ -255,7 +255,7 @@ export default function NursePatientsTab() {
               )}
             </div>
 
-            <div style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
               {recentLoading
                 ? 'Loading...'
                 : `${recentUpdates.length} recent update${recentUpdates.length === 1 ? '' : 's'}`}
@@ -346,7 +346,7 @@ export default function NursePatientsTab() {
                     <span className="doctor-filter-label">Phone: {selectedPatient.phone || '—'}</span>
                     <span className="doctor-filter-label">Email: {selectedPatient.email || '—'}</span>
                   </div>
-                  <div style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
                     {selectedPatient.vaccinationHistory.length} completed ·{' '}
                     {selectedPatient.pendingVaccines.filter((pv) => !pv.isOverdue).length} upcoming ·{' '}
                     {selectedPatient.pendingVaccines.filter((pv) => pv.isOverdue).length} missed

@@ -119,10 +119,10 @@ export default function NurseNavbar() {
                   src={user.profilePhotoUrl}
                   alt={user.name || 'Nurse'}
                   className="navbar-avatar-img"
-                  style={{ borderColor: '#0369a1' }}
+                  style={{ borderColor: 'var(--color-accent)' }}
                 />
               ) : (
-                <div className="navbar-avatar-fallback" style={{ background: '#e0f2fe', color: '#0369a1', borderColor: '#38bdf8' }}>
+                <div className="navbar-avatar-fallback" style={{ background: 'var(--color-info-bg)', color: 'var(--color-accent)', borderColor: 'var(--color-info-border)' }}>
                   <IconNurse size={20} />
                 </div>
               )}
@@ -134,13 +134,13 @@ export default function NurseNavbar() {
                   <div className="doctor-dropdown-name">{user?.name || 'Nurse Profile'}</div>
                   <div className="doctor-dropdown-meta">Senior Immunization Nurse</div>
                   {user?.registrationNumber && (
-                    <div className="doctor-dropdown-meta" style={{ color: '#0369a1', fontWeight: 600 }}>
+                    <div className="doctor-dropdown-meta" style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
                       Reg: {user.registrationNumber}
                     </div>
                   )}
                 </div>
 
-                <div style={{ height: '1px', background: '#f1f5f9', margin: '6px 0 10px' }} />
+                <div style={{ height: '1px', background: 'var(--color-surface-subtle)', margin: '6px 0 10px' }} />
 
                 <button
                   type="button"
@@ -209,7 +209,7 @@ export default function NurseNavbar() {
                 </button>
               );
             })}
-            <div style={{ height: '1px', background: '#e2e8f0', margin: '6px 0' }} />
+            <div style={{ height: '1px', background: 'var(--color-soft-panel-deep)', margin: '6px 0' }} />
             <button
               type="button"
               className="portal-mobile-nav-btn"
