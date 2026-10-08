@@ -21,6 +21,11 @@
   /* RGB triplets for translucent shades: rgba(var(--rgb-primary), 0.3) */
   --rgb-primary: 8, 127, 120;
   --rgb-primary-dark: 18, 56, 75;
+  --rgb-success: 35, 130, 82;
+  --rgb-error: 181, 71, 67;
+  --rgb-info: 39, 109, 130;
+  --rgb-info-bg: 237, 246, 248;
+  --rgb-soft-panel: 234, 245, 242;
   --gradient-primary: linear-gradient(180deg, #0b8279 0%, #066d68 100%);
 
   /* Neutral & Surface Colors */
