@@ -57,7 +57,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F7),
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -145,9 +145,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0F9FF),
+                          color: AppColors.infoBg,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: const Color(0xFFBAE6FD), width: 1.5),
+                          border: Border.all(color: AppColors.infoBorder, width: 1.5),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,7 +161,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF0369A1),
+                                    color: AppColors.info,
                                   ),
                                 ),
                               ],

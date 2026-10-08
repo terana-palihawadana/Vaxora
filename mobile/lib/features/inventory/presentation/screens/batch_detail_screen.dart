@@ -38,7 +38,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 
   Color get _statusColor {
     if (batch.isExpired || batch.isLowStock) return AppColors.error;
-    if (batch.isExpiringSoon) return const Color(0xFFB2660A);
+    if (batch.isExpiringSoon) return AppColors.warning;
     return AppColors.success;
   }
 
@@ -301,12 +301,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       case 'restock':
         return StaffSurfaces.brandSoft;
       case 'dispense':
-        return const Color(0xFF6D5BAE);
+        return AppColors.ai;
       case 'sensor':
         return AppColors.success;
       case 'qa':
       default:
-        return const Color(0xFF5B6BB0);
+        return AppColors.info;
     }
   }
 
@@ -315,12 +315,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       case 'restock':
         return StaffSurfaces.softPanelDeep;
       case 'dispense':
-        return const Color(0xFFEDE9F8);
+        return AppColors.aiBg;
       case 'sensor':
         return AppColors.successBg;
       case 'qa':
       default:
-        return const Color(0xFFEEF0FA);
+        return AppColors.infoBg;
     }
   }
 

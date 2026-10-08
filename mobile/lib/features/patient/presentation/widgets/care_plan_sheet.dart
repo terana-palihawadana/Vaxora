@@ -205,7 +205,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.borderCard,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -249,7 +249,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: const Icon(Icons.close, color: AppColors.textMuted),
                   onPressed: _isLoading
                       ? null
                       : () => Navigator.of(context).pop(),
@@ -321,14 +321,14 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
+                color: AppColors.errorBg,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFECACA)),
+                border: Border.all(color: AppColors.errorBorder),
               ),
               child: Text(
                 _error!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
+                style: const TextStyle(fontSize: 12, color: AppColors.error),
               ),
             ),
             const SizedBox(height: 20),
@@ -400,9 +400,9 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
+                color: AppColors.successBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
+                border: Border.all(color: AppColors.successBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -412,7 +412,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF15803D),
+                      color: AppColors.success,
                       letterSpacing: 0.6,
                     ),
                   ),
@@ -421,7 +421,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
                     plan.followUpRecommendation,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF166534),
+                      color: AppColors.success,
                       height: 1.45,
                     ),
                   ),
@@ -438,9 +438,9 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0FDF4),
+              color: AppColors.successBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBBF7D0), width: 1.5),
+              border: Border.all(color: AppColors.successBorder, width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,9 +563,9 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0F9FF),
+        color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFBAE6FD)),
+        border: Border.all(color: AppColors.infoBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -575,7 +575,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF0369A1),
+              color: AppColors.info,
               letterSpacing: 0.6,
             ),
           ),
@@ -612,17 +612,17 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
     final s = w.severity.toLowerCase();
     Color bg, fg, border;
     if (s == 'critical') {
-      bg = const Color(0xFFFEF2F2);
-      fg = const Color(0xFF991B1B);
-      border = const Color(0xFFEF4444);
+      bg = AppColors.errorBg;
+      fg = AppColors.error;
+      border = AppColors.error;
     } else if (s == 'warning') {
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFF92400E);
-      border = const Color(0xFFF59E0B);
+      bg = AppColors.warningBg;
+      fg = AppColors.warning;
+      border = AppColors.warningBorder;
     } else {
-      bg = const Color(0xFFEFF6FF);
+      bg = AppColors.infoBg;
       fg = AppColors.primary;
-      border = const Color(0xFF3B82F6);
+      border = AppColors.info;
     }
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -651,20 +651,20 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
     final p = a.priority.toLowerCase();
     Color bg, fg;
     if (p == 'high') {
-      bg = const Color(0xFFFEE2E2);
-      fg = const Color(0xFF991B1B);
+      bg = AppColors.errorBg;
+      fg = AppColors.error;
     } else if (p == 'medium') {
-      bg = const Color(0xFFFEF3C7);
-      fg = const Color(0xFF92400E);
+      bg = AppColors.warningBg;
+      fg = AppColors.warning;
     } else {
-      bg = const Color(0xFFE0F2FE);
-      fg = const Color(0xFF075985);
+      bg = AppColors.infoBg;
+      fg = AppColors.info;
     }
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F8F7),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.borderLight),
       ),
@@ -720,9 +720,9 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFBFDBFE)),
+        border: Border.all(color: AppColors.infoBorder),
       ),
       child: Row(
         children: [
@@ -735,7 +735,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1E3A8A),
+                    color: AppColors.info,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -844,7 +844,7 @@ class _CarePlanLoaderState extends State<CarePlanLoader> {
             'Total: ${r.durationMs}ms',
             style: const TextStyle(
               fontSize: 10,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textPlaceholder,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -870,7 +870,7 @@ class _PdfPreviewPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F7),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,

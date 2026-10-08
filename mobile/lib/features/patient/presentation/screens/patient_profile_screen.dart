@@ -445,7 +445,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 _buildSectionCard(
                   title: 'Emergency Contact',
                   icon: Icons.contact_phone_outlined,
-                  iconColor: const Color(0xFFB2660A),
+                  iconColor: AppColors.warning,
                   children: [
                     _buildField(
                       label: 'Contact Name & Relationship',
@@ -554,7 +554,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
               Icon(
                 Icons.monitor_heart_outlined,
                 size: 18,
-                color: const Color(0xFF0E7490),
+                color: AppColors.info,
               ),
               const SizedBox(width: 8),
               const Text(
@@ -722,13 +722,13 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     switch (severity.toLowerCase()) {
       case 'critical':
       case 'severe':
-        return const Color(0xFFDC2626);
+        return AppColors.error;
       case 'moderate':
-        return const Color(0xFFB45309);
+        return AppColors.warning;
       case 'mild':
-        return const Color(0xFF0284C7);
+        return AppColors.info;
       default:
-        return const Color(0xFF64748B);
+        return AppColors.textMuted;
     }
   }
 
@@ -736,12 +736,12 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     switch (status.toLowerCase()) {
       case 'active':
       case 'chronic':
-        return const Color(0xFFB45309);
+        return AppColors.warning;
       case 'resolved':
       case 'inremission':
-        return const Color(0xFF10B981);
+        return AppColors.success;
       default:
-        return const Color(0xFF64748B);
+        return AppColors.textMuted;
     }
   }
 

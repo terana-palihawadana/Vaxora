@@ -99,7 +99,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F7),
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -176,7 +176,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF667B83),
+                          color: AppColors.textMuted,
                           height: 1.4,
                         ),
                       ),
@@ -252,7 +252,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF667B83),
+                          color: AppColors.textMuted,
                           height: 1.4,
                         ),
                       ),
@@ -288,7 +288,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   icon: Icon(
                                     _showNewPassword ? Icons.visibility_off : Icons.visibility,
                                     size: 20,
-                                    color: const Color(0xFF667B83),
+                                    color: AppColors.textMuted,
                                   ),
                                   onPressed: () =>
                                       setState(() => _showNewPassword = !_showNewPassword),
@@ -310,7 +310,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   icon: Icon(
                                     _showConfirmPassword ? Icons.visibility_off : Icons.visibility,
                                     size: 20,
-                                    color: const Color(0xFF667B83),
+                                    color: AppColors.textMuted,
                                   ),
                                   onPressed: () => setState(
                                       () => _showConfirmPassword = !_showConfirmPassword),

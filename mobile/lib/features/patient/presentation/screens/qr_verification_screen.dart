@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../staff/presentation/widgets/staff_common_widgets.dart';
 import '../../data/models/vaccination_record_model.dart';
 import '../../data/repositories/patient_repository.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// QR certificate verification.
 ///
@@ -444,7 +445,7 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 64, color: Color(0xFFDC2626)),
+            const Icon(Icons.error_outline, size: 64, color: AppColors.error),
             const SizedBox(height: 16),
             const Text(
               'Verification failed',
@@ -492,13 +493,13 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF0FDF4),
+            color: AppColors.successBg,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+            border: Border.all(color: AppColors.successBorder, width: 1.5),
           ),
           child: Row(
             children: [
-              const Icon(Icons.verified, color: Color(0xFF16A34A), size: 28),
+              const Icon(Icons.verified, color: AppColors.success, size: 28),
               const SizedBox(width: 12),
               const Expanded(
                 child: Column(
@@ -509,7 +510,7 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF16A34A),
+                        color: AppColors.success,
                       ),
                     ),
                     SizedBox(height: 2),
@@ -573,7 +574,7 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
                   _metricBox(
                     '${t.distinctVaccines}',
                     'Vaccines',
-                    const Color(0xFF8B5CF6),
+                    AppColors.ai,
                   ),
                   const SizedBox(width: 8),
                   _metricBox(
@@ -581,7 +582,7 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
                         ? '${t.lastVaccinatedAt!.year}-${t.lastVaccinatedAt!.month.toString().padLeft(2, '0')}-${t.lastVaccinatedAt!.day.toString().padLeft(2, '0')}'
                         : '—',
                     'Last dose',
-                    const Color(0xFF16A34A),
+                    AppColors.success,
                   ),
                 ],
               ),
@@ -655,10 +656,10 @@ class _QrVerificationScreenState extends State<QrVerificationScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
+              color: AppColors.successBg,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.check, size: 16, color: Color(0xFF16A34A)),
+            child: const Icon(Icons.check, size: 16, color: AppColors.success),
           ),
           const SizedBox(width: 12),
           Expanded(

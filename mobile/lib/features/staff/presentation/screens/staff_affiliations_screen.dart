@@ -253,7 +253,7 @@ class _StaffAffiliationsScreenState extends State<StaffAffiliationsScreen> {
                   value: '${_invitations.length}',
                   icon: Icons.mark_email_unread_outlined,
                   accent: _invitations.isNotEmpty
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
               ],
@@ -351,7 +351,7 @@ class _InvitationCard extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: StaffSurfaces.card(borderColor: const Color(0xFFF5B168)),
+      decoration: StaffSurfaces.card(borderColor: AppColors.warningBorder),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

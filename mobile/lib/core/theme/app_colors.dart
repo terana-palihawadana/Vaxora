@@ -36,12 +36,24 @@ class AppColors {
   // Status
   static const Color success = Color(0xFF238252);
   static const Color successBg = Color(0xFFEDF7F0);
+  static const Color successBorder = Color(0xFFC3E3CF);
   static const Color error = Color(0xFFB54743);
   static const Color errorBg = Color(0xFFFFF1EF);
+  static const Color errorBorder = Color(0xFFFECACA);
   static const Color info = Color(0xFF276D82);
   static const Color infoBg = Color(0xFFEDF6F8);
-  static const Color warning = Color(0xFFA86513);
-  static const Color warningBg = Color(0xFFFFF6E8);
+  static const Color infoBorder = Color(0xFFC7E0E7);
+  static const Color warning = Color(0xFFB2660A);
+  static const Color warningBg = Color(0xFFFFF4E5);
+  static const Color warningBorder = Color(0xFFF5B168);
+
+  // AI assistant accents
+  static const Color ai = Color(0xFF6D5BAE);
+  static const Color aiBg = Color(0xFFEDE9F8);
+  static const Color aiBorder = Color(0xFFDCD4F0);
+
+  // Star ratings
+  static const Color rating = Color(0xFFF59E0B);
 
   // Gradients
   static const LinearGradient authButtonGradient = LinearGradient(

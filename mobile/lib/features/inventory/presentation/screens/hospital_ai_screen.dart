@@ -161,7 +161,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
             title: 'Scan Expiring Batches',
             description:
                 'Find batches nearing expiry and generate a rescue memo',
-            color: const Color(0xFFD97706),
+            color: AppColors.warning,
             onTap: _busy
                 ? null
                 : () => _runAgent(
@@ -177,15 +177,15 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
           if (_error != null)
             _banner(
               _error!,
-              const Color(0xFFDC2626),
-              const Color(0xFFFEF2F2),
+              AppColors.error,
+              AppColors.errorBg,
               Icons.error_outline,
             ),
           if (_success != null)
             _banner(
               _success!,
-              const Color(0xFF16A34A),
-              const Color(0xFFF0FDF4),
+              AppColors.success,
+              AppColors.successBg,
               Icons.check_circle_outline,
             ),
           if (_run != null) _runResult(_run!),
@@ -197,21 +197,21 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
   Widget _header() => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      color: const Color(0xFFEDE9F8),
+      color: AppColors.aiBg,
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color(0xFFDCD4F0)),
+      border: Border.all(color: AppColors.aiBorder),
     ),
     child: const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Icon(Icons.smart_toy, color: Color(0xFF6D5BAE), size: 26),
+            Icon(Icons.smart_toy, color: AppColors.ai, size: 26),
             SizedBox(width: 10),
             Text(
               'Inventory AI Assistant',
               style: TextStyle(
-                color: Color(0xFF3F356E),
+                color: AppColors.textTitle,
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -221,7 +221,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
         SizedBox(height: 8),
         Text(
           'Run an agent to draft purchase orders or rescue plans for expiring batches. All drafts require your approval before anything changes.',
-          style: TextStyle(color: Color(0xFF685D86), fontSize: 13, height: 1.4),
+          style: TextStyle(color: AppColors.textMuted, fontSize: 13, height: 1.4),
         ),
       ],
     ),
@@ -323,7 +323,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
                 children: [
                   const Icon(
                     Icons.smart_toy_outlined,
-                    color: Color(0xFF7C3AED),
+                    color: AppColors.ai,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -350,7 +350,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F8F7),
+              color: AppColors.background,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.borderLight),
             ),
@@ -358,7 +358,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
               children: [
                 Icon(
                   Icons.check_circle_outline,
-                  color: Color(0xFF16A34A),
+                  color: AppColors.success,
                   size: 20,
                 ),
                 SizedBox(width: 10),
@@ -386,7 +386,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: (isPo ? AppColors.brandBlue : const Color(0xFFD97706))
+          color: (isPo ? AppColors.brandBlue : AppColors.warning)
               .withValues(alpha: 0.35),
           width: 1.5,
         ),
@@ -398,7 +398,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
             children: [
               Icon(
                 isPo ? Icons.shopping_cart_outlined : Icons.event_note_outlined,
-                color: isPo ? AppColors.brandBlue : const Color(0xFFD97706),
+                color: isPo ? AppColors.brandBlue : AppColors.warning,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -463,7 +463,7 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isPo
                         ? AppColors.brandBlue
-                        : const Color(0xFFD97706),
+                        : AppColors.warning,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),

@@ -245,7 +245,7 @@ class _ReviewsCarouselState extends State<ReviewsCarousel> {
                 decoration: BoxDecoration(
                   color: _currentIndex == index
                       ? AppColors.brandBlue
-                      : const Color(0xFFCBD5E1),
+                      : AppColors.borderCard,
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),

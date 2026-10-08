@@ -46,7 +46,7 @@ class ImmunizationTimelineItem extends StatelessWidget {
             decoration: BoxDecoration(
               color: switch (_tone) {
                 StaffChipTone.success => AppColors.successBg,
-                StaffChipTone.warning => const Color(0xFFFFF4E5),
+                StaffChipTone.warning => AppColors.warningBg,
                 StaffChipTone.danger => AppColors.errorBg,
                 _ => StaffSurfaces.softPanelDeep,
               },
@@ -58,7 +58,7 @@ class ImmunizationTimelineItem extends StatelessWidget {
               size: 18,
               color: switch (_tone) {
                 StaffChipTone.success => AppColors.success,
-                StaffChipTone.warning => const Color(0xFFB2660A),
+                StaffChipTone.warning => AppColors.warning,
                 StaffChipTone.danger => AppColors.error,
                 _ => StaffSurfaces.brandSoft,
               },

@@ -44,7 +44,7 @@ class DigitalCertificateSheet extends StatelessWidget {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
+                    color: AppColors.borderCard,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -104,8 +104,8 @@ class DigitalCertificateSheet extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Color(0xFFFFFFFF),
-                      Color(0xFFF5F8F7),
+                      AppColors.surface,
+                      AppColors.background,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),

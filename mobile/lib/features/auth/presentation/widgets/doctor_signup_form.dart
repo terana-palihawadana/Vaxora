@@ -196,7 +196,7 @@ class _DoctorSignupFormState extends State<DoctorSignupForm> {
                 icon: Icon(
                   _showPassword ? Icons.visibility_off : Icons.visibility,
                   size: 20,
-                  color: const Color(0xFF667B83),
+                  color: AppColors.textMuted,
                 ),
                 onPressed: () => setState(() => _showPassword = !_showPassword),
               ),
@@ -219,7 +219,7 @@ class _DoctorSignupFormState extends State<DoctorSignupForm> {
                 icon: Icon(
                   _showConfirmPassword ? Icons.visibility_off : Icons.visibility,
                   size: 20,
-                  color: const Color(0xFF667B83),
+                  color: AppColors.textMuted,
                 ),
                 onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
               ),
@@ -257,7 +257,7 @@ class _DoctorSignupFormState extends State<DoctorSignupForm> {
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF087F78).withValues(alpha: 0.35),
+                  color: AppColors.primary.withValues(alpha: 0.35),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

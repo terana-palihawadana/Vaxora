@@ -27,7 +27,7 @@ class StaffSurfaces {
   static const Color divider = AppColors.borderLight;
   static const Color chipNeutralBg = AppColors.surfaceSubtle;
   static const Color chipNeutralBorder = AppColors.borderCard;
-  static const Color dangerBorder = Color(0xFFFECACA);
+  static const Color dangerBorder = AppColors.errorBorder;
   static const double cardRadius = 14;
 
   /// Slightly-muted brand blue for chrome (icons / loaders / accents).
@@ -716,9 +716,9 @@ class StaffStatusChip extends StatelessWidget {
         );
       case StaffChipTone.warning:
         return (
-          bg: const Color(0xFFFFF4E5),
-          border: const Color(0xFFF5B168),
-          fg: const Color(0xFFB2660A),
+          bg: AppColors.warningBg,
+          border: AppColors.warningBorder,
+          fg: AppColors.warning,
         );
       case StaffChipTone.danger:
         return (

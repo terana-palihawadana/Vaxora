@@ -182,7 +182,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   value: _loading ? '—' : '$actionCount',
                   icon: Icons.mark_email_unread_outlined,
                   accent: actionCount > 0
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
               ],
@@ -381,7 +381,7 @@ class _HomeNotice extends StatelessWidget {
           decoration: StaffSurfaces.card(),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFFB2660A), size: 20),
+              Icon(icon, color: AppColors.warning, size: 20),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

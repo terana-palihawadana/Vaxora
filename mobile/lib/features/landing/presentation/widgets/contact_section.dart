@@ -223,7 +223,7 @@ class _ContactSectionState extends State<ContactSection> {
                             borderRadius: BorderRadius.circular(10),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF087F78).withValues(alpha: 0.35),
+                                color: AppColors.primary.withValues(alpha: 0.35),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),

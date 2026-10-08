@@ -211,7 +211,7 @@ class _FileUploadPickerBoxState extends State<FileUploadPickerBox> {
           style: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF475569),
+            color: AppColors.textBody,
           ),
         ),
         const SizedBox(height: 5),
@@ -233,7 +233,7 @@ class _FileUploadPickerBoxState extends State<FileUploadPickerBox> {
                 Icon(
                   hasFile ? Icons.check_circle : Icons.upload_file,
                   size: 20,
-                  color: hasFile ? AppColors.success : const Color(0xFF554A78),
+                  color: hasFile ? AppColors.success : AppColors.textBody,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -244,7 +244,7 @@ class _FileUploadPickerBoxState extends State<FileUploadPickerBox> {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: hasFile ? AppColors.textTitle : const Color(0xFF554A78),
+                      color: hasFile ? AppColors.textTitle : AppColors.textBody,
                     ),
                   ),
                 ),

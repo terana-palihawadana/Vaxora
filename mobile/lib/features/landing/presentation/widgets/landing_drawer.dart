@@ -155,7 +155,7 @@ class LandingDrawer extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? AppColors.brandBlue : const Color(0xFFF5F8F7),
+          color: isActive ? AppColors.brandBlue : AppColors.background,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isActive ? AppColors.brandBlue : AppColors.borderLight,

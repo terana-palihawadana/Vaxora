@@ -161,7 +161,7 @@ class _HospitalHomeScreenState extends State<HospitalHomeScreen> {
                   value: '$alertCount',
                   icon: Icons.warning_amber_outlined,
                   accent: alertCount > 0
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
                 StaffIntroStat(
@@ -244,16 +244,16 @@ class _HospitalHomeScreenState extends State<HospitalHomeScreen> {
               icon: Icons.notifications_outlined,
               title: 'Stock alerts',
               subtitle: 'Low stock, expiry, and expired lots',
-              accent: const Color(0xFFB2660A),
-              well: const Color(0xFFFFF4E5),
+              accent: AppColors.warning,
+              well: AppColors.warningBg,
               onTap: _openAlerts,
             ),
             _ShortcutTile(
               icon: Icons.auto_awesome,
               title: 'Inventory AI',
               subtitle: 'Restock and expiry rescue drafts',
-              accent: const Color(0xFF6D5BAE),
-              well: const Color(0xFFEDE9F8),
+              accent: AppColors.ai,
+              well: AppColors.aiBg,
               onTap: _openAi,
             ),
             _ShortcutTile(
@@ -308,7 +308,7 @@ class _AttentionTile extends StatelessWidget {
               borderColor: switch (tone) {
                 StaffChipTone.danger =>
                   AppColors.error.withValues(alpha: 0.28),
-                StaffChipTone.warning => const Color(0xFFF5B168),
+                StaffChipTone.warning => AppColors.warningBorder,
                 _ => StaffSurfaces.cardBorder,
               },
             ),
@@ -320,7 +320,7 @@ class _AttentionTile extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: switch (tone) {
                       StaffChipTone.danger => AppColors.errorBg,
-                      StaffChipTone.warning => const Color(0xFFFFF4E5),
+                      StaffChipTone.warning => AppColors.warningBg,
                       StaffChipTone.success => AppColors.successBg,
                       _ => StaffSurfaces.softPanelDeep,
                     },
@@ -331,7 +331,7 @@ class _AttentionTile extends StatelessWidget {
                     size: 18,
                     color: switch (tone) {
                       StaffChipTone.danger => AppColors.error,
-                      StaffChipTone.warning => const Color(0xFFB2660A),
+                      StaffChipTone.warning => AppColors.warning,
                       StaffChipTone.success => AppColors.success,
                       _ => StaffSurfaces.brandSoft,
                     },

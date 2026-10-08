@@ -8,7 +8,7 @@ class LandingFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color(0xFF0F172A),
+      color: AppColors.textTitle,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
       child: Column(
         children: [

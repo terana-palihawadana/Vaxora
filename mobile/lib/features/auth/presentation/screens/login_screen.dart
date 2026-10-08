@@ -77,7 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F8F7),
+      backgroundColor: AppColors.background,
       body: Column(
         children: [
           AuthBannerHeader(
@@ -216,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ? Icons.visibility_off
                                       : Icons.visibility,
                                   size: 20,
-                                  color: const Color(0xFF667B83),
+                                  color: AppColors.textMuted,
                                 ),
                                 onPressed: () => setState(
                                   () => _showPassword = !_showPassword,
@@ -264,7 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(10),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF087F78)
+                                  color: AppColors.primary
                                       .withValues(alpha: 0.35),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),

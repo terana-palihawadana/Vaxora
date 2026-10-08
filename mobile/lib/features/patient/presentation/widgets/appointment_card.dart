@@ -119,7 +119,7 @@ class AppointmentCard extends StatelessWidget {
         borderColor: switch (_tone) {
           StaffChipTone.success => AppColors.success.withValues(alpha: 0.28),
           StaffChipTone.danger => AppColors.error.withValues(alpha: 0.28),
-          StaffChipTone.warning => const Color(0xFFF5B168),
+          StaffChipTone.warning => AppColors.warningBorder,
           _ => StaffSurfaces.cardBorder,
         },
       ),

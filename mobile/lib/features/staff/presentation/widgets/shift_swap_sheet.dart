@@ -3,6 +3,7 @@ import '../../../../core/network/api_client.dart';
 import '../../data/models/shift_model.dart';
 import '../../data/repositories/shift_swap_repository.dart';
 import 'staff_common_widgets.dart';
+import '../../../../core/theme/app_colors.dart';
 
 /// Staff files a cover request. No agent — the hospital's scheduling agent
 /// suggests who should take the shift.
@@ -224,7 +225,7 @@ class _ShiftSwapSheetState extends State<ShiftSwapSheet> {
                             fontWeight: FontWeight.w600,
                             color: _quota!.canRequest || _quota!.alreadyPending
                                 ? StaffSurfaces.brandSoft
-                                : const Color(0xFFB2660A),
+                                : AppColors.warning,
                           ),
                         ),
                       ],
@@ -236,16 +237,16 @@ class _ShiftSwapSheetState extends State<ShiftSwapSheet> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: AppColors.successBg,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF6EE7B7)),
+                      border: Border.all(color: AppColors.successBorder),
                     ),
                     child: const Text(
                       'Request sent. Your hospital will review it and pick cover.',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF047857),
+                        color: AppColors.success,
                       ),
                     ),
                   ),

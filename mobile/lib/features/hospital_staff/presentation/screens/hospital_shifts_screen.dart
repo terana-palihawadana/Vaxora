@@ -324,7 +324,7 @@ class _HospitalShiftCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: StaffSurfaces.card(
         borderColor: switch (cover) {
-          'requested' => const Color(0xFFF5B168),
+          'requested' => AppColors.warningBorder,
           'declined' => AppColors.error.withValues(alpha: 0.28),
           'covering' => AppColors.success.withValues(alpha: 0.28),
           _ => StaffSurfaces.cardBorder,
