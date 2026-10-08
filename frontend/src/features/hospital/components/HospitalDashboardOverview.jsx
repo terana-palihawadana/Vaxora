@@ -620,9 +620,9 @@ export default function HospitalDashboardOverview() {
       {toastMessage && (
         <div
           style={{
-            background: '#ecfdf5',
-            border: '1px solid #6ee7b7',
-            color: '#065f46',
+            background: 'var(--color-success-bg)',
+            border: '1px solid var(--color-success-border)',
+            color: 'var(--color-success)',
             padding: '12px 18px',
             borderRadius: '10px',
             marginBottom: '20px',
@@ -638,7 +638,7 @@ export default function HospitalDashboardOverview() {
           <button
             type="button"
             onClick={() => setToastMessage('')}
-            style={{ background: 'none', border: 'none', color: '#065f46', cursor: 'pointer', fontWeight: 800 }}
+            style={{ background: 'none', border: 'none', color: 'var(--color-success)', cursor: 'pointer', fontWeight: 800 }}
           >
             <IconClose size={14} />
           </button>
@@ -825,19 +825,19 @@ export default function HospitalDashboardOverview() {
               <tbody>
                 {queueLoading ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-muted)' }}>
                       Loading live queue from database...
                     </td>
                   </tr>
                 ) : queueError ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#dc2626' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-error)' }}>
                       {queueError}
                     </td>
                   </tr>
                 ) : filteredQueue.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: '#94a3b8' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '32px', color: 'var(--color-text-placeholder)' }}>
                       No patients in queue for {viewScope === 'today' ? "today's session" : 'selected filters'}.
                       {viewScope === 'today' && (
                         <button
@@ -846,7 +846,7 @@ export default function HospitalDashboardOverview() {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#1e40af',
+                            color: 'var(--color-primary)',
                             fontWeight: 700,
                             cursor: 'pointer',
                             textDecoration: 'underline',
@@ -1025,15 +1025,15 @@ export default function HospitalDashboardOverview() {
 
           <div className="inventory-items-list">
             {inventoryLoading ? (
-              <p style={{ color: '#64748b', textAlign: 'center', padding: '24px' }}>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px' }}>
                 Loading live inventory batches...
               </p>
             ) : inventoryError ? (
-              <p style={{ color: '#dc2626', textAlign: 'center', padding: '24px' }}>
+              <p style={{ color: 'var(--color-error)', textAlign: 'center', padding: '24px' }}>
                 {inventoryError}
               </p>
             ) : inventory.length === 0 ? (
-              <p style={{ color: '#64748b', textAlign: 'center', padding: '24px' }}>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px' }}>
                 No vaccine batches logged in database. Click "+ Restock" to register a batch.
               </p>
             ) : (
@@ -1059,7 +1059,7 @@ export default function HospitalDashboardOverview() {
                   </div>
 
                   {item.warning && (
-                    <div style={{ color: '#b45309', fontSize: '0.72rem', fontWeight: 700, marginTop: '6px' }}>
+                    <div style={{ color: 'var(--color-warning)', fontSize: '0.72rem', fontWeight: 700, marginTop: '6px' }}>
                       {item.warning}
                     </div>
                   )}
@@ -1111,16 +1111,16 @@ export default function HospitalDashboardOverview() {
           <div
             className="appointment-alert-pill"
             role="alert"
-            style={{ marginBottom: '12px', background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}
+            style={{ marginBottom: '12px', background: 'var(--color-error-bg)', color: 'var(--color-error)', borderColor: 'var(--color-error-border)' }}
           >
             {boothsError}
           </div>
         )}
 
         {boothsLoading ? (
-          <p style={{ color: '#64748b', margin: 0 }}>Loading booth staffing...</p>
+          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>Loading booth staffing...</p>
         ) : boothCards.length === 0 ? (
-          <p style={{ color: '#64748b', margin: 0 }}>
+          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
             No active booths yet. Add stations under Staff → Booths, then assign shifts to them.
           </p>
         ) : (

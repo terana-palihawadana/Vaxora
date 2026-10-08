@@ -17,10 +17,10 @@ function FairnessSummary({ summary, validation }) {
 
   const renderRows = (rows, title) => (
     <div style={{ flex: 1, minWidth: 180 }}>
-      <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>{title}</div>
+      <div style={{ fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '6px' }}>{title}</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {rows.slice(0, 6).map((row) => (
-          <div key={`${title}-${row.affiliationId || row.staffName}`} style={{ fontSize: '12px', color: '#334155' }}>
+          <div key={`${title}-${row.affiliationId || row.staffName}`} style={{ fontSize: '12px', color: 'var(--color-text-body)' }}>
             {row.staffName} · {row.shiftCount} shift{row.shiftCount === 1 ? '' : 's'}
             {row.load ? ` · ${row.load}` : ''}
           </div>
@@ -35,17 +35,17 @@ function FairnessSummary({ summary, validation }) {
         marginTop: '10px',
         padding: '10px 12px',
         borderRadius: '8px',
-        border: '1px solid #dbeafe',
-        background: '#eff6ff',
+        border: '1px solid var(--color-info-bg)',
+        background: 'var(--color-info-bg)',
       }}
     >
-      <div style={{ fontWeight: 700, color: '#1d4ed8', marginBottom: '8px' }}>Workload fairness</div>
+      <div style={{ fontWeight: 700, color: 'var(--color-primary-hover)', marginBottom: '8px' }}>Workload fairness</div>
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
         {before.length > 0 ? renderRows(before, 'Before') : null}
         {after.length > 0 ? renderRows(after, 'After plan') : null}
       </div>
       {validation && Array.isArray(validation.issues) && validation.issues.length > 0 ? (
-        <div style={{ marginTop: '8px', color: '#b45309', fontSize: '12px' }}>
+        <div style={{ marginTop: '8px', color: 'var(--color-warning)', fontSize: '12px' }}>
           {validation.issues.length} proposal(s) need review before approval.
         </div>
       ) : null}
@@ -59,24 +59,24 @@ function BookingBrief({ briefing }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
       {days.map((day) => (
         <div key={day.date}>
-          <div style={{ fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>{speakDate(day.date)}</div>
+          <div style={{ fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '6px' }}>{speakDate(day.date)}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {(day.slots || []).map((slot) => (
               <div
                 key={`${day.date}-${slot.name}-${slot.vaccine}`}
                 style={{
-                  border: '1px solid #e2e8f0',
+                  border: '1px solid var(--color-border-light)',
                   borderRadius: '8px',
                   padding: '8px 10px',
-                  background: '#f8fafc',
+                  background: 'var(--color-bg)',
                 }}
               >
-                <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '13px' }}>{slot.name}</div>
-                <div style={{ color: '#0f172a', marginTop: '2px' }}>
+                <div style={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: '13px' }}>{slot.name}</div>
+                <div style={{ color: 'var(--color-text-title)', marginTop: '2px' }}>
                   {slot.count} bookings · {slot.vaccine}
                 </div>
                 {(slot.booths || []).map((booth) => (
-                  <div key={booth} style={{ color: '#334155', fontSize: '13px', marginTop: '2px' }}>
+                  <div key={booth} style={{ color: 'var(--color-text-body)', fontSize: '13px', marginTop: '2px' }}>
                     {booth}
                   </div>
                 ))}
@@ -128,7 +128,7 @@ const formatMarkdownText = (text, isUser = false) => {
       const token = match[0];
       if (token.startsWith('**') && token.endsWith('**')) {
         parts.push(
-          <strong key={`${lineIdx}-${match.index}`} style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0f172a' }}>
+          <strong key={`${lineIdx}-${match.index}`} style={{ fontWeight: 700, color: isUser ? 'var(--color-text-inverse)' : 'var(--color-text-title)' }}>
             {token.slice(2, -2)}
           </strong>
         );
@@ -137,7 +137,7 @@ const formatMarkdownText = (text, isUser = false) => {
           <code
             key={`${lineIdx}-${match.index}`}
             style={{
-              background: isUser ? 'rgba(255,255,255,0.2)' : '#e2e8f0',
+              background: isUser ? 'rgba(255,255,255,0.2)' : 'var(--color-soft-panel-deep)',
               padding: '1px 5px',
               borderRadius: '4px',
               fontSize: '0.88em',
@@ -162,7 +162,7 @@ const formatMarkdownText = (text, isUser = false) => {
           key={lineIdx}
           style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}
         >
-          <span style={{ color: isUser ? '#ffffff' : '#0369a1', fontSize: '9px', marginTop: '6px' }}>●</span>
+          <span style={{ color: isUser ? 'var(--color-text-inverse)' : 'var(--color-accent)', fontSize: '9px', marginTop: '6px' }}>●</span>
           <div style={{ flex: 1 }}>{parts}</div>
         </div>
       );
@@ -174,7 +174,7 @@ const formatMarkdownText = (text, isUser = false) => {
           key={lineIdx}
           style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', margin: '3px 0', paddingLeft: '4px' }}
         >
-          <span style={{ fontWeight: 700, color: isUser ? '#ffffff' : '#0369a1', fontSize: '13px' }}>
+          <span style={{ fontWeight: 700, color: isUser ? 'var(--color-text-inverse)' : 'var(--color-accent)', fontSize: '13px' }}>
             {itemNumber}.
           </span>
           <div style={{ flex: 1 }}>{parts}</div>
@@ -627,9 +627,9 @@ export default function StaffSchedulingAgentChat({
   return (
     <div
       style={{
-        background: '#ffffff',
+        background: 'var(--color-surface)',
         borderRadius: '16px',
-        border: '1px solid #e2e8f0',
+        border: '1px solid var(--color-border-light)',
         boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         flexDirection: 'column',
@@ -641,8 +641,8 @@ export default function StaffSchedulingAgentChat({
       {/* Header — same pattern as BookingAgentChat */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%)',
-          color: '#ffffff',
+          background: 'linear-gradient(135deg, var(--color-info) 0%, var(--color-accent) 100%)',
+          color: 'var(--color-text-inverse)',
           padding: '16px 20px',
           display: 'flex',
           alignItems: 'center',
@@ -678,8 +678,8 @@ export default function StaffSchedulingAgentChat({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: agentHealth?.online ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-              border: `1px solid ${agentHealth?.online ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+              background: agentHealth?.online ? 'rgba(var(--rgb-success), 0.2)' : 'rgba(var(--rgb-error), 0.2)',
+              border: `1px solid ${agentHealth?.online ? 'rgba(var(--rgb-success), 0.4)' : 'rgba(var(--rgb-error), 0.4)'}`,
               padding: '4px 10px',
               borderRadius: '20px',
               fontSize: '11px',
@@ -691,7 +691,7 @@ export default function StaffSchedulingAgentChat({
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                background: agentHealth?.online ? '#22c55e' : '#ef4444',
+                background: agentHealth?.online ? 'var(--color-success)' : 'var(--color-error)',
                 display: 'inline-block',
               }}
             />
@@ -706,7 +706,7 @@ export default function StaffSchedulingAgentChat({
               style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 border: 'none',
-                color: '#ffffff',
+                color: 'var(--color-text-inverse)',
                 width: '32px',
                 height: '32px',
                 borderRadius: '8px',
@@ -738,7 +738,7 @@ export default function StaffSchedulingAgentChat({
           flex: 1,
           overflowY: 'auto',
           padding: '20px',
-          background: '#f8fafc',
+          background: 'var(--color-bg)',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
@@ -761,11 +761,11 @@ export default function StaffSchedulingAgentChat({
                   maxWidth: '85%',
                   padding: '14px 18px',
                   borderRadius: isUser ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: isUser ? '#0369a1' : msg.isError ? '#fef2f2' : '#ffffff',
-                  color: isUser ? '#ffffff' : msg.isError ? '#991b1b' : '#1e293b',
-                  border: isUser ? 'none' : msg.isError ? '1px solid #fecaca' : '1px solid #e2e8f0',
+                  background: isUser ? 'var(--color-accent)' : msg.isError ? 'var(--color-error-bg)' : 'var(--color-surface)',
+                  color: isUser ? 'var(--color-text-inverse)' : msg.isError ? 'var(--color-error)' : 'var(--color-text-title)',
+                  border: isUser ? 'none' : msg.isError ? '1px solid var(--color-error-border)' : '1px solid var(--color-border-light)',
                   boxShadow: isUser
-                    ? '0 2px 8px rgba(2, 132, 199, 0.2)'
+                    ? '0 2px 8px rgba(var(--rgb-info), 0.2)'
                     : '0 2px 6px rgba(0, 0, 0, 0.04)',
                   fontSize: '14px',
                   lineHeight: '1.6',
@@ -784,8 +784,8 @@ export default function StaffSchedulingAgentChat({
                 ).length;
                 const cellStyle = {
                   padding: '8px',
-                  borderBottom: '1px solid #e2e8f0',
-                  borderRight: '1px solid #e2e8f0',
+                  borderBottom: '1px solid var(--color-border-light)',
+                  borderRight: '1px solid var(--color-border-light)',
                   verticalAlign: 'top',
                   wordBreak: 'break-word',
                 };
@@ -794,7 +794,7 @@ export default function StaffSchedulingAgentChat({
                   const people = cells.get(`${booth}|${date}|${slot}`) || [];
                   if (people.length === 0) {
                     return (
-                      <td key={`${booth}|${date}|${slot}`} style={{ ...cellStyle, background: '#f8fafc', color: '#94a3b8', textAlign: 'center' }}>
+                      <td key={`${booth}|${date}|${slot}`} style={{ ...cellStyle, background: 'var(--color-bg)', color: 'var(--color-text-placeholder)', textAlign: 'center' }}>
                         —
                       </td>
                     );
@@ -814,46 +814,46 @@ export default function StaffSchedulingAgentChat({
                                 borderRadius: '6px',
                                 border: `1px solid ${
                                   status === 'approved'
-                                    ? '#86efac'
+                                    ? 'var(--color-success-border)'
                                     : status === 'declined'
-                                      ? '#e2e8f0'
-                                      : '#bae6fd'
+                                      ? 'var(--color-border-light)'
+                                      : 'var(--color-info-border)'
                                 }`,
                                 background:
                                   status === 'approved'
-                                    ? '#f0fdf4'
+                                    ? 'var(--color-success-bg)'
                                     : status === 'declined'
-                                      ? '#f8fafc'
-                                      : '#f0f9ff',
+                                      ? 'var(--color-bg)'
+                                      : 'var(--color-info-bg)',
                               }}
                             >
-                              <div style={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.3 }}>
+                              <div style={{ fontWeight: 700, color: 'var(--color-text-title)', lineHeight: 1.3 }}>
                                 {proposal.staffName}
                               </div>
                               {proposal.specialization ? (
-                                <div style={{ color: '#475569', fontSize: '11px', lineHeight: 1.3 }}>
+                                <div style={{ color: 'var(--color-text-body)', fontSize: '11px', lineHeight: 1.3 }}>
                                   {proposal.specialization}
                                 </div>
                               ) : null}
                               {proposal.vaccineName ? (
-                                <div style={{ color: '#0369a1', fontSize: '11px', fontWeight: 600, lineHeight: 1.3 }}>
+                                <div style={{ color: 'var(--color-accent)', fontSize: '11px', fontWeight: 600, lineHeight: 1.3 }}>
                                   {proposal.vaccineName}
                                 </div>
                               ) : null}
-                              <div style={{ color: '#64748b', fontSize: '11px', lineHeight: 1.3 }}>
+                              <div style={{ color: 'var(--color-text-muted)', fontSize: '11px', lineHeight: 1.3 }}>
                                 {proposal.staffRole || 'Staff'} · {String(proposal.startTime).slice(0, 5)}–
                                 {String(proposal.endTime).slice(0, 5)}
                               </div>
                               {typeof proposal.reason === 'string' &&
                               proposal.reason.toLowerCase().includes('specialization') ? (
-                                <div style={{ color: '#0f766e', fontSize: '10px', marginTop: '2px', lineHeight: 1.3 }}>
+                                <div style={{ color: 'var(--color-primary)', fontSize: '10px', marginTop: '2px', lineHeight: 1.3 }}>
                                   {proposal.reason.includes('·')
                                     ? proposal.reason.split('·').slice(1).join('·').trim()
                                     : proposal.reason}
                                 </div>
                               ) : null}
                               {Array.isArray(proposal.alternatives) && proposal.alternatives.length > 0 ? (
-                                <div style={{ color: '#64748b', fontSize: '10px', marginTop: '4px' }}>
+                                <div style={{ color: 'var(--color-text-muted)', fontSize: '10px', marginTop: '4px' }}>
                                   Alt: {proposal.alternatives.map((alt) => alt.staffName).join(', ')}
                                 </div>
                               ) : null}
@@ -863,7 +863,7 @@ export default function StaffSchedulingAgentChat({
                                     marginTop: '4px',
                                     fontWeight: 700,
                                     fontSize: '11px',
-                                    color: status === 'approved' ? '#15803d' : '#64748b',
+                                    color: status === 'approved' ? 'var(--color-success)' : 'var(--color-text-muted)',
                                   }}
                                 >
                                   {status === 'approved' ? 'Created' : 'Declined'}
@@ -885,9 +885,9 @@ export default function StaffSchedulingAgentChat({
                                       flex: 1,
                                       padding: '4px 6px',
                                       borderRadius: '4px',
-                                      border: '1px solid #cbd5e1',
-                                      background: '#ffffff',
-                                      color: '#64748b',
+                                      border: '1px solid var(--color-border-card)',
+                                      background: 'var(--color-surface)',
+                                      color: 'var(--color-text-muted)',
                                       fontWeight: 600,
                                       fontSize: '11px',
                                       cursor: 'pointer',
@@ -910,8 +910,8 @@ export default function StaffSchedulingAgentChat({
                                       padding: '4px 6px',
                                       borderRadius: '4px',
                                       border: 'none',
-                                      background: '#16a34a',
-                                      color: '#ffffff',
+                                      background: 'var(--color-success)',
+                                      color: 'var(--color-text-inverse)',
                                       fontWeight: 600,
                                       fontSize: '11px',
                                       cursor: 'pointer',
@@ -935,20 +935,20 @@ export default function StaffSchedulingAgentChat({
                       alignSelf: 'stretch',
                       width: '100%',
                       marginTop: '4px',
-                      border: '1px solid #bae6fd',
+                      border: '1px solid var(--color-info-border)',
                       borderRadius: '10px',
-                      background: '#ffffff',
+                      background: 'var(--color-surface)',
                       overflow: 'hidden',
                     }}
                   >
                     <div
                       style={{
                         padding: '8px 12px',
-                        borderBottom: '1px solid #bae6fd',
-                        background: '#f0f9ff',
+                        borderBottom: '1px solid var(--color-info-border)',
+                        background: 'var(--color-info-bg)',
                         fontSize: '12px',
                         fontWeight: 700,
-                        color: '#0369a1',
+                        color: 'var(--color-accent)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -970,8 +970,8 @@ export default function StaffSchedulingAgentChat({
                             padding: '6px 12px',
                             borderRadius: '6px',
                             border: 'none',
-                            background: '#16a34a',
-                            color: '#ffffff',
+                            background: 'var(--color-success)',
+                            color: 'var(--color-text-inverse)',
                             fontWeight: 700,
                             fontSize: '12px',
                             cursor: 'pointer',
@@ -991,11 +991,11 @@ export default function StaffSchedulingAgentChat({
                           <div
                             style={{
                               padding: '8px 12px',
-                              background: '#f8fafc',
-                              borderBottom: '1px solid #e2e8f0',
+                              background: 'var(--color-bg)',
+                              borderBottom: '1px solid var(--color-border-light)',
                               fontWeight: 700,
                               fontSize: '13px',
-                              color: '#0f172a',
+                              color: 'var(--color-text-title)',
                             }}
                           >
                             {shortDateLabel(date)}
@@ -1006,18 +1006,18 @@ export default function StaffSchedulingAgentChat({
                               tableLayout: 'fixed',
                               borderCollapse: 'collapse',
                               fontSize: '12px',
-                              color: '#0f172a',
+                              color: 'var(--color-text-title)',
                             }}
                           >
                             <thead>
-                              <tr style={{ background: '#f0f9ff' }}>
-                                <th style={{ width: '28%', padding: '6px 8px', textAlign: 'left', color: '#0369a1', borderBottom: '1px solid #bae6fd' }}>
+                              <tr style={{ background: 'var(--color-info-bg)' }}>
+                                <th style={{ width: '28%', padding: '6px 8px', textAlign: 'left', color: 'var(--color-accent)', borderBottom: '1px solid var(--color-info-border)' }}>
                                   Booth
                                 </th>
-                                <th style={{ width: '36%', padding: '6px 8px', textAlign: 'center', color: '#0369a1', borderBottom: '1px solid #bae6fd' }}>
+                                <th style={{ width: '36%', padding: '6px 8px', textAlign: 'center', color: 'var(--color-accent)', borderBottom: '1px solid var(--color-info-border)' }}>
                                   Morning
                                 </th>
-                                <th style={{ width: '36%', padding: '6px 8px', textAlign: 'center', color: '#0369a1', borderBottom: '1px solid #bae6fd' }}>
+                                <th style={{ width: '36%', padding: '6px 8px', textAlign: 'center', color: 'var(--color-accent)', borderBottom: '1px solid var(--color-info-border)' }}>
                                   Afternoon
                                 </th>
                               </tr>
@@ -1028,8 +1028,8 @@ export default function StaffSchedulingAgentChat({
                                   <td
                                     style={{
                                       padding: '8px',
-                                      borderBottom: '1px solid #e2e8f0',
-                                      borderRight: '1px solid #e2e8f0',
+                                      borderBottom: '1px solid var(--color-border-light)',
+                                      borderRight: '1px solid var(--color-border-light)',
                                       fontWeight: 700,
                                       verticalAlign: 'top',
                                       wordBreak: 'break-word',
@@ -1056,13 +1056,13 @@ export default function StaffSchedulingAgentChat({
                 <div
                   style={{
                     maxWidth: '90%',
-                    background: msg.decision === 'Approved' ? '#f0fdf4' : '#f8fafc',
-                    border: `1px solid ${msg.decision === 'Approved' ? '#86efac' : '#cbd5e1'}`,
+                    background: msg.decision === 'Approved' ? 'var(--color-success-bg)' : 'var(--color-bg)',
+                    border: `1px solid ${msg.decision === 'Approved' ? 'var(--color-success-border)' : 'var(--color-border-card)'}`,
                     borderRadius: '8px',
                     padding: '6px 10px',
                     marginTop: '2px',
                     fontSize: '11px',
-                    color: '#475569',
+                    color: 'var(--color-text-body)',
                     fontWeight: 600,
                   }}
                 >
@@ -1079,7 +1079,7 @@ export default function StaffSchedulingAgentChat({
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
-              color: '#64748b',
+              color: 'var(--color-text-muted)',
               fontSize: '13px',
               fontStyle: 'italic',
               padding: '8px 0',
@@ -1096,8 +1096,8 @@ export default function StaffSchedulingAgentChat({
         <div
           style={{
             padding: '10px 16px',
-            background: '#f1f5f9',
-            borderTop: '1px solid #e2e8f0',
+            background: 'var(--color-surface-subtle)',
+            borderTop: '1px solid var(--color-border-light)',
             display: 'flex',
             gap: '8px',
             overflowX: 'auto',
@@ -1113,9 +1113,9 @@ export default function StaffSchedulingAgentChat({
                 whiteSpace: 'nowrap',
                 padding: '6px 12px',
                 borderRadius: '20px',
-                border: '1px solid #cbd5e1',
-                background: '#ffffff',
-                color: '#334155',
+                border: '1px solid var(--color-border-card)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text-body)',
                 fontSize: '12px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -1130,8 +1130,8 @@ export default function StaffSchedulingAgentChat({
       <div
         style={{
           padding: '14px 18px',
-          background: '#ffffff',
-          borderTop: '1px solid #e2e8f0',
+          background: 'var(--color-surface)',
+          borderTop: '1px solid var(--color-border-light)',
           display: 'flex',
           gap: '10px',
           alignItems: 'center',
@@ -1150,7 +1150,7 @@ export default function StaffSchedulingAgentChat({
             resize: 'none',
             padding: '10px 14px',
             borderRadius: '10px',
-            border: '1px solid #cbd5e1',
+            border: '1px solid var(--color-border-card)',
             outline: 'none',
             fontSize: '14px',
             fontFamily: 'inherit',
@@ -1164,8 +1164,8 @@ export default function StaffSchedulingAgentChat({
           style={{
             padding: '10px 20px',
             borderRadius: '10px',
-            background: isLoading || !inputMessage.trim() ? '#94a3b8' : '#0369a1',
-            color: '#ffffff',
+            background: isLoading || !inputMessage.trim() ? 'var(--color-text-placeholder)' : 'var(--color-accent)',
+            color: 'var(--color-text-inverse)',
             border: 'none',
             fontWeight: 600,
             fontSize: '14px',

@@ -60,7 +60,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <p style={{ fontSize: '0.88rem', color: '#64748b', marginTop: 0, marginBottom: '16px', lineHeight: '1.5' }}>
+            <p style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', marginTop: 0, marginBottom: '16px', lineHeight: '1.5' }}>
               Accurately logging vaccine wastage ensures strict compliance with National Immunization &amp; Cold-Chain standards. All reported entries are stamped in the MOH audit trail.
             </p>
 
@@ -90,7 +90,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                   value={formData.lotNumber}
                   readOnly
                   className="modal-input"
-                  style={{ background: '#f1f5f9', cursor: 'not-allowed' }}
+                  style={{ background: 'var(--color-surface-subtle)', cursor: 'not-allowed' }}
                 />
               </div>
 
@@ -167,14 +167,14 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
             </div>
           </div>
 
-          <div className="modal-footer" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+          <div className="modal-footer" style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '16px' }}>
             <button type="button" className="btn-modal-cancel" onClick={onClose}>
               Cancel
             </button>
             <button
               type="submit"
               className="btn-modal-submit"
-              style={{ background: '#dc2626', borderColor: '#b91c1c', boxShadow: '0 4px 14px rgba(220, 38, 38, 0.35)' }}
+              style={{ background: 'var(--color-error)', borderColor: 'var(--color-error)', boxShadow: '0 4px 14px rgba(var(--rgb-error), 0.35)' }}
             >
               Confirm &amp; Deduct Wasted Stock
             </button>

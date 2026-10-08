@@ -18,8 +18,8 @@ function formatDayRange(from, to) {
 }
 
 const roleStyleMap = {
-  DOCTOR: { accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', label: 'Doctor' },
-  NURSE: { accent: '#059669', bg: '#ecfdf5', border: '#a7f3d0', label: 'Nurse' },
+  DOCTOR: { accent: 'var(--color-ai)', bg: 'var(--color-ai-bg)', border: 'var(--color-ai-border)', label: 'Doctor' },
+  NURSE: { accent: 'var(--color-success)', bg: 'var(--color-success-bg)', border: 'var(--color-success-border)', label: 'Nurse' },
 };
 
 /**

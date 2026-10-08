@@ -215,16 +215,16 @@ export default function HospitalStaffTab() {
             maxWidth: '1400px',
             width: '100%',
             marginBottom: '20px',
-            background: '#fef2f2',
-            color: '#b91c1c',
-            borderColor: '#fecaca',
+            background: 'var(--color-error-bg)',
+            color: 'var(--color-error)',
+            borderColor: 'var(--color-error-border)',
           }}
         >
           {error}
           <button
             type="button"
             onClick={() => setError('')}
-            style={{ marginLeft: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#b91c1c' }}
+            style={{ marginLeft: '12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-error)' }}
           >
             Dismiss
           </button>
@@ -355,8 +355,8 @@ export default function HospitalStaffTab() {
             className={`hospital-nav-btn ${activeTab === 'all' ? 'active' : ''}`}
             onClick={() => setActiveTab('all')}
             style={{
-              background: activeTab === 'all' ? '#19469d' : '#ffffff',
-              border: '1px solid #cbd5e1',
+              background: activeTab === 'all' ? 'var(--color-primary)' : 'var(--color-surface)',
+              border: '1px solid var(--color-border-card)',
             }}
           >
             All ({staffList.length})
@@ -367,8 +367,8 @@ export default function HospitalStaffTab() {
             className={`hospital-nav-btn ${activeTab === 'doctors' ? 'active' : ''}`}
             onClick={() => setActiveTab('doctors')}
             style={{
-              background: activeTab === 'doctors' ? '#19469d' : '#ffffff',
-              border: '1px solid #cbd5e1',
+              background: activeTab === 'doctors' ? 'var(--color-primary)' : 'var(--color-surface)',
+              border: '1px solid var(--color-border-card)',
             }}
           >
             Doctors ({staffList.filter((s) => s.role === 'Doctor').length})
@@ -379,8 +379,8 @@ export default function HospitalStaffTab() {
             className={`hospital-nav-btn ${activeTab === 'nurses' ? 'active' : ''}`}
             onClick={() => setActiveTab('nurses')}
             style={{
-              background: activeTab === 'nurses' ? '#19469d' : '#ffffff',
-              border: '1px solid #cbd5e1',
+              background: activeTab === 'nurses' ? 'var(--color-primary)' : 'var(--color-surface)',
+              border: '1px solid var(--color-border-card)',
             }}
           >
             Nurses ({staffList.filter((s) => s.role === 'Nurse').length})
@@ -391,8 +391,8 @@ export default function HospitalStaffTab() {
             className={`hospital-nav-btn ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
             style={{
-              background: activeTab === 'pending' ? '#19469d' : '#ffffff',
-              border: '1px solid #cbd5e1',
+              background: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-surface)',
+              border: '1px solid var(--color-border-card)',
             }}
           >
             Pending ({pendingCount})
@@ -413,14 +413,14 @@ export default function HospitalStaffTab() {
         {loading ? (
           <div
             className="hospital-section-card"
-            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#64748b' }}
+            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}
           >
             Loading staff directory...
           </div>
         ) : filteredStaff.length === 0 ? (
           <div
             className="hospital-section-card"
-            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#64748b' }}
+            style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: 'var(--color-text-muted)' }}
           >
             {staffList.length === 0
               ? 'No staff yet. Invite an approved doctor or nurse with their Vaxora ID to get started.'
@@ -436,7 +436,7 @@ export default function HospitalStaffTab() {
                 border:
                   staff.affiliationStatus === 'Pending'
                     ? '1px solid rgba(245, 158, 11, 0.45)'
-                    : '1px solid rgba(21, 42, 85, 0.18)',
+                    : '1px solid rgba(var(--rgb-primary-dark), 0.18)',
               }}
             >
               <div className="booth-card-header">
@@ -444,9 +444,9 @@ export default function HospitalStaffTab() {
                   <span
                     className="booth-number-tag"
                     style={{
-                      background: staff.role === 'Doctor' ? '#19469d' : '#0f766e',
-                      color: '#ffffff',
-                      borderColor: staff.role === 'Doctor' ? '#153a82' : '#0b5f59',
+                      background: staff.role === 'Doctor' ? 'var(--color-brand-blue)' : 'var(--color-primary)',
+                      color: 'var(--color-text-inverse)',
+                      borderColor: staff.role === 'Doctor' ? 'var(--color-primary-dark)' : 'var(--color-primary-hover)',
                     }}
                   >
                     {staff.role}
@@ -456,11 +456,11 @@ export default function HospitalStaffTab() {
                       fontFamily: 'var(--font-heading)',
                       fontWeight: 700,
                       fontSize: '0.78rem',
-                      background: '#eff6ff',
-                      color: '#1e40af',
+                      background: 'var(--color-info-bg)',
+                      color: 'var(--color-primary)',
                       padding: '2px 8px',
                       borderRadius: '4px',
-                      border: '1px solid #bfdbfe',
+                      border: '1px solid var(--color-info-border)',
                     }}
                   >
                     {staff.vaxoraId}
@@ -475,20 +475,20 @@ export default function HospitalStaffTab() {
                       height: '6px',
                       background:
                         staff.isOnDutyNow
-                          ? '#22c55e'
+                          ? 'var(--color-success)'
                           : staff.affiliationStatus === 'Pending'
-                            ? '#f59e0b'
-                            : '#94a3b8',
+                            ? 'var(--color-warning)'
+                            : 'var(--color-text-placeholder)',
                     }}
                   />
                   <span
                     style={{
                       color:
                         staff.isOnDutyNow
-                          ? '#15803d'
+                          ? 'var(--color-success)'
                           : staff.affiliationStatus === 'Pending'
-                            ? '#b45309'
-                            : '#64748b',
+                            ? 'var(--color-warning)'
+                            : 'var(--color-text-muted)',
                       fontWeight: 700,
                       fontSize: '0.78rem',
                     }}
@@ -498,10 +498,10 @@ export default function HospitalStaffTab() {
                 </div>
               </div>
 
-              <div className="booth-staff-info" style={{ padding: '14px', background: '#f8fafc' }}>
+              <div className="booth-staff-info" style={{ padding: '14px', background: 'var(--color-bg)' }}>
                 <div
                   className="staff-avatar-mini"
-                  style={{ width: '50px', height: '50px', background: '#e2e8f0', color: '#475569', overflow: 'hidden' }}
+                  style={{ width: '50px', height: '50px', background: 'var(--color-soft-panel-deep)', color: 'var(--color-text-body)', overflow: 'hidden' }}
                 >
                   {staff.photoUrl ? (
                     <img
@@ -517,10 +517,10 @@ export default function HospitalStaffTab() {
                   <span className="staff-name" style={{ fontSize: '1.08rem' }}>
                     {staff.name}
                   </span>
-                  <span className="staff-role-desc" style={{ color: '#2563eb', fontWeight: 600 }}>
+                  <span className="staff-role-desc" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
                     {staff.specialty}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                     {staff.email}
                   </span>
                 </div>
@@ -535,7 +535,7 @@ export default function HospitalStaffTab() {
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: '#dc2626',
+                      color: 'var(--color-error)',
                       fontWeight: 600,
                       fontSize: '0.78rem',
                       cursor: 'pointer',
@@ -557,7 +557,7 @@ export default function HospitalStaffTab() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#dc2626',
+                        color: 'var(--color-error)',
                         fontWeight: 600,
                         fontSize: '0.78rem',
                         cursor: 'pointer',
@@ -576,7 +576,7 @@ export default function HospitalStaffTab() {
                         style={{
                           background: 'none',
                           border: 'none',
-                          color: '#64748b',
+                          color: 'var(--color-text-muted)',
                           fontWeight: 600,
                           fontSize: '0.78rem',
                           cursor: 'pointer',
@@ -606,7 +606,7 @@ export default function HospitalStaffTab() {
           >
             Previous
           </button>
-          <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+          <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
             Page {page} of {pageCount}
           </span>
           <button

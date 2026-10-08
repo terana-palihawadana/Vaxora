@@ -306,8 +306,8 @@ export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
               className={`hospital-nav-btn ${filter === 'pending' ? 'active' : ''}`}
               onClick={() => setFilter('pending')}
               style={{
-                background: filter === 'pending' ? '#19469d' : '#ffffff',
-                border: '1px solid #cbd5e1',
+                background: filter === 'pending' ? 'var(--color-primary)' : 'var(--color-surface)',
+                border: '1px solid var(--color-border-card)',
               }}
             >
               Pending ({pending.length})
@@ -317,8 +317,8 @@ export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
               className={`hospital-nav-btn ${filter === 'all' ? 'active' : ''}`}
               onClick={() => setFilter('all')}
               style={{
-                background: filter === 'all' ? '#19469d' : '#ffffff',
-                border: '1px solid #cbd5e1',
+                background: filter === 'all' ? 'var(--color-primary)' : 'var(--color-surface)',
+                border: '1px solid var(--color-border-card)',
               }}
             >
               All ({requests.length})

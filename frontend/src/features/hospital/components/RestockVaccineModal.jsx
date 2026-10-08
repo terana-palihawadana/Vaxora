@@ -122,7 +122,7 @@ export default function RestockVaccineModal({
             <h3 style={{ margin: 0 }}>
               {isCustomMode ? 'Add new vaccine product' : 'Log Vaccine Restock Shipment'}
             </h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--color-text-muted)' }}>
               {isCustomMode
                 ? 'Enter the product details, then continue with lot and vault info below.'
                 : 'Select from hospital-registered vaccine formulations or enter a new product name.'}
@@ -234,7 +234,7 @@ export default function RestockVaccineModal({
                     </select>
                   </div>
                 </div>
-                <p style={{ margin: '-4px 0 12px', fontSize: '0.76rem', color: '#64748b' }}>
+                <p style={{ margin: '-4px 0 12px', fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>
                   New products are saved to your formulary when the shipment is committed.
                 </p>
               </>

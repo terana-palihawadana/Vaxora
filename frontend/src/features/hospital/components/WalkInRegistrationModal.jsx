@@ -131,9 +131,9 @@ export default function WalkInRegistrationModal({
                   marginBottom: '12px',
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid #ef4444',
-                  color: '#b91c1c',
+                  background: 'rgba(var(--rgb-error), 0.12)',
+                  border: '1px solid var(--color-error)',
+                  color: 'var(--color-error)',
                   fontSize: '0.85rem',
                   fontWeight: 600,
                 }}
@@ -167,7 +167,7 @@ export default function WalkInRegistrationModal({
                   required
                   className="modal-input"
                 />
-                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                   Matches an existing account by NIC, or creates one with the email/phone below.
                 </p>
               </div>
@@ -209,7 +209,7 @@ export default function WalkInRegistrationModal({
                   required
                   className="modal-input"
                 />
-                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                   For new guest accounts only: this is their login email, and the default password is their NIC.
                 </p>
               </div>
@@ -240,7 +240,7 @@ export default function WalkInRegistrationModal({
                 ))}
               </select>
               {vaccinePrices?.[formData.vaccine] ? (
-                <span style={{ display: 'block', marginTop: 4, fontSize: '0.75rem', color: '#64748b' }}>
+                <span style={{ display: 'block', marginTop: 4, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                   Fee: {vaccinePrices[formData.vaccine]}
                   {vaccinePrices[formData.vaccine] !== 'Free' ? ' — collect at the desk (Mark paid)' : ''}
                 </span>
@@ -277,7 +277,7 @@ export default function WalkInRegistrationModal({
                 </select>
               </div>
             </div>
-            <span style={{ display: 'block', marginTop: 6, fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ display: 'block', marginTop: 6, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
               A doctor prescribes the dosage at the booth. Only booths offering this vaccine are listed.
             </span>
           </div>
