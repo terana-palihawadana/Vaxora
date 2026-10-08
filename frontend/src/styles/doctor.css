@@ -1181,21 +1181,23 @@
 }
 
 .doctor-filter-btn {
-  border: none;
-  background: transparent;
   padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
   cursor: pointer;
   transition: all 0.15s ease;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-size: var(--pill-size);
+  font-weight: var(--btn-weight);
+  box-shadow: none;
 }
 
 .doctor-filter-btn.active {
-  background-color: var(--color-surface);
-  color: var(--color-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  box-shadow: var(--pill-active-shadow);
 }
 
 .doctor-search-bar {
@@ -2860,24 +2862,27 @@
 
 .doctor-filter-btn {
   padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--color-border-card);
-  background: var(--color-surface);
-  color: var(--color-text-title);
-  font-size: 0.85rem;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: var(--btn-radius);
+  font-family: var(--btn-font);
+  font-size: var(--pill-size);
+  font-weight: var(--btn-weight);
+  box-shadow: none;
 }
 
 .doctor-filter-btn:hover {
-  background: var(--color-soft-panel-deep);
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
 }
 
 .doctor-filter-btn.active {
-  background: var(--color-primary);
-  color: var(--color-text-inverse);
-  border-color: var(--color-primary);
+  background: var(--pill-active-bg);
+  color: var(--pill-active-text);
+  box-shadow: var(--pill-active-shadow);
 }
 
 .doctor-appointments-table-wrapper {

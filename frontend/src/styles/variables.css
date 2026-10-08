@@ -103,6 +103,17 @@
   --btn-soft-bg: var(--color-soft-panel);
   --btn-soft-bg-hover: var(--color-soft-panel-deep);
 
+  /* Filter pills and segmented controls */
+  --pill-track-bg: var(--color-surface-subtle);
+  --pill-track-border: var(--color-border-light);
+  --pill-text: var(--color-text-muted);
+  --pill-text-hover: var(--color-primary);
+  --pill-active-bg: var(--color-primary);
+  --pill-active-text: var(--color-text-inverse);
+  --pill-active-shadow: 0 2px 8px rgba(8, 127, 120, 0.25);
+  --pill-pad: 6px 14px;
+  --pill-size: 0.84rem;
+
   /* Focus */
   --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);
 
