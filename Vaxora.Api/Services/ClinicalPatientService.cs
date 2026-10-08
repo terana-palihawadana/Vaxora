@@ -7,9 +7,14 @@ namespace Vaxora.Api.Services;
 
 public interface IClinicalPatientService
 {
-    Task<List<ClinicalPatientSearchResultDto>> SearchPatientsAsync(string query, int limit = 10);
-    Task<ClinicalPatientDetailDto> GetPatientByVaxoraIdAsync(string vaxoraId);
-    Task<List<ClinicalRecentUpdateDto>> GetRecentDosageUpdatesAsync(int limit = 10);
+    Task<List<ClinicalPatientSearchResultDto>> SearchPatientsAsync(
+        string query,
+        Guid viewerUserId,
+        int limit = 10);
+    Task<ClinicalPatientDetailDto> GetPatientByVaxoraIdAsync(
+        string vaxoraId,
+        Guid viewerUserId);
+    Task<List<ClinicalRecentUpdateDto>> GetRecentDosageUpdatesAsync(Guid viewerUserId, int limit = 10);
     Task<ClinicalPendingVaccineDto> UpdatePrescribedDosageAsync(Guid doctorUserId, Guid appointmentId, UpdatePrescribedDosageDto dto);
 }
 
@@ -22,15 +27,23 @@ public class ClinicalPatientService : IClinicalPatientService
     };
 
     private readonly ApplicationDbContext _context;
+    private readonly IClinicalScopeService _clinicalScope;
     private readonly ILogger<ClinicalPatientService> _logger;
 
-    public ClinicalPatientService(ApplicationDbContext context, ILogger<ClinicalPatientService> logger)
+    public ClinicalPatientService(
+        ApplicationDbContext context,
+        ILogger<ClinicalPatientService> logger,
+        IClinicalScopeService? clinicalScope = null)
     {
         _context = context;
+        _clinicalScope = clinicalScope ?? new ClinicalScopeService(context);
         _logger = logger;
     }
 
-    public async Task<List<ClinicalPatientSearchResultDto>> SearchPatientsAsync(string query, int limit = 10)
+    public async Task<List<ClinicalPatientSearchResultDto>> SearchPatientsAsync(
+        string query,
+        Guid viewerUserId,
+        int limit = 10)
     {
         var term = query?.Trim() ?? string.Empty;
         if (term.Length < 2)
@@ -38,8 +51,15 @@ public class ClinicalPatientService : IClinicalPatientService
 
         limit = Math.Clamp(limit, 1, 20);
         var like = $"%{term}%";
+        var viewer = await GetActiveClinicalViewerAsync(viewerUserId);
+        if (viewer == null)
+            return new List<ClinicalPatientSearchResultDto>();
 
-        var patients = await _context.PatientProfiles
+        var allowedHospitalProfileIds = await GetHospitalProfileIdsAsync(viewer);
+        if (allowedHospitalProfileIds.Length == 0)
+            return new List<ClinicalPatientSearchResultDto>();
+
+        var patientQuery = _context.PatientProfiles
             .AsNoTracking()
             .Include(p => p.User)
             .Where(p =>
@@ -50,10 +70,27 @@ public class ClinicalPatientService : IClinicalPatientService
                     EF.Functions.ILike(p.FullName, like) ||
                     EF.Functions.ILike(p.NicNumber, like) ||
                     EF.Functions.ILike(p.User.Email, like)
-                ))
+                ) &&
+                (
+                    _context.Appointments.AsNoTracking().Any(a =>
+                        a.PatientProfileId == p.Id &&
+                        a.HospitalProfileId.HasValue &&
+                        allowedHospitalProfileIds.Contains(a.HospitalProfileId.Value)) ||
+                    _context.PatientVisits.AsNoTracking().Any(v =>
+                        v.PatientProfileId == p.Id &&
+                        v.HospitalProfileId.HasValue &&
+                        allowedHospitalProfileIds.Contains(v.HospitalProfileId.Value))
+                ));
+
+        var patients = await patientQuery
             .OrderBy(p => p.FullName)
             .Take(limit)
             .ToListAsync();
+
+        await LogClinicalPhiViewAsync(
+            viewerUserId,
+            "CLINICAL_PATIENT_SEARCH",
+            $"Searched patients queryLength={term.Length} resultCount={patients.Count}");
 
         return patients.Select(p => new ClinicalPatientSearchResultDto
         {
@@ -67,7 +104,9 @@ public class ClinicalPatientService : IClinicalPatientService
         }).ToList();
     }
 
-    public async Task<ClinicalPatientDetailDto> GetPatientByVaxoraIdAsync(string vaxoraId)
+    public async Task<ClinicalPatientDetailDto> GetPatientByVaxoraIdAsync(
+        string vaxoraId,
+        Guid viewerUserId)
     {
         var reg = (vaxoraId ?? string.Empty).Trim().ToUpperInvariant();
         if (string.IsNullOrWhiteSpace(reg))
@@ -83,6 +122,16 @@ public class ClinicalPatientService : IClinicalPatientService
 
         if (patient.User.Role != UserRole.PATIENT)
             throw new InvalidOperationException("The provided Vaxora ID does not belong to a patient.");
+
+        var viewer = await GetActiveClinicalViewerAsync(viewerUserId);
+        if (viewer == null || !await _clinicalScope.CanAccessPatientAsync(
+                viewerUserId,
+                viewer.Role.ToString(),
+                patient.Id))
+        {
+            // Keep inaccessible records indistinguishable from unknown IDs.
+            throw new KeyNotFoundException("No patient found with that Vaxora ID.");
+        }
 
         var history = await _context.PatientVaccinationRecords
             .AsNoTracking()
@@ -101,12 +150,17 @@ public class ClinicalPatientService : IClinicalPatientService
             .ToListAsync();
 
         // Overdue (missed) visits first so clinicians clear them before today's queue.
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = StaffDutyHelper.HospitalToday();
         pendingAppointments = pendingAppointments
             .OrderByDescending(a => a.AppointmentDate < today)
             .ThenBy(a => a.AppointmentDate)
             .ThenBy(a => a.StartTime)
             .ToList();
+
+        await LogClinicalPhiViewAsync(
+            viewerUserId,
+            "CLINICAL_PATIENT_DETAIL_VIEW",
+            $"Viewed patient profile vaxoraId={reg} patientUserId={patient.UserId}");
 
         return new ClinicalPatientDetailDto
         {
@@ -130,14 +184,26 @@ public class ClinicalPatientService : IClinicalPatientService
         };
     }
 
-    public async Task<List<ClinicalRecentUpdateDto>> GetRecentDosageUpdatesAsync(int limit = 10)
+    public async Task<List<ClinicalRecentUpdateDto>> GetRecentDosageUpdatesAsync(Guid viewerUserId, int limit = 10)
     {
+        var viewer = await GetActiveClinicalViewerAsync(viewerUserId);
+        if (viewer == null)
+            return new List<ClinicalRecentUpdateDto>();
+
+        var allowedHospitalProfileIds = await GetHospitalProfileIdsAsync(viewer);
+        if (allowedHospitalProfileIds.Length == 0)
+            return new List<ClinicalRecentUpdateDto>();
+
         limit = Math.Clamp(limit, 1, 20);
 
         var updates = await _context.Appointments
             .AsNoTracking()
             .Include(a => a.PatientUser)
-            .Where(a => a.DosageUpdatedAt != null && !string.IsNullOrWhiteSpace(a.PrescribedDosage))
+            .Where(a =>
+                a.DosageUpdatedAt != null &&
+                !string.IsNullOrWhiteSpace(a.PrescribedDosage) &&
+                a.HospitalProfileId.HasValue &&
+                allowedHospitalProfileIds.Contains(a.HospitalProfileId.Value))
             .OrderByDescending(a => a.DosageUpdatedAt)
             .Take(limit)
             .ToListAsync();
@@ -153,6 +219,22 @@ public class ClinicalPatientService : IClinicalPatientService
             UpdatedAt = a.DosageUpdatedAt!.Value,
             RelativeTime = ToRelativeTime(a.DosageUpdatedAt.Value)
         }).ToList();
+    }
+
+    private async Task<User?> GetActiveClinicalViewerAsync(Guid viewerUserId)
+    {
+        return await _context.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u =>
+                u.Id == viewerUserId &&
+                u.Status == UserStatus.Active &&
+                (u.Role == UserRole.DOCTOR || u.Role == UserRole.NURSE));
+    }
+
+    private async Task<Guid[]> GetHospitalProfileIdsAsync(User viewer)
+    {
+        var ids = await _clinicalScope.GetHospitalProfileIdsAsync(viewer.Id, viewer.Role.ToString());
+        return ids?.ToArray() ?? Array.Empty<Guid>();
     }
 
     public async Task<ClinicalPendingVaccineDto> UpdatePrescribedDosageAsync(
@@ -181,6 +263,17 @@ public class ClinicalPatientService : IClinicalPatientService
             .FirstOrDefaultAsync(a => a.Id == appointmentId)
             ?? throw new KeyNotFoundException("Appointment not found.");
 
+        var isAffiliated = await _context.StaffAffiliations.AsNoTracking().AnyAsync(a =>
+            a.StaffUserId == doctorUserId &&
+            a.HospitalUserId == appointment.HospitalUserId &&
+            a.StaffRole == UserRole.DOCTOR &&
+            a.Status == AffiliationStatus.Active);
+
+        if (!isAffiliated)
+            throw new UnauthorizedAccessException("You are not affiliated with this hospital.");
+
+        await StaffDutyHelper.EnsureStaffOnDutyAsync(_context, doctorUserId, appointment.HospitalUserId);
+
         if (string.Equals(appointment.Status, "Completed", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(appointment.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(appointment.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
@@ -188,21 +281,25 @@ public class ClinicalPatientService : IClinicalPatientService
             throw new InvalidOperationException("Cannot edit dosage for completed, cancelled, or rejected appointments.");
         }
 
+        // Once the nurse has started, the prescription is locked so the recorded dose
+        // always matches what was given. Return the patient to the queue to change it.
+        if (string.Equals(appointment.Status, "Administering", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(appointment.Status, "Observation", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Administration has already started, so the dose is locked. Return the patient to the queue to change it.");
+        }
+
         // Past incomplete visits need to be closed or rebooked — not prescribed retrospectively.
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = StaffDutyHelper.HospitalToday();
         if (appointment.AppointmentDate < today)
         {
             throw new InvalidOperationException(
                 "This visit date has already passed. Mark it missed or ask the patient to rebook before prescribing dosage.");
         }
 
-        await StaffDutyHelper.EnsureStaffOnDutyAsync(
-            _context,
-            doctorUserId,
-            appointment.HospitalUserId);
-
         var doctorName = doctor.DoctorProfile?.FullName is { Length: > 0 } name
-            ? $"Dr. {name}"
+            ? StaffNameFormatter.WithRolePrefix(name, "Dr.")
             : doctor.Email;
 
         appointment.PrescribedDosage = dosage;
@@ -231,9 +328,28 @@ public class ClinicalPatientService : IClinicalPatientService
         return MapPending(appointment);
     }
 
+    private async Task LogClinicalPhiViewAsync(Guid viewerUserId, string action, string details)
+    {
+        var viewer = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == viewerUserId);
+        if (viewer == null)
+            return;
+
+        var text = details.Length > 1000 ? details[..1000] : details;
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = viewerUserId,
+            UserEmail = viewer.Email,
+            Role = viewer.Role.ToString(),
+            Action = action,
+            Details = text,
+            Timestamp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+    }
+
     private static ClinicalPendingVaccineDto MapPending(Appointment a)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = StaffDutyHelper.HospitalToday();
         var isOverdue = a.AppointmentDate < today;
         return new ClinicalPendingVaccineDto
         {

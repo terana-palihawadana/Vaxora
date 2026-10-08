@@ -22,7 +22,9 @@ class InventoryRepository {
             .map((e) => BatchModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-    } catch (_) {}
+    } catch (_) {
+      rethrow;
+    }
     return [];
   }
 
@@ -37,7 +39,9 @@ class InventoryRepository {
             .map((e) => BatchModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-    } catch (_) {}
+    } catch (_) {
+      rethrow;
+    }
     return [];
   }
 
@@ -48,7 +52,9 @@ class InventoryRepository {
       if (response is Map<String, dynamic>) {
         return InventorySummaryModel.fromJson(response);
       }
-    } catch (_) {}
+    } catch (_) {
+      rethrow;
+    }
     return null;
   }
 
@@ -61,7 +67,9 @@ class InventoryRepository {
             .map((e) => FormularyEntryModel.fromJson(e as Map<String, dynamic>))
             .toList();
       }
-    } catch (_) {}
+    } catch (_) {
+      rethrow;
+    }
     return [];
   }
 
@@ -94,10 +102,12 @@ class InventoryRepository {
     required String storageUnit,
     required String expiryDate,
     required String supplier,
+    String? category,
   }) async {
     final response = await ApiClient.post(
       ApiConstants.inventoryRestock,
       body: {
+        if (category != null && category.isNotEmpty) 'category': category,
         'vaccineName': vaccineName,
         'lotNumber': lotNumber,
         'quantity': quantity,

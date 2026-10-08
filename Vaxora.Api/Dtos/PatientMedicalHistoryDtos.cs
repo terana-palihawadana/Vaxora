@@ -28,6 +28,8 @@ public class PatientMedicalTimelineDto
     public Guid PatientProfileId { get; set; }
     public string PatientName { get; set; } = string.Empty;
     public string NicNumber { get; set; } = string.Empty;
+    public DateTime? DateOfBirth { get; set; }
+    public string? PhoneNumber { get; set; }
     public int TotalRecords { get; set; }
     public int ActiveConditions { get; set; }
     public int CriticalOrSevere { get; set; }

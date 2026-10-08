@@ -15,6 +15,7 @@ class ShiftSwapRequestModel {
   final String createdAt;
   final String? decidedAt;
   final String? reviewSummary;
+  final bool aiRanked;
   final String? hospitalName;
   final String? direction;
   final String? replacementUserId;
@@ -38,6 +39,7 @@ class ShiftSwapRequestModel {
     required this.createdAt,
     this.decidedAt,
     this.reviewSummary,
+    this.aiRanked = false,
     this.hospitalName,
     this.direction,
     this.replacementUserId,
@@ -48,6 +50,7 @@ class ShiftSwapRequestModel {
   bool get isPending => status.toUpperCase() == 'PENDING';
   bool get isApproved => status.toUpperCase() == 'APPROVED';
   bool get isDeclined => status.toUpperCase() == 'DECLINED';
+  bool get isCancelled => status.toUpperCase() == 'CANCELLED';
   bool get isIncoming => (direction ?? '').toUpperCase() == 'INCOMING';
   bool get isOutgoing => !isIncoming;
 
@@ -114,6 +117,7 @@ class ShiftSwapRequestModel {
       createdAt: json['createdAt']?.toString() ?? '',
       decidedAt: json['decidedAt']?.toString(),
       reviewSummary: json['reviewSummary']?.toString(),
+      aiRanked: json['aiRanked'] == true,
       hospitalName: json['hospitalName']?.toString(),
       direction: json['direction']?.toString(),
       replacementUserId: json['replacementUserId']?.toString(),

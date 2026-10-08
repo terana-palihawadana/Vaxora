@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Cryptography;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -40,7 +41,9 @@ public class ApiIntegrationTests : IDisposable
                     ["Jwt:SecretKey"] = JwtSecret,
                     ["Jwt:Issuer"] = "Vaxora.Api",
                     ["Jwt:Audience"] = "Vaxora.Client",
-                    ["Jwt:ExpiryInMinutes"] = "60"
+                    ["Jwt:ExpiryInMinutes"] = "60",
+                    ["PayHere:MerchantId"] = "121212",
+                    ["PayHere:MerchantSecret"] = "testSecret456"
                 });
             })
             .ConfigureServices(services =>
@@ -262,8 +265,6 @@ public class ApiIntegrationTests : IDisposable
                 HospitalUserId = hospitalUserId,
                 VaccineId = vaccineId,
                 VaccineName = "Pfizer Comirnaty",
-                DoctorName = "Dr. Gamage",
-                NurseName = "Nurse Silva",
                 ScheduleType = "OneTime",
                 SpecificDate = scheduleDate,
                 StartTime = "09:00",
@@ -338,5 +339,153 @@ public class ApiIntegrationTests : IDisposable
             Assert.Equal("Confirmed", savedAppointment.Status);
             Assert.Equal("Paid", savedAppointment.PaymentStatus);
         }
+    }
+
+    [Fact]
+    public async Task PostPaymentConfirm_with_client_supplied_payment_id_does_not_mark_appointment_paid()
+    {
+        var (appointment, token) = await CreatePendingPayHereAppointmentAsync();
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/payment/confirm");
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        request.Content = JsonContent.Create(new
+        {
+            appointmentId = appointment.Id,
+            paymentId = "CLIENT-FORGED-PAYMENT-ID"
+        });
+
+        var response = await _client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+
+        var body = await response.Content.ReadFromJsonAsync<JsonObject>();
+        Assert.NotNull(body);
+        Assert.Equal("false", body["confirmed"]?.ToString());
+
+        await using var context = GetDbContext();
+        var saved = await context.Appointments.SingleAsync(a => a.Id == appointment.Id);
+        Assert.Equal("PendingPayment", saved.Status);
+        Assert.Equal("PendingOnline", saved.PaymentStatus);
+        Assert.Null(saved.PaymentTransactionId);
+    }
+
+    [Fact]
+    public async Task PostPayHereNotify_with_valid_signature_and_matching_payment_confirms_appointment()
+    {
+        var (appointment, _) = await CreatePendingPayHereAppointmentAsync();
+        var orderId = $"APT-{appointment.Id.ToString("N")[..12].ToUpperInvariant()}";
+
+        var response = await _client.PostAsync(
+            "/api/payment/payhere-notify",
+            CreatePayHereNotification(orderId, "PAYHERE-VALID-123", "1500.00", "LKR"));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        await using var context = GetDbContext();
+        var saved = await context.Appointments.SingleAsync(a => a.Id == appointment.Id);
+        Assert.Equal("Confirmed", saved.Status);
+        Assert.Equal("Paid", saved.PaymentStatus);
+        Assert.Equal("PAYHERE-VALID-123", saved.PaymentTransactionId);
+    }
+
+    [Fact]
+    public async Task PostPayHereNotify_with_signed_non_lkr_currency_does_not_confirm_appointment()
+    {
+        var (appointment, _) = await CreatePendingPayHereAppointmentAsync();
+        var orderId = $"APT-{appointment.Id.ToString("N")[..12].ToUpperInvariant()}";
+
+        var response = await _client.PostAsync(
+            "/api/payment/payhere-notify",
+            CreatePayHereNotification(orderId, "PAYHERE-WRONG-CURRENCY", "1500.00", "USD"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        await using var context = GetDbContext();
+        var saved = await context.Appointments.SingleAsync(a => a.Id == appointment.Id);
+        Assert.Equal("PendingPayment", saved.Status);
+        Assert.Equal("PendingOnline", saved.PaymentStatus);
+        Assert.Null(saved.PaymentTransactionId);
+    }
+
+    private async Task<(Appointment Appointment, string Token)> CreatePendingPayHereAppointmentAsync()
+    {
+        var patient = new User
+        {
+            Email = $"payment.patient.{Guid.NewGuid():N}@vaxora.lk",
+            PasswordHash = "hashedPassword",
+            Role = UserRole.PATIENT,
+            Status = UserStatus.Active,
+            RegistrationNumber = $"VAX-P-{Guid.NewGuid():N}"[..14],
+            PatientProfile = new PatientProfile
+            {
+                FullName = "PayHere Test Patient",
+                NicNumber = $"{Guid.NewGuid():N}"[..12]
+            }
+        };
+        var hospital = new User
+        {
+            Email = $"payment.hospital.{Guid.NewGuid():N}@vaxora.lk",
+            PasswordHash = "hashedPassword",
+            Role = UserRole.HOSPITAL,
+            Status = UserStatus.Active,
+            RegistrationNumber = $"VAX-H-{Guid.NewGuid():N}"[..14],
+            HospitalProfile = new HospitalProfile
+            {
+                HospitalName = "Payment Test Hospital",
+                RegistrationNumber = $"HP-{Guid.NewGuid():N}"[..12]
+            }
+        };
+        var appointment = new Appointment
+        {
+            PatientUserId = patient.Id,
+            PatientName = "PayHere Test Patient",
+            PatientEmail = patient.Email,
+            HospitalUserId = hospital.Id,
+            HospitalName = "Payment Test Hospital",
+            VaccineName = "Influenza",
+            AppointmentDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(2)),
+            TimeSlot = "10:00 AM - 10:20 AM",
+            Status = "PendingPayment",
+            PaymentMethod = "PayHere",
+            PaymentStatus = "PendingOnline",
+            Fee = 1500m
+        };
+
+        await using (var context = GetDbContext())
+        {
+            context.Users.AddRange(patient, hospital);
+            context.Appointments.Add(appointment);
+            await context.SaveChangesAsync();
+        }
+
+        var token = _server.Services.GetRequiredService<ITokenService>()
+            .GenerateAccessToken(patient, patient.PatientProfile!.FullName);
+        return (appointment, token);
+    }
+
+    private static FormUrlEncodedContent CreatePayHereNotification(
+        string orderId,
+        string paymentId,
+        string amount,
+        string currency)
+    {
+        const string merchantId = "121212";
+        const string merchantSecret = "testSecret456";
+        const string statusCode = "2";
+        var hashedSecret = Convert.ToHexString(
+            MD5.HashData(Encoding.UTF8.GetBytes(merchantSecret))).ToUpperInvariant();
+        var signaturePayload = $"{merchantId}{orderId}{amount}{currency}{statusCode}{hashedSecret}";
+        var signature = Convert.ToHexString(
+            MD5.HashData(Encoding.UTF8.GetBytes(signaturePayload))).ToUpperInvariant();
+
+        return new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["merchant_id"] = merchantId,
+            ["order_id"] = orderId,
+            ["payment_id"] = paymentId,
+            ["payhere_amount"] = amount,
+            ["payhere_currency"] = currency,
+            ["status_code"] = statusCode,
+            ["md5sig"] = signature
+        });
     }
 }

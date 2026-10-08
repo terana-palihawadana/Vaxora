@@ -99,6 +99,30 @@ class AuthRepository {
     );
   }
 
+  static Future<void> requestPasswordReset({required String email}) async {
+    await ApiClient.post(
+      ApiConstants.forgotPassword,
+      body: {'email': email.trim()},
+    );
+  }
+
+  static Future<void> resetPassword({
+    required String email,
+    required String resetToken,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    await ApiClient.post(
+      ApiConstants.resetPassword,
+      body: {
+        'email': email.trim(),
+        'resetToken': resetToken.trim(),
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      },
+    );
+  }
+
   static Future<Map<String, dynamic>> registerPatient({
     required String email,
     required String password,

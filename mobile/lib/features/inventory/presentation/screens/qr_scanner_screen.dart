@@ -7,7 +7,11 @@ import '../../data/repositories/inventory_repository.dart';
 import 'batch_detail_screen.dart';
 
 class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+  /// When set, the scanner resolves against these lots and pops the matched
+  /// [BatchModel] instead of opening the batch detail screen.
+  final List<BatchModel>? pickFromLots;
+
+  const QrScannerScreen({super.key, this.pickFromLots});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -45,7 +49,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     await _controller.stop();
 
     try {
-      final batches = await InventoryRepository.getBatches();
+      final batches =
+          widget.pickFromLots ?? await InventoryRepository.getBatches();
 
       BatchModel? match;
       for (final b in batches) {
@@ -57,13 +62,19 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (match != null) {
         if (!mounted) return;
+        if (widget.pickFromLots != null) {
+          Navigator.of(context).pop(match);
+          return;
+        }
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => BatchDetailScreen(batch: match!)),
         );
       } else {
         if (!mounted) return;
         setState(() {
-          _errorMessage = 'No batch found matching: "$rawValue"';
+          _errorMessage = widget.pickFromLots != null
+              ? 'Scanned lot "$rawValue" is not usable stock for this vaccine.'
+              : 'No batch found matching: "$rawValue"';
           _isProcessing = false;
         });
         await _controller.start();

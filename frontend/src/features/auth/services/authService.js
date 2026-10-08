@@ -72,26 +72,63 @@ export const clearAuth = () => {
   emitAuthUserUpdated();
 };
 
-/**
- * Generic API request wrapper with auth header & error handling
- */
-async function apiRequest(endpoint, options = {}) {
-  const token = getToken();
+/** Single in-flight refresh so concurrent 401s share one rotation. */
+let refreshInFlight = null;
+
+function parseErrorMessage(data) {
+  let errorMessage = 'Request failed';
+  if (typeof data === 'object' && data !== null) {
+    if (data.message) {
+      errorMessage = data.message;
+    } else if (data.errors && typeof data.errors === 'object') {
+      const fieldErrors = Object.values(data.errors).flat();
+      if (fieldErrors.length > 0) {
+        errorMessage = fieldErrors.join(' ');
+      } else if (data.title) {
+        errorMessage = data.title;
+      }
+    } else if (data.title) {
+      errorMessage = data.title;
+    }
+  } else if (typeof data === 'string' && data) {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed.message) errorMessage = parsed.message;
+      else if (parsed.errors) errorMessage = Object.values(parsed.errors).flat().join(' ');
+      else if (parsed.title) errorMessage = parsed.title;
+      else errorMessage = data;
+    } catch {
+      errorMessage = data;
+    }
+  }
+  return errorMessage;
+}
+
+async function fetchJson(endpoint, options = {}) {
+  const {
+    skipAuth = false,
+    skipAuthRefresh = false,
+    headers: optionHeaders,
+    ...fetchOptions
+  } = options;
+
   const headers = {
-    ...(options.headers || {}),
+    ...(optionHeaders || {}),
   };
 
-  // Only set Content-Type to application/json if not sending FormData
-  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+  if (!(fetchOptions.body instanceof FormData) && !headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+  if (!skipAuth) {
+    const token = getToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
   }
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
+    ...fetchOptions,
     headers,
   });
 
@@ -99,36 +136,84 @@ async function apiRequest(endpoint, options = {}) {
   const isJson = contentType && contentType.includes('application/json');
   const data = isJson ? await response.json() : await response.text();
 
-  if (!response.ok) {
-    let errorMessage = 'Request failed';
-    if (typeof data === 'object' && data !== null) {
-      if (data.message) {
-        errorMessage = data.message;
-      } else if (data.errors && typeof data.errors === 'object') {
-        const fieldErrors = Object.values(data.errors).flat();
-        if (fieldErrors.length > 0) {
-          errorMessage = fieldErrors.join(' ');
-        } else if (data.title) {
-          errorMessage = data.title;
-        }
-      } else if (data.title) {
-        errorMessage = data.title;
-      }
-    } else if (typeof data === 'string' && data) {
-      try {
-        const parsed = JSON.parse(data);
-        if (parsed.message) errorMessage = parsed.message;
-        else if (parsed.errors) errorMessage = Object.values(parsed.errors).flat().join(' ');
-        else if (parsed.title) errorMessage = parsed.title;
-        else errorMessage = data;
-      } catch {
-        errorMessage = data;
-      }
+  return { response, data };
+}
+
+async function refreshSessionOnce() {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) throw new Error('No refresh token available');
+
+    const { response, data } = await fetchJson('/auth/refresh-token', {
+      method: 'POST',
+      body: JSON.stringify({ refreshToken }),
+      skipAuth: true,
+      skipAuthRefresh: true,
+    });
+
+    if (!response.ok) {
+      clearAuth();
+      throw new Error(parseErrorMessage(data));
     }
-    throw new Error(errorMessage);
+
+    if (data.token) {
+      setSession(data.token, data.refreshToken, data.user);
+    }
+    return data;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
+/**
+ * Generic API request wrapper with auth header, 401 refresh retry, and error handling.
+ */
+async function apiRequest(endpoint, options = {}) {
+  const { skipAuthRefresh = false, ...requestOptions } = options;
+  let { response, data } = await fetchJson(endpoint, requestOptions);
+
+  if (
+    response.status === 401 &&
+    !skipAuthRefresh &&
+    !endpoint.includes('/auth/login') &&
+    !endpoint.includes('/auth/refresh-token') &&
+    getRefreshToken()
+  ) {
+    try {
+      await refreshSessionOnce();
+      ({ response, data } = await fetchJson(endpoint, requestOptions));
+    } catch {
+      clearAuth();
+      throw new Error(parseErrorMessage(data) || 'Session expired. Please sign in again.');
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(parseErrorMessage(data));
   }
 
   return data;
+}
+
+// Cross-tab logout: when another tab clears the session, leave protected pages here too.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (
+      (event.key === 'vaxora_token' || event.key === 'vaxora_refresh_token') &&
+      event.newValue === null &&
+      event.oldValue
+    ) {
+      emitAuthUserUpdated();
+      const path = window.location.pathname || '';
+      if (!path.startsWith('/login') && !path.startsWith('/signup')) {
+        window.location.assign('/login');
+      }
+    }
+  });
 }
 
 export const authService = {
@@ -227,24 +312,18 @@ export const authService = {
 
   // 7. Refresh Token
   async refreshToken() {
-    const refreshToken = getRefreshToken();
-    if (!refreshToken) throw new Error('No refresh token available');
-
-    const data = await apiRequest('/auth/refresh-token', {
-      method: 'POST',
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    if (data.token) {
-      setSession(data.token, data.refreshToken, data.user);
-    }
-    return data;
+    return refreshSessionOnce();
   },
 
-  // 8. Logout
+  // 8. Logout — always clear local session; revoke server refresh even if access JWT expired
   async logout() {
+    const refreshToken = getRefreshToken();
     try {
-      await apiRequest('/auth/logout', { method: 'POST' });
+      await apiRequest('/auth/logout', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+        skipAuthRefresh: true,
+      });
     } catch (err) {
       console.warn('Logout API error:', err);
     } finally {

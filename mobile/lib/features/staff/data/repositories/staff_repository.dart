@@ -114,6 +114,11 @@ class StaffRepository {
 
   /// Status values: Confirmed, Administering, Observation, Completed, Cancelled, Rejected.
   /// Optional [administration] fields are used when certifying to Observation.
+  /// Marks a patient as arrived (today only).
+  static Future<void> checkIn(String appointmentId) async {
+    await ApiClient.post(ApiConstants.appointmentCheckIn(appointmentId));
+  }
+
   static Future<StaffAppointmentModel> updateAppointmentStatus({
     required String appointmentId,
     required String status,
@@ -139,6 +144,28 @@ class StaffRepository {
       return StaffAppointmentModel.fromJson(response);
     }
     throw ApiException('Failed to update appointment status.');
+  }
+
+  /// Clock in (OnDuty), take a break (OnBreak) or clock out (Off).
+  static Future<void> updateDutyStatus({
+    required String affiliationId,
+    required String dutyStatus,
+  }) async {
+    await ApiClient.put(
+      ApiConstants.hospitalAffiliationDuty(affiliationId),
+      body: {'dutyStatus': dutyStatus},
+    );
+  }
+
+  /// Doctor-only: prescribe or amend the dose before the nurse administers it.
+  static Future<void> updateDosage({
+    required String appointmentId,
+    required String dosage,
+  }) async {
+    await ApiClient.put(
+      ApiConstants.appointmentDosage(appointmentId),
+      body: {'dosage': dosage.trim()},
+    );
   }
 
   /// Clinical AEFI report: care, dose documentation, and follow-up visit.

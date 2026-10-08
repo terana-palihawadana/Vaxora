@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 
 const DEFAULT_LIST = [
   'Pfizer-BioNTech Bivalent (mRNA)',
@@ -14,6 +14,7 @@ function emptyForm() {
   return {
     vaccineName: '',
     customVaccineName: '',
+    category: 'routine',
     lotNumber: '',
     quantity: '',
     expiryDate: '',
@@ -28,21 +29,32 @@ export default function RestockVaccineModal({
   onAddStock,
   registeredVaccines = [],
 }) {
-  const vaccineOptions = registeredVaccines.length > 0 ? registeredVaccines : DEFAULT_LIST;
-  const wasOpenRef = useRef(false);
+  // Accept either string names or formulary row objects { name / vaccineName }
+  const vaccineOptions = (
+    registeredVaccines.length > 0 ? registeredVaccines : DEFAULT_LIST
+  )
+    .map((v) => (typeof v === 'string' ? v : String(v?.name || v?.vaccineName || '').trim()))
+    .filter(Boolean);
 
   const [formData, setFormData] = useState(emptyForm);
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Clear only when opening — never refill with demo defaults.
-  useEffect(() => {
-    if (isOpen && !wasOpenRef.current) {
+  // Reset before paint when opening, and again when closing — avoids flashing custom-mode UI.
+  useLayoutEffect(() => {
+    if (isOpen) {
       setIsCustomMode(false);
       setSubmitting(false);
       setFormData(emptyForm());
     }
-    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsCustomMode(false);
+      setSubmitting(false);
+      setFormData(emptyForm());
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -90,6 +102,7 @@ export default function RestockVaccineModal({
         storageUnit: formData.storageUnit,
         expiryDate: formData.expiryDate || undefined,
         supplier: formData.supplier.trim(),
+        ...(isCustomMode ? { category: formData.category || 'routine' } : {}),
       });
       setIsCustomMode(false);
       setFormData(emptyForm());
@@ -106,21 +119,46 @@ export default function RestockVaccineModal({
       <div className="hospital-modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
-            <h3 style={{ margin: 0 }}>Log Vaccine Restock Shipment</h3>
+            <h3 style={{ margin: 0 }}>
+              {isCustomMode ? 'Add new vaccine product' : 'Log Vaccine Restock Shipment'}
+            </h3>
             <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#64748b' }}>
-              Select from hospital-registered vaccine formulations or enter a new product name.
+              {isCustomMode
+                ? 'Enter the product details, then continue with lot and vault info below.'
+                : 'Select from hospital-registered vaccine formulations or enter a new product name.'}
             </p>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose} disabled={submitting}>
-            &times;
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {isCustomMode && (
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => {
+                  setIsCustomMode(false);
+                  setFormData((prev) => ({
+                    ...prev,
+                    vaccineName: '',
+                    customVaccineName: '',
+                    category: 'routine',
+                  }));
+                }}
+                disabled={submitting}
+                style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+              >
+                ← Back to list
+              </button>
+            )}
+            <button type="button" className="modal-close-btn" onClick={onClose} disabled={submitting}>
+              &times;
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
           <div className="modal-body">
-            <div className="modal-form-group">
-              <label className="modal-label">Vaccine Product Formulation *</label>
-              {!isCustomMode ? (
+            {!isCustomMode ? (
+              <div className="modal-form-group">
+                <label className="modal-label">Vaccine product *</label>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <select
                     name="vaccineName"
@@ -139,7 +177,7 @@ export default function RestockVaccineModal({
                         {name}
                       </option>
                     ))}
-                    <option value="__custom__">✨ + Enter a New Vaccine Product Name...</option>
+                    <option value="__custom__">+ Enter a new vaccine product…</option>
                   </select>
                   <button
                     type="button"
@@ -154,45 +192,57 @@ export default function RestockVaccineModal({
                     + New
                   </button>
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <div style={{ display: 'flex', gap: '8px' }}>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(140px, 0.65fr)', gap: '12px' }}>
+                  <div className="modal-form-group">
+                    <label className="modal-label" htmlFor="restock-custom-name">
+                      New product name *
+                    </label>
                     <input
+                      id="restock-custom-name"
                       type="text"
                       name="customVaccineName"
                       value={formData.customVaccineName}
                       onChange={handleChange}
-                      placeholder="e.g. Sinopharm BBIBP-CorV or AstraZeneca Vaxzevria"
+                      placeholder="e.g. Sinopharm BBIBP-CorV"
                       required
                       className="modal-input"
-                      style={{ flex: 1, borderColor: '#19469d' }}
                       autoFocus
                       disabled={submitting}
                       autoComplete="off"
                     />
-                    <button
-                      type="button"
-                      className="btn-quick-adjust btn-adjust-minus"
-                      onClick={() => {
-                        setIsCustomMode(false);
-                        setFormData((prev) => ({ ...prev, vaccineName: '', customVaccineName: '' }));
-                      }}
-                      style={{ padding: '0 12px', fontSize: '0.8rem' }}
-                      disabled={submitting}
-                    >
-                      Back to list
-                    </button>
                   </div>
-                  <span style={{ fontSize: '0.76rem', color: '#2563eb' }}>
-                    💡 New products are saved to your formulary when the shipment is committed.
-                  </span>
+                  <div className="modal-form-group">
+                    <label className="modal-label" htmlFor="restock-vaccine-category">
+                      Category *
+                    </label>
+                    <select
+                      id="restock-vaccine-category"
+                      name="category"
+                      value={formData.category}
+                      onChange={handleChange}
+                      className="modal-select"
+                      disabled={submitting}
+                      required
+                    >
+                      <option value="routine">Routine</option>
+                      <option value="mrna">mRNA</option>
+                      <option value="seasonal">Seasonal</option>
+                      <option value="pediatric">Pediatric</option>
+                    </select>
+                  </div>
                 </div>
-              )}
-            </div>
+                <p style={{ margin: '-4px 0 12px', fontSize: '0.76rem', color: '#64748b' }}>
+                  New products are saved to your formulary when the shipment is committed.
+                </p>
+              </>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="modal-form-group">
-                <label className="modal-label">Batch / Lot Number *</label>
+                <label className="modal-label">Batch / lot number *</label>
                 <input
                   type="text"
                   name="lotNumber"
@@ -206,7 +256,7 @@ export default function RestockVaccineModal({
                 />
               </div>
               <div className="modal-form-group">
-                <label className="modal-label">Quantity Received (Vials) *</label>
+                <label className="modal-label">Quantity received (vials) *</label>
                 <input
                   type="number"
                   name="quantity"
@@ -223,7 +273,7 @@ export default function RestockVaccineModal({
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="modal-form-group">
-                <label className="modal-label">Expiry Date</label>
+                <label className="modal-label">Expiry date</label>
                 <input
                   type="date"
                   name="expiryDate"
@@ -234,7 +284,7 @@ export default function RestockVaccineModal({
                 />
               </div>
               <div className="modal-form-group">
-                <label className="modal-label">Assigned Cold Vault *</label>
+                <label className="modal-label">Assigned cold vault *</label>
                 <select
                   name="storageUnit"
                   value={formData.storageUnit}
@@ -254,7 +304,7 @@ export default function RestockVaccineModal({
             </div>
 
             <div className="modal-form-group">
-              <label className="modal-label">Authorized Supplier / Batch Dispatch</label>
+              <label className="modal-label">Authorized supplier / batch dispatch</label>
               <input
                 type="text"
                 name="supplier"

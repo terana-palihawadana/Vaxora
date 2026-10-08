@@ -1,5 +1,6 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useEffect, useMemo, useState } from 'react';
+import ClinicalContextPanel from './ClinicalContextPanel';
 
 /** Blank administration record. Confirmations start unticked so the clinician must sign off. */
 const emptyAdministration = {
@@ -9,6 +10,7 @@ const emptyAdministration = {
   route: 'Intramuscular (IM)',
   dosage: '',
   notes: '',
+  doseConfirmed: false,
   consentConfirmed: false,
   vitalsConfirmed: false,
 };
@@ -19,6 +21,7 @@ export default function ClinicalAdministerModal({
   patient,
   onCertify,
   lotOptions = [],
+  isDoctor = false,
 }) {
   const [formData, setFormData] = useState(emptyAdministration);
   const [submitting, setSubmitting] = useState(false);
@@ -63,8 +66,8 @@ export default function ClinicalAdministerModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.consentConfirmed || !formData.vitalsConfirmed) {
-      alert('Please confirm informed consent and pre-vaccination vitals checklist.');
+    if (!formData.doseConfirmed || !formData.consentConfirmed || !formData.vitalsConfirmed) {
+      alert('Please confirm the prescribed dose, informed consent and pre-vaccination vitals.');
       return;
     }
     if (!formData.batchId && !formData.lotNumber) {
@@ -76,7 +79,7 @@ export default function ClinicalAdministerModal({
       await onCertify({
         ...patient,
         administrationDetails: formData,
-        administeredAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        administeredAt: new Date().toISOString(),
       });
       onClose();
     } catch {
@@ -132,6 +135,8 @@ export default function ClinicalAdministerModal({
               </div>
             </div>
 
+            <ClinicalContextPanel patientProfileId={patient.patientProfileId} />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               <div className="doctor-form-group">
                 <label className="doctor-form-label">Vaccine Lot / Batch #</label>
@@ -157,15 +162,21 @@ export default function ClinicalAdministerModal({
               </div>
 
               <div className="doctor-form-group">
-                <label className="doctor-form-label">Dosage &amp; Volume</label>
+                <label className="doctor-form-label">Prescribed dose (locked)</label>
                 <input
                   type="text"
                   className="doctor-form-input"
                   value={formData.dosage}
-                  onChange={(e) => setFormData({ ...formData, dosage: e.target.value })}
                   required
+                  readOnly
                   disabled={submitting}
+                  title="Locked once administration starts — return the patient to the queue to change it"
                 />
+                {!isDoctor && (
+                  <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                    Prescribed by {patient.prescribedBy || 'the doctor'}. Contact the doctor to change it.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -202,6 +213,15 @@ export default function ClinicalAdministerModal({
             </div>
 
             <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '10px', padding: '12px 14px', margin: '14px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#065f46', cursor: 'pointer', marginBottom: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={formData.doseConfirmed}
+                  onChange={(e) => setFormData({ ...formData, doseConfirmed: e.target.checked })}
+                  disabled={submitting}
+                />
+                Prescribed dose checked against the doctor&apos;s order ({patient?.dose || 'not set'})
+              </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#065f46', cursor: 'pointer', marginBottom: '8px' }}>
                 <input
                   type="checkbox"

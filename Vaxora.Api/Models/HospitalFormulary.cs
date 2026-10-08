@@ -17,6 +17,10 @@ public class HospitalFormulary
 
     public DateTime RegisteredAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>Hospital fee per person in LKR for this vaccine (0 = Free / subsidized).</summary>
+    [Range(0, 1000000)]
+    public decimal Price { get; set; } = 0.00m;
+
     // Navigation
     [ForeignKey(nameof(HospitalProfileId))]
     public virtual HospitalProfile HospitalProfile { get; set; } = null!;

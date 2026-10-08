@@ -7,8 +7,6 @@ public class AvailableDateDto
     public string Date { get; set; } = string.Empty; // "2026-09-16"
     public string DayOfWeek { get; set; } = string.Empty; // "Wednesday"
     public string DisplayText { get; set; } = string.Empty; // "2026-09-16 (Wednesday) - 09:00 AM to 11:00 AM"
-    public string? DoctorName { get; set; }
-    public string? NurseName { get; set; }
     public Guid? BoothId { get; set; }
     public string? BoothLabel { get; set; }
     public string StartTime { get; set; } = string.Empty;
@@ -23,8 +21,16 @@ public class TimeSlotDto
     public string Slot { get; set; } = string.Empty; // "09:00 AM - 09:20 AM"
     public string StartTime { get; set; } = string.Empty; // "09:00"
     public string EndTime { get; set; } = string.Empty; // "09:20"
+    /// <summary>True when this 20-min band has reached capacity (typically 3 patients).</summary>
     public bool IsBooked { get; set; }
-    public string DisplayStatus => IsBooked ? "Booked (Unavailable)" : "Available";
+    public int BookedCount { get; set; }
+    public int Capacity { get; set; } = 3;
+    public int SeatsRemaining => Math.Max(0, Capacity - BookedCount);
+    public string DisplayStatus => IsBooked
+        ? "Full (Unavailable)"
+        : SeatsRemaining == Capacity
+            ? "Available"
+            : $"{SeatsRemaining} seat(s) left";
 }
 
 public class BookAppointmentRequestDto
@@ -54,6 +60,7 @@ public class AppointmentResponseDto
 {
     public Guid Id { get; set; }
     public Guid? PatientUserId { get; set; }
+    public Guid? PatientProfileId { get; set; }
     public string PatientName { get; set; } = string.Empty;
     public string? PatientNic { get; set; }
     public string? PatientPhone { get; set; }
@@ -75,13 +82,26 @@ public class AppointmentResponseDto
     public string PaymentStatus { get; set; } = "Paid";
     public string? PaymentTransactionId { get; set; }
     public string? Notes { get; set; }
+    public Guid? BoothId { get; set; }
     public string? BoothLabel { get; set; }
     public string? PrescribedDosage { get; set; }
     public Guid? PrescribedByDoctorUserId { get; set; }
     public string? PrescribedByDoctorName { get; set; }
     public DateTime? DosageUpdatedAt { get; set; }
+    public DateTime? CheckedInAt { get; set; }
+    /// <summary>Walk-in registration matched the patient's existing booking for today (checked in, not duplicated).</summary>
+    public bool MatchedExistingBooking { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+}
+
+/// <summary>Patient identifiers for affiliated staff after explicit contact reveal.</summary>
+public class StaffAppointmentPatientContactDto
+{
+    public Guid AppointmentId { get; set; }
+    public string? PatientNic { get; set; }
+    public string? PatientPhone { get; set; }
+    public string? PatientEmail { get; set; }
 }
 
 public class UpdateAppointmentStatusDto
@@ -116,6 +136,9 @@ public class UpdateAppointmentStatusDto
     public bool? ConsentConfirmed { get; set; }
 
     public bool? VitalsConfirmed { get; set; }
+
+    /// <summary>Administering staff confirm the doctor's prescribed dose before giving it.</summary>
+    public bool? DoseConfirmed { get; set; }
 }
 
 public class CreateWalkInAppointmentDto
@@ -184,17 +207,6 @@ public class ConfirmPayHerePaymentRequestDto
 {
     [Required]
     public Guid AppointmentId { get; set; }
-
-    /// <summary>Optional legacy field. Alone it is not enough to mark an appointment paid.</summary>
-    public string? PaymentId { get; set; }
-
-    /// <summary>Optional PayHere notify proof — required together to confirm from the client.</summary>
-    public string? MerchantId { get; set; }
-    public string? OrderId { get; set; }
-    public string? PayhereAmount { get; set; }
-    public string? PayhereCurrency { get; set; }
-    public string? StatusCode { get; set; }
-    public string? Md5Sig { get; set; }
 }
 
 public class ReportAefiDto

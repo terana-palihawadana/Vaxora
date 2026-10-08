@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -80,10 +79,8 @@ public class PaymentController : ControllerBase
     }
 
     /// <summary>
-    /// Sync PayHere payment status for the patient UI after checkout.
-    /// Does NOT trust client-supplied payment ids alone. Marks Paid only when:
-    /// 1) IPN already confirmed the appointment, or
-    /// 2) Client forwards a verified PayHere notify signature payload.
+    /// Returns the server-confirmed PayHere payment status for the patient UI.
+    /// Only the signed PayHere IPN can transition an appointment to Paid.
     /// </summary>
     [HttpPost("confirm")]
     [Authorize]
@@ -115,84 +112,11 @@ public class PaymentController : ControllerBase
             });
         }
 
-        var hasProof =
-            !string.IsNullOrWhiteSpace(dto.MerchantId) &&
-            !string.IsNullOrWhiteSpace(dto.OrderId) &&
-            !string.IsNullOrWhiteSpace(dto.PaymentId) &&
-            !string.IsNullOrWhiteSpace(dto.PayhereAmount) &&
-            !string.IsNullOrWhiteSpace(dto.PayhereCurrency) &&
-            !string.IsNullOrWhiteSpace(dto.StatusCode) &&
-            !string.IsNullOrWhiteSpace(dto.Md5Sig);
-
-        if (!hasProof)
+        return Accepted(new
         {
-            if (!string.IsNullOrWhiteSpace(dto.PaymentId))
-            {
-                var appResult = await _appointmentService.ConfirmPayHerePaymentAsync(
-                    appointment.Id,
-                    dto.PaymentId,
-                    dto.OrderId ?? _payHereService.BuildOrderId(appointment.Id));
-
-                return Ok(new
-                {
-                    message = "Payment confirmed successfully. Booking confirmed and emails sent.",
-                    confirmed = true,
-                    appointment = appResult
-                });
-            }
-
-            return Accepted(new
-            {
-                message =
-                    "Waiting for PayHere payment notification. Refresh in a moment, or ask the hospital desk to Mark paid if you paid at the counter.",
-                confirmed = false,
-                appointment
-            });
-        }
-
-        if (!_payHereService.VerifyNotification(
-                dto.MerchantId!,
-                dto.OrderId!,
-                dto.PayhereAmount!,
-                dto.PayhereCurrency!,
-                dto.StatusCode!,
-                dto.Md5Sig!))
-        {
-            _logger.LogWarning(
-                "Rejected forged/invalid PayHere client confirm for Appointment {AppId}",
-                appointment.Id);
-            return BadRequest(new { message = "Invalid PayHere payment signature." });
-        }
-
-        if (dto.StatusCode != "2")
-        {
-            return BadRequest(new { message = $"PayHere payment was not successful (status {dto.StatusCode})." });
-        }
-
-        if (!_payHereService.MatchesOrderId(appointment.Id, dto.OrderId))
-        {
-            return BadRequest(new { message = "PayHere order id does not match this appointment." });
-        }
-
-        if (!_payHereService.TryParseAmount(dto.PayhereAmount, out var paidAmount) ||
-            Math.Abs(paidAmount - appointment.Fee) > 0.01m)
-        {
-            return BadRequest(new
-            {
-                message = $"PayHere amount {dto.PayhereAmount} does not match appointment fee {appointment.Fee.ToString("0.00", CultureInfo.InvariantCulture)}."
-            });
-        }
-
-        var result = await _appointmentService.ConfirmPayHerePaymentAsync(
-            appointment.Id,
-            dto.PaymentId!,
-            dto.OrderId);
-
-        return Ok(new
-        {
-            message = "Payment confirmed successfully. Booking confirmed and emails sent.",
-            confirmed = true,
-            appointment = result
+            message = "Waiting for PayHere payment notification.",
+            confirmed = false,
+            appointment
         });
     }
 
@@ -247,6 +171,22 @@ public class PaymentController : ControllerBase
             {
                 _logger.LogWarning("PayHere IPN: Could not locate appointment matching OrderId {OrderId}", orderId);
                 return Ok("Notification processed");
+            }
+
+            if (!_payHereService.MatchesOrderId(appointment.Id, orderId))
+            {
+                _logger.LogWarning(
+                    "PayHere IPN order id mismatch for Appointment {AppId}. Order={OrderId}",
+                    appointment.Id, orderId);
+                return BadRequest("Order id mismatch");
+            }
+
+            if (!string.Equals(payhereCurrency, "LKR", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning(
+                    "PayHere IPN currency mismatch for Appointment {AppId}. Currency={Currency}",
+                    appointment.Id, payhereCurrency);
+                return BadRequest("Currency mismatch");
             }
 
             if (!_payHereService.TryParseAmount(payhereAmount, out var paidAmount) ||

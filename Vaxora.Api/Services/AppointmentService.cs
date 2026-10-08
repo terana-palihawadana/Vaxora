@@ -14,12 +14,20 @@ public interface IAppointmentService
     Task<AppointmentResponseDto> CreateWalkInAppointmentAsync(Guid hospitalUserId, CreateWalkInAppointmentDto dto);
     Task<List<AppointmentResponseDto>> GetPatientAppointmentsAsync(Guid patientUserId);
     Task<List<AppointmentResponseDto>> GetHospitalAppointmentsAsync(Guid hospitalUserId, DateOnly? date = null, string? status = null);
-    Task<List<AppointmentResponseDto>> GetStaffHospitalAppointmentsAsync(Guid staffUserId, Guid hospitalUserId, DateOnly? date = null);
+    Task<List<AppointmentResponseDto>> GetStaffHospitalAppointmentsAsync(
+        Guid staffUserId,
+        Guid hospitalUserId,
+        DateOnly? date = null);
+    Task<StaffAppointmentPatientContactDto> GetStaffAppointmentPatientContactAsync(
+        Guid staffUserId,
+        Guid appointmentId);
     /// <summary>
     /// Update appointment status. Actor may be the owning hospital, or an active
     /// doctor/nurse affiliated with that hospital.
     /// </summary>
     Task<AppointmentResponseDto> UpdateAppointmentStatusAsync(Guid actorUserId, Guid appointmentId, UpdateAppointmentStatusDto dto);
+    /// <summary>Marks a patient as arrived (hospital desk or affiliated staff), today only.</summary>
+    Task<AppointmentResponseDto> CheckInAsync(Guid actorUserId, Guid appointmentId);
     Task<bool> CancelAppointmentAsync(Guid userId, string idOrRef, bool isHospital = false);
     Task<bool> CancelAppointmentAsync(Guid userId, Guid appointmentId, bool isHospital = false);
     Task<AppointmentResponseDto> ConfirmPayHerePaymentAsync(Guid appointmentId, string transactionId, string? orderId = null);
@@ -45,10 +53,13 @@ public class AppointmentService : IAppointmentService
         };
 
     /// <summary>
-    /// Clinical transitions that require the doctor/nurse to be on an active shift.
-    /// Hospital owners are exempt (they update without a staff shift).
+    /// Clinical session transitions that only doctors/nurses may perform (not hospital desk).
+    /// Also used for payment-settled checks before administration.
     /// </summary>
-    private static readonly HashSet<string> OnDutyRequiredStatuses =
+    /// <summary>Minimum post-vaccination observation before discharge.</summary>
+    private const int ObservationMinutes = 15;
+
+    private static readonly HashSet<string> ClinicalSessionStatuses =
         new(StringComparer.OrdinalIgnoreCase)
         {
             "Administering",
@@ -90,7 +101,7 @@ public class AppointmentService : IAppointmentService
 
         var schedules = await _context.VaccineSchedules
             .AsNoTracking()
-            .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId.HasValue && s.HospitalProfileId == resolvedProfileId.Value)) &&
+            .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId != null && s.HospitalProfileId == resolvedProfileId)) &&
                         s.Status == "Active" &&
                         s.VaccineName.ToLower().Contains(vName))
             .ToListAsync();
@@ -100,11 +111,12 @@ public class AppointmentService : IAppointmentService
             // Fallback: check all active schedules for this hospital if vaccine matching is broad
             schedules = await _context.VaccineSchedules
                 .AsNoTracking()
-                .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId.HasValue && s.HospitalProfileId == resolvedProfileId.Value)) && s.Status == "Active")
+                .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId != null && s.HospitalProfileId == resolvedProfileId)) && s.Status == "Active")
                 .ToListAsync();
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = StaffDutyHelper.HospitalToday();
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
         var maxLookahead = today.AddDays(60);
         var availableDates = new List<AvailableDateDto>();
 
@@ -114,8 +126,10 @@ public class AppointmentService : IAppointmentService
 
             if (!isWeekly)
             {
-                // One-time schedule
-                if (schedule.SpecificDate.HasValue && schedule.SpecificDate.Value >= today)
+                // One-time schedule — skip fully elapsed windows
+                if (schedule.SpecificDate.HasValue &&
+                    schedule.SpecificDate.Value >= today &&
+                    HasBookableRemainder(schedule.SpecificDate.Value, schedule.EndTime, today, now))
                 {
                     var date = schedule.SpecificDate.Value;
                     var dayName = date.DayOfWeek.ToString();
@@ -125,11 +139,7 @@ public class AppointmentService : IAppointmentService
                     {
                         Date = date.ToString("yyyy-MM-dd"),
                         DayOfWeek = dayName,
-                        DisplayText = string.IsNullOrWhiteSpace(schedule.DoctorName)
-                            ? $"{date:yyyy-MM-dd} ({dayName}) - {formattedTime}"
-                            : $"{date:yyyy-MM-dd} ({dayName}) - {formattedTime} (Dr. {schedule.DoctorName})",
-                        DoctorName = schedule.DoctorName,
-                        NurseName = schedule.NurseName,
+                        DisplayText = $"{date:yyyy-MM-dd} ({dayName}) - {formattedTime}",
                         BoothId = schedule.BoothId,
                         BoothLabel = schedule.BoothLabel,
                         StartTime = schedule.StartTime,
@@ -161,6 +171,9 @@ public class AppointmentService : IAppointmentService
 
                 for (var cur = startDate; cur <= endDate; cur = cur.AddDays(1))
                 {
+                    if (!HasBookableRemainder(cur, schedule.EndTime, today, now))
+                        continue;
+
                     var dayName = cur.DayOfWeek.ToString();
                     var dayShort = dayName[..Math.Min(3, dayName.Length)];
 
@@ -174,11 +187,7 @@ public class AppointmentService : IAppointmentService
                         {
                             Date = cur.ToString("yyyy-MM-dd"),
                             DayOfWeek = dayName,
-                            DisplayText = string.IsNullOrWhiteSpace(schedule.DoctorName)
-                                ? $"{cur:yyyy-MM-dd} ({dayName}) - {formattedTime}"
-                                : $"{cur:yyyy-MM-dd} ({dayName}) - {formattedTime} (Dr. {schedule.DoctorName})",
-                            DoctorName = schedule.DoctorName,
-                            NurseName = schedule.NurseName,
+                            DisplayText = $"{cur:yyyy-MM-dd} ({dayName}) - {formattedTime}",
                             BoothId = schedule.BoothId,
                             BoothLabel = schedule.BoothLabel,
                             StartTime = schedule.StartTime,
@@ -200,6 +209,17 @@ public class AppointmentService : IAppointmentService
             .ToList();
     }
 
+    /// <summary>False when the clinic window for this date has already ended.</summary>
+    private static bool HasBookableRemainder(DateOnly date, string? endTimeStr, DateOnly today, TimeOnly now)
+    {
+        if (date < today) return false;
+        if (date > today) return true;
+        if (!TryParseTime(endTimeStr ?? string.Empty, out var endTime)) return true;
+        // Need at least one 20-min band still available → last slot starts at end-20.
+        var lastSlotStart = endTime.AddMinutes(-20);
+        return lastSlotStart >= now;
+    }
+
     public async Task<List<TimeSlotDto>> GetAvailableTimeSlotsAsync(Guid hospitalUserId, string vaccineName, DateOnly date)
     {
         var dayName = date.DayOfWeek.ToString();
@@ -216,7 +236,7 @@ public class AppointmentService : IAppointmentService
         var vName = vaccineName.Trim().ToLowerInvariant();
         var schedules = await _context.VaccineSchedules
             .AsNoTracking()
-            .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId.HasValue && s.HospitalProfileId == resolvedProfileId.Value)) &&
+            .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId != null && s.HospitalProfileId == resolvedProfileId)) &&
                         s.Status == "Active" &&
                         (string.IsNullOrWhiteSpace(vName) || s.VaccineName.ToLower().Contains(vName)))
             .ToListAsync();
@@ -250,26 +270,32 @@ public class AppointmentService : IAppointmentService
             matchingSchedules.Add(new VaccineSchedule
             {
                 StartTime = "09:00",
-                EndTime = "11:00",
-                DoctorName = "Physician on Duty",
-                NurseName = "Staff Nurse"
+                EndTime = "11:00"
             });
         }
 
         // Fetch already booked appointments for this hospital and date (not cancelled)
         var bookedAppointments = await _context.Appointments
             .AsNoTracking()
-            .Where(a => (a.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId.HasValue && a.HospitalProfileId == resolvedProfileId.Value)) &&
+            .Where(a => (a.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId != null && a.HospitalProfileId == resolvedProfileId)) &&
                         a.AppointmentDate == date &&
                         a.Status != "Cancelled" &&
                         a.Status != "Rejected")
             .ToListAsync();
 
-        var bookedSlots = bookedAppointments
-            .Select(a => a.TimeSlot.Trim())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var bookedCounts = bookedAppointments
+            .GroupBy(a => a.TimeSlot.Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
 
+        var capacity = ScheduleStockPlanner.PatientsPerSlot;
         var slots = new List<TimeSlotDto>();
+        var today = StaffDutyHelper.HospitalToday();
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
+
+        if (date < today)
+        {
+            return new List<TimeSlotDto>();
+        }
 
         foreach (var sch in matchingSchedules)
         {
@@ -277,8 +303,18 @@ public class AppointmentService : IAppointmentService
 
             foreach (var slot in scheduleSlots)
             {
-                var isBooked = bookedSlots.Contains(slot.Slot);
-                slot.IsBooked = isBooked;
+                // Hide slots that already started (or finished starting) for today.
+                if (date == today &&
+                    TryParseTime(slot.StartTime, out var slotStart) &&
+                    slotStart < now)
+                {
+                    continue;
+                }
+
+                bookedCounts.TryGetValue(slot.Slot, out var count);
+                slot.Capacity = capacity;
+                slot.BookedCount = count;
+                slot.IsBooked = count >= capacity;
                 slots.Add(slot);
             }
         }
@@ -288,6 +324,45 @@ public class AppointmentService : IAppointmentService
             .Select(g => g.First())
             .OrderBy(s => s.StartTime)
             .ToList();
+    }
+
+    private async Task InsertWithinSlotCapacityAsync(Appointment appointment, int slotCapacity)
+    {
+        if (!_context.Database.IsNpgsql())
+        {
+            _context.Appointments.Add(appointment);
+            await _context.SaveChangesAsync();
+            return;
+        }
+
+        var lockKey = $"slot:{appointment.HospitalUserId}:{appointment.AppointmentDate:yyyyMMdd}:{appointment.TimeSlot}";
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await _context.Database.BeginTransactionAsync();
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT pg_advisory_xact_lock(hashtextextended({lockKey}, 0))");
+
+            var booked = await _context.Appointments
+                .CountAsync(a => a.HospitalUserId == appointment.HospitalUserId &&
+                                 a.AppointmentDate == appointment.AppointmentDate &&
+                                 a.TimeSlot == appointment.TimeSlot &&
+                                 a.Status != "Cancelled" &&
+                                 a.Status != "Rejected");
+            if (booked >= slotCapacity)
+            {
+                throw new InvalidOperationException(
+                    $"The slot '{appointment.TimeSlot}' on {appointment.AppointmentDate:yyyy-MM-dd} is full " +
+                    $"({slotCapacity} patients). Please select a different time slot.");
+            }
+
+            if (_context.Entry(appointment).State == EntityState.Detached)
+            {
+                _context.Appointments.Add(appointment);
+            }
+            await _context.SaveChangesAsync();
+            await tx.CommitAsync();
+        });
     }
 
     public async Task<AppointmentResponseDto> BookAppointmentAsync(Guid patientUserId, BookAppointmentRequestDto dto)
@@ -312,17 +387,22 @@ public class AppointmentService : IAppointmentService
 
         var resolvedHospitalUserId = hospital.Id;
 
-        // Validate slot collision: 20-minute slots cannot be booked more than once
-        var existingAppointment = await _context.Appointments
-            .FirstOrDefaultAsync(a => a.HospitalUserId == resolvedHospitalUserId &&
-                                      a.AppointmentDate == dto.AppointmentDate &&
-                                      a.TimeSlot == dto.TimeSlot &&
-                                      a.Status != "Cancelled" &&
-                                      a.Status != "Rejected");
+        EnsureAppointmentNotInPast(dto.AppointmentDate, dto.TimeSlot);
 
-        if (existingAppointment != null)
+        // Capacity: up to PatientsPerSlot concurrent patients per 20-minute band
+        var slotCapacity = ScheduleStockPlanner.PatientsPerSlot;
+        var existingInSlot = await _context.Appointments
+            .CountAsync(a => a.HospitalUserId == resolvedHospitalUserId &&
+                             a.AppointmentDate == dto.AppointmentDate &&
+                             a.TimeSlot == dto.TimeSlot &&
+                             a.Status != "Cancelled" &&
+                             a.Status != "Rejected");
+
+        if (existingInSlot >= slotCapacity)
         {
-            throw new InvalidOperationException($"The slot '{dto.TimeSlot}' on {dto.AppointmentDate:yyyy-MM-dd} is already booked by another patient. Please select a different time slot.");
+            throw new InvalidOperationException(
+                $"The slot '{dto.TimeSlot}' on {dto.AppointmentDate:yyyy-MM-dd} is full " +
+                $"({slotCapacity} patients). Please select a different time slot.");
         }
 
         // Find matching active schedule for doctor/nurse attribution and fee calculation
@@ -404,10 +484,6 @@ public class AppointmentService : IAppointmentService
             VaccineScheduleId = schedule?.Id ?? dto.VaccineScheduleId,
             VaccineId = schedule?.VaccineId ?? dto.VaccineId,
             VaccineName = dto.VaccineName.Trim(),
-            DoctorUserId = schedule?.DoctorUserId,
-            DoctorName = schedule?.DoctorName,
-            NurseUserId = schedule?.NurseUserId,
-            NurseName = schedule?.NurseName,
             AppointmentDate = dto.AppointmentDate,
             TimeSlot = dto.TimeSlot.Trim(),
             Status = appointmentStatus,
@@ -418,8 +494,7 @@ public class AppointmentService : IAppointmentService
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Appointments.Add(appointment);
-        await _context.SaveChangesAsync();
+        await InsertWithinSlotCapacityAsync(appointment, slotCapacity);
 
         _logger.LogInformation("Appointment {AppId} created for Patient {Patient} at {Hospital} on {Date} ({Slot}) - Status: {Status}, Fee: {Fee}, PaymentMethod: {PaymentMethod}",
             appointment.Id, appointment.PatientName, appointment.HospitalName, appointment.AppointmentDate, appointment.TimeSlot, appointment.Status, appointment.Fee, appointment.PaymentMethod);
@@ -520,6 +595,40 @@ public class AppointmentService : IAppointmentService
             ? patient.PatientProfile!.FullName
             : presentedName;
 
+        // Already booked today for this vaccine: check in that booking instead of
+        // queueing the patient twice. A different vaccine still gets its own walk-in.
+        if (!createdAccount)
+        {
+            var hospitalDay = StaffDutyHelper.HospitalToday();
+            var wantedVaccine = vaccineName.ToLowerInvariant();
+            var todaysBookings = await _context.Appointments
+                .Include(a => a.VaccineSchedule)
+                .Where(a =>
+                    a.HospitalUserId == hospital.Id &&
+                    a.PatientUserId == patient.Id &&
+                    a.AppointmentDate == hospitalDay &&
+                    (a.Status == "Confirmed" || a.Status == "PendingPayment"))
+                .ToListAsync();
+            var existing = todaysBookings.FirstOrDefault(a =>
+            {
+                var booked = (a.VaccineName ?? string.Empty).Trim().ToLowerInvariant();
+                return booked.Length > 0 && (booked == wantedVaccine || booked.Contains(wantedVaccine) || wantedVaccine.Contains(booked));
+            });
+            if (existing != null)
+            {
+                if (existing.CheckedInAt == null)
+                {
+                    existing.CheckedInAt = DateTime.UtcNow;
+                    existing.CheckedInByUserId = hospital.Id;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                }
+                await _context.SaveChangesAsync();
+                var matched = MapToDto(existing);
+                matched.MatchedExistingBooking = true;
+                return matched;
+            }
+        }
+
         var hospitalNow = DateTime.UtcNow.AddHours(5.5);
         var today = DateOnly.FromDateTime(hospitalNow);
         var start = new TimeOnly(hospitalNow.Hour, hospitalNow.Minute);
@@ -539,13 +648,26 @@ public class AppointmentService : IAppointmentService
             timeSlot = $"{FormatTime12h(start)} - {FormatTime12h(end)}";
         }
 
+        var (boothId, boothLabel) = await ResolveWalkInBoothAsync(hospital.Id, vaccineName, dto.BoothLabel);
+
         var vName = vaccineName.ToLowerInvariant();
-        var schedule = await _context.VaccineSchedules
-            .FirstOrDefaultAsync(s =>
+        var hospitalProfileId = hospital.HospitalProfile?.Id;
+        var scheduleQuery = _context.VaccineSchedules
+            .Where(s =>
                 s.Status == "Active" &&
                 (s.HospitalUserId == hospital.Id ||
-                 (hospital.HospitalProfile != null && s.HospitalProfileId == hospital.HospitalProfile.Id)) &&
+                 (hospitalProfileId != null && s.HospitalProfileId == hospitalProfileId)) &&
                 (s.VaccineName.ToLower() == vName || s.VaccineName.ToLower().Contains(vName)));
+        // Prefer the session running at the assigned booth so vaccine and booth agree.
+        var schedule = (boothId.HasValue
+                ? await scheduleQuery.FirstOrDefaultAsync(s => s.BoothId == boothId)
+                : null)
+            ?? await scheduleQuery.FirstOrDefaultAsync();
+
+        // Walk-ins pay the same hospital price as booked patients (formulary price,
+        // falling back to the session price). Priced walk-ins wait for desk payment.
+        var walkInFee = await ResolveWalkInFeeAsync(hospital, vaccineName, schedule);
+        var walkInIsFree = walkInFee <= 0;
 
         var noteParts = new List<string>
         {
@@ -553,8 +675,9 @@ public class AppointmentService : IAppointmentService
                 ? "Walk-in registration (patient account auto-created)"
                 : "Walk-in registration"
         };
-        if (!string.IsNullOrWhiteSpace(dto.Dose)) noteParts.Add($"Dose: {dto.Dose.Trim()}");
-        if (!string.IsNullOrWhiteSpace(dto.BoothLabel)) noteParts.Add($"Booth: {dto.BoothLabel.Trim()}");
+        // The desk records which dose in the series this is; the dosage itself must be
+        // prescribed by a doctor, so the walk-in waits in the queue as "awaiting prescription".
+        if (!string.IsNullOrWhiteSpace(dto.Dose)) noteParts.Add($"Dose sequence: {dto.Dose.Trim()}");
         if (dto.Age.HasValue) noteParts.Add($"Age: {dto.Age.Value}");
         if (!string.IsNullOrWhiteSpace(dto.Gender)) noteParts.Add($"Gender: {dto.Gender.Trim()}");
         if (!createdAccount &&
@@ -563,6 +686,8 @@ public class AppointmentService : IAppointmentService
         {
             noteParts.Add($"Presented as: {presentedName}");
         }
+        // Keep Booth last: booth labels contain " · ", and ExtractBoothFromNotes reads to end of line.
+        if (!string.IsNullOrWhiteSpace(boothLabel)) noteParts.Add($"Booth: {boothLabel}");
 
         var appointment = new Appointment
         {
@@ -579,20 +704,17 @@ public class AppointmentService : IAppointmentService
             VaccineScheduleId = schedule?.Id,
             VaccineId = schedule?.VaccineId,
             VaccineName = vaccineName,
-            DoctorUserId = schedule?.DoctorUserId,
-            DoctorName = schedule?.DoctorName,
-            NurseUserId = schedule?.NurseUserId,
-            NurseName = schedule?.NurseName,
             AppointmentDate = today,
             TimeSlot = timeSlot,
             StartTime = start.ToString("HH:mm"),
             EndTime = end.ToString("HH:mm"),
-            Status = "Confirmed",
-            Fee = 0.00m,
+            Status = walkInIsFree ? "Confirmed" : "PendingPayment",
+            Fee = walkInIsFree ? 0.00m : walkInFee,
             PaymentMethod = "WalkIn",
-            PaymentStatus = "Paid",
+            PaymentStatus = walkInIsFree ? "Paid" : "Pending",
+            CheckedInAt = DateTime.UtcNow,
+            CheckedInByUserId = hospital.Id,
             Notes = string.Join(" · ", noteParts),
-            PrescribedDosage = string.IsNullOrWhiteSpace(dto.Dose) ? null : dto.Dose.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 
@@ -685,6 +807,9 @@ public class AppointmentService : IAppointmentService
     {
         var appointments = await _context.Appointments
             .AsNoTracking()
+            .Include(a => a.VaccineSchedule)
+            .Include(a => a.PatientUser)
+                .ThenInclude(u => u!.PatientProfile)
             .Where(a => a.PatientUserId == patientUserId)
             .OrderByDescending(a => a.AppointmentDate)
             .ThenByDescending(a => a.CreatedAt)
@@ -695,9 +820,20 @@ public class AppointmentService : IAppointmentService
 
     public async Task<List<AppointmentResponseDto>> GetHospitalAppointmentsAsync(Guid hospitalUserId, DateOnly? date = null, string? status = null)
     {
+        var hospitalProfileId = await _context.HospitalProfiles
+            .AsNoTracking()
+            .Where(h => h.UserId == hospitalUserId)
+            .Select(h => (Guid?)h.Id)
+            .FirstOrDefaultAsync();
+
         var query = _context.Appointments
             .AsNoTracking()
-            .Where(a => a.HospitalUserId == hospitalUserId);
+            .Include(a => a.VaccineSchedule)
+            .Include(a => a.PatientUser)
+                .ThenInclude(u => u!.PatientProfile)
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId ||
+                (hospitalProfileId.HasValue && a.HospitalProfileId == hospitalProfileId.Value));
 
         if (date.HasValue)
         {
@@ -737,23 +873,153 @@ public class AppointmentService : IAppointmentService
         if (!isAffiliated)
             throw new UnauthorizedAccessException("You are not affiliated with this hospital.");
 
-        var query = _context.Appointments
+        // Clinical floor list is session-scoped: hospital-local today only (±1 day).
+        // Broader history remains on hospital/admin appointment screens.
+        var hospitalToday = StaffDutyHelper.HospitalToday();
+        var sessionDate = date ?? hospitalToday;
+        var earliest = hospitalToday.AddDays(-1);
+        var latest = hospitalToday.AddDays(1);
+        if (sessionDate < earliest || sessionDate > latest)
+        {
+            throw new InvalidOperationException(
+                $"Clinical queue is limited to today's hospital session ({hospitalToday:yyyy-MM-dd}) ± 1 day. Use hospital appointments for wider history.");
+        }
+
+        var appointments = await _context.Appointments
             .AsNoTracking()
+            .Include(a => a.VaccineSchedule)
+            .Include(a => a.PatientUser)
+                .ThenInclude(u => u!.PatientProfile)
             .Where(a =>
                 a.HospitalUserId == hospitalUserId &&
                 a.Status != "Cancelled" &&
-                a.Status != "Rejected");
-
-        if (date.HasValue)
-            query = query.Where(a => a.AppointmentDate == date.Value);
-
-        var appointments = await query
+                a.Status != "Rejected" &&
+                a.AppointmentDate == sessionDate)
             .OrderBy(a => a.AppointmentDate)
             .ThenBy(a => a.StartTime)
             .ThenBy(a => a.CreatedAt)
             .ToListAsync();
 
-        return appointments.Select(MapToDto).ToList();
+        var dateLabel = sessionDate.ToString("yyyy-MM-dd");
+        var auditDetails =
+            $"Staff viewed clinical appointment list hospital={hospitalUserId} date={dateLabel} recordCount={appointments.Count}";
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = staffUserId,
+            UserEmail = staff.Email,
+            Role = staff.Role.ToString(),
+            Action = "STAFF_CLINICAL_QUEUE_VIEW",
+            Details = auditDetails.Length > 1000 ? auditDetails[..1000] : auditDetails,
+            Timestamp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        return appointments.Select(MapToStaffListDto).ToList();
+    }
+
+    public async Task<StaffAppointmentPatientContactDto> GetStaffAppointmentPatientContactAsync(
+        Guid staffUserId,
+        Guid appointmentId)
+    {
+        var staff = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == staffUserId);
+        if (staff == null || staff.Role is not (UserRole.DOCTOR or UserRole.NURSE))
+            throw new UnauthorizedAccessException("Only doctors or nurses can view patient contact details.");
+
+        if (staff.Status != UserStatus.Active)
+            throw new InvalidOperationException("Staff account must be Active.");
+
+        var appointment = await _context.Appointments.AsNoTracking()
+            .Include(a => a.PatientUser)
+                .ThenInclude(u => u!.PatientProfile)
+            .FirstOrDefaultAsync(a => a.Id == appointmentId)
+            ?? throw new KeyNotFoundException("Appointment record not found.");
+
+        if (string.Equals(appointment.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(appointment.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Contact details are not available for cancelled or rejected appointments.");
+        }
+
+        var isAffiliated = await _context.StaffAffiliations.AsNoTracking().AnyAsync(a =>
+            a.StaffUserId == staffUserId &&
+            a.HospitalUserId == appointment.HospitalUserId &&
+            a.Status == AffiliationStatus.Active);
+
+        if (!isAffiliated)
+            throw new UnauthorizedAccessException("You are not affiliated with this hospital.");
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = staffUserId,
+            UserEmail = staff.Email,
+            Role = staff.Role.ToString(),
+            Action = "STAFF_PATIENT_CONTACT_VIEW",
+            Details = $"Revealed patient contact for appointment {appointment.Id}",
+            Timestamp = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
+
+        var profile = appointment.PatientUser?.PatientProfile;
+        return new StaffAppointmentPatientContactDto
+        {
+            AppointmentId = appointment.Id,
+            PatientNic = profile?.NicNumber ?? appointment.PatientNic,
+            PatientPhone = profile?.PhoneNumber ?? appointment.PatientUser?.PhoneNumber ?? appointment.PatientPhone,
+            PatientEmail = appointment.PatientUser?.Email ?? appointment.PatientEmail
+        };
+    }
+
+    public async Task<AppointmentResponseDto> CheckInAsync(Guid actorUserId, Guid appointmentId)
+    {
+        var appointment = await _context.Appointments
+            .Include(a => a.VaccineSchedule)
+            .FirstOrDefaultAsync(a => a.Id == appointmentId)
+            ?? throw new KeyNotFoundException("Appointment record not found.");
+
+        var actor = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == actorUserId)
+            ?? throw new UnauthorizedAccessException("Invalid user.");
+
+        var isHospitalOwner = appointment.HospitalUserId == actorUserId;
+        if (!isHospitalOwner)
+        {
+            if (actor.Role is not (UserRole.DOCTOR or UserRole.NURSE))
+                throw new UnauthorizedAccessException("Only the hospital desk or affiliated clinical staff can check patients in.");
+            var isAffiliated = await _context.StaffAffiliations.AsNoTracking().AnyAsync(a =>
+                a.StaffUserId == actorUserId &&
+                a.HospitalUserId == appointment.HospitalUserId &&
+                a.Status == AffiliationStatus.Active);
+            if (!isAffiliated)
+                throw new UnauthorizedAccessException("You are not affiliated with this hospital.");
+        }
+
+        if (appointment.AppointmentDate != StaffDutyHelper.HospitalToday())
+            throw new InvalidOperationException("Patients can only be checked in on the day of their appointment.");
+
+        if (!string.Equals(appointment.Status, "Confirmed", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(appointment.Status, "PendingPayment", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Cannot check in an appointment that is {appointment.Status}.");
+        }
+
+        if (appointment.CheckedInAt == null)
+        {
+            appointment.CheckedInAt = DateTime.UtcNow;
+            appointment.CheckedInByUserId = actorUserId;
+            appointment.UpdatedAt = DateTime.UtcNow;
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = actorUserId,
+                UserEmail = actor.Email,
+                Role = actor.Role.ToString(),
+                Action = "PATIENT_CHECKED_IN",
+                Details = $"Patient {appointment.PatientName} checked in for appointment {appointment.Id}",
+                Timestamp = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+        }
+
+        return MapToDto(appointment);
     }
 
     public async Task<AppointmentResponseDto> UpdateAppointmentStatusAsync(Guid actorUserId, Guid appointmentId, UpdateAppointmentStatusDto dto)
@@ -800,18 +1066,13 @@ public class AppointmentService : IAppointmentService
         }
 
         // Clinical session transitions are doctor/nurse only — hospital can monitor, not administer.
-        if (OnDutyRequiredStatuses.Contains(nextStatus))
+        if (ClinicalSessionStatuses.Contains(nextStatus))
         {
             if (isHospitalOwner)
             {
                 throw new UnauthorizedAccessException(
-                    "Clinical status changes (Administering, Observation, Completed) must be performed by on-duty clinical staff.");
+                    "Clinical status changes (Administering, Observation, Completed) must be performed by clinical staff.");
             }
-
-            await StaffDutyHelper.EnsureStaffOnDutyAsync(
-                _context,
-                actorUserId,
-                appointment.HospitalUserId);
         }
 
         // Returning a patient from an active clinical session to the waiting queue is also a clinical action.
@@ -825,17 +1086,19 @@ public class AppointmentService : IAppointmentService
             if (isHospitalOwner)
             {
                 throw new UnauthorizedAccessException(
-                    "Returning a patient to the waiting queue must be performed by on-duty clinical staff.");
+                    "Returning a patient to the waiting queue must be performed by clinical staff.");
             }
+        }
 
-            await StaffDutyHelper.EnsureStaffOnDutyAsync(
-                _context,
-                actorUserId,
-                appointment.HospitalUserId);
+        // Clinical session work needs the staff member to be on duty here
+        // (live rostered shift or clock-in, which also covers walk-ins).
+        if (!isHospitalOwner && (ClinicalSessionStatuses.Contains(nextStatus) || returningToQueue))
+        {
+            await StaffDutyHelper.EnsureStaffOnDutyAsync(_context, actorUserId, appointment.HospitalUserId);
         }
 
         // Dose/session transitions require settled payment (free bookings are Paid at create).
-        if (OnDutyRequiredStatuses.Contains(nextStatus) &&
+        if (ClinicalSessionStatuses.Contains(nextStatus) &&
             !string.Equals(appointment.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException(
@@ -843,6 +1106,57 @@ public class AppointmentService : IAppointmentService
         }
 
         var previousStatus = appointment.Status;
+
+        // A doctor must prescribe the dose before the nurse starts or records administration.
+        var startingOrGivingDose =
+            (string.Equals(nextStatus, "Administering", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(nextStatus, "Observation", StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(nextStatus, "Completed", StringComparison.OrdinalIgnoreCase)) &&
+            string.Equals(previousStatus, "Confirmed", StringComparison.OrdinalIgnoreCase) ||
+            (string.Equals(nextStatus, "Observation", StringComparison.OrdinalIgnoreCase) &&
+             string.Equals(previousStatus, "Administering", StringComparison.OrdinalIgnoreCase));
+        if (startingOrGivingDose && string.IsNullOrWhiteSpace(appointment.PrescribedDosage))
+        {
+            throw new InvalidOperationException(
+                "A doctor must prescribe the dose before administration. Ask the doctor to prescribe it first.");
+        }
+
+        // Post-vaccination observation: at least 15 minutes before discharge.
+        if (!isHospitalOwner &&
+            string.Equals(nextStatus, "Completed", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(previousStatus, "Observation", StringComparison.OrdinalIgnoreCase))
+        {
+            var observedFor = DateTime.UtcNow - (appointment.UpdatedAt ?? DateTime.UtcNow);
+            var remaining = TimeSpan.FromMinutes(ObservationMinutes) - observedFor;
+            if (remaining > TimeSpan.Zero)
+            {
+                var minutes = (int)Math.Ceiling(remaining.TotalMinutes);
+                throw new InvalidOperationException(
+                    $"Observation is not complete — {minutes} more minute{(minutes == 1 ? "" : "s")} before discharge.");
+            }
+        }
+
+        // Real clinics only call patients who have arrived.
+        if (!isHospitalOwner &&
+            string.Equals(nextStatus, "Administering", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(previousStatus, "Confirmed", StringComparison.OrdinalIgnoreCase) &&
+            appointment.CheckedInAt == null)
+        {
+            throw new InvalidOperationException("This patient has not checked in yet. Check them in when they arrive.");
+        }
+
+        // Two-person check: the doctor prescribes, the administering staff member signs off
+        // the order, consent and vitals before the dose is recorded as given.
+        var recordingAdministration =
+            !isHospitalOwner &&
+            string.Equals(nextStatus, "Observation", StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(previousStatus, "Administering", StringComparison.OrdinalIgnoreCase);
+        if (recordingAdministration &&
+            (dto.DoseConfirmed != true || dto.ConsentConfirmed != true || dto.VitalsConfirmed != true))
+        {
+            throw new InvalidOperationException(
+                "Confirm the prescribed dose, patient consent and pre-vaccination vitals before recording administration.");
+        }
 
         // Enforce clinical transition graph for non-hospital actors.
         // Hospital desk may still Confirm/Cancel/Reject bookings; clinical staff
@@ -938,7 +1252,7 @@ public class AppointmentService : IAppointmentService
             ?? throw new UnauthorizedAccessException("Invalid user.");
 
         if (actor.Role is not (UserRole.DOCTOR or UserRole.NURSE))
-            throw new UnauthorizedAccessException("Only on-duty clinical staff can report AEFI.");
+            throw new UnauthorizedAccessException("Only clinical staff can report AEFI.");
 
         if (actor.Status != UserStatus.Active)
             throw new InvalidOperationException("Staff account must be Active.");
@@ -950,8 +1264,6 @@ public class AppointmentService : IAppointmentService
 
         if (!isAffiliated)
             throw new UnauthorizedAccessException("You are not affiliated with this hospital.");
-
-        await StaffDutyHelper.EnsureStaffOnDutyAsync(_context, actorUserId, appointment.HospitalUserId);
 
         if (string.Equals(appointment.Status, "Cancelled", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(appointment.Status, "Rejected", StringComparison.OrdinalIgnoreCase))
@@ -1250,13 +1562,28 @@ public class AppointmentService : IAppointmentService
             return true; // Already cancelled
         }
 
-        // Rule: Patients cannot cancel past appointments if already completed
+        // Patient self-service cancellation requires at least 24 hours' notice.
         if (!isHospital)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
             if (appointment.Status == "Completed")
             {
                 throw new InvalidOperationException("Completed vaccination appointments cannot be cancelled.");
+            }
+
+            var startTimeValue = string.IsNullOrWhiteSpace(appointment.StartTime)
+                ? appointment.TimeSlot
+                : appointment.StartTime;
+            if (!TryParseSlotStart(startTimeValue, out var slotStart))
+            {
+                throw new InvalidOperationException("Appointment has an invalid time slot and cannot be cancelled online.");
+            }
+
+            var appointmentStart = appointment.AppointmentDate.ToDateTime(slotStart);
+            var hospitalNow = DateTime.SpecifyKind(StaffDutyHelper.HospitalNow(), DateTimeKind.Unspecified);
+            if (appointmentStart - hospitalNow < TimeSpan.FromHours(24))
+            {
+                throw new InvalidOperationException(
+                    "Appointments can only be cancelled at least 24 hours before the scheduled start time.");
             }
         }
 
@@ -1449,6 +1776,43 @@ public class AppointmentService : IAppointmentService
         return result;
     }
 
+    private static void EnsureAppointmentNotInPast(DateOnly appointmentDate, string? timeSlot)
+    {
+        var today = StaffDutyHelper.HospitalToday();
+        if (appointmentDate < today)
+        {
+            throw new InvalidOperationException("Cannot book an appointment on a past date.");
+        }
+
+        if (appointmentDate > today)
+        {
+            return;
+        }
+
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
+        if (!TryParseSlotStart(timeSlot, out var slotStart))
+        {
+            throw new InvalidOperationException("Selected time slot is invalid.");
+        }
+
+        if (slotStart < now)
+        {
+            throw new InvalidOperationException("Cannot book a time slot that has already started. Please choose a later slot.");
+        }
+    }
+
+    private static bool TryParseSlotStart(string? timeSlot, out TimeOnly start)
+    {
+        start = default;
+        if (string.IsNullOrWhiteSpace(timeSlot)) return false;
+
+        // Formats: "09:00 AM - 09:20 AM" or "09:00-09:20" or single start time
+        var raw = timeSlot.Trim();
+        var dash = raw.IndexOf('-');
+        var startPart = dash >= 0 ? raw[..dash].Trim() : raw;
+        return TryParseTime(startPart, out start);
+    }
+
     private static bool TryParseTime(string timeStr, out TimeOnly time)
     {
         time = default;
@@ -1481,6 +1845,130 @@ public class AppointmentService : IAppointmentService
         if (!string.IsNullOrWhiteSpace(boothLabel))
             parts.Add($"Booth: {boothLabel.Trim()}");
         return parts.Count == 0 ? null : string.Join("\n", parts);
+    }
+
+    private async Task<decimal> ResolveWalkInFeeAsync(User hospital, string vaccineName, VaccineSchedule? schedule)
+    {
+        if (hospital.HospitalProfile != null)
+        {
+            var wanted = vaccineName.Trim().ToLowerInvariant();
+            var formulary = await _context.HospitalFormularies
+                .AsNoTracking()
+                .Include(f => f.Vaccine)
+                .Where(f => f.HospitalProfileId == hospital.HospitalProfile.Id)
+                .ToListAsync();
+            var match = formulary.FirstOrDefault(f =>
+                (schedule?.VaccineId != null && f.VaccineId == schedule.VaccineId) ||
+                (f.Vaccine != null && string.Equals(f.Vaccine.Name.Trim(), wanted, StringComparison.OrdinalIgnoreCase)));
+            if (match != null)
+                return Math.Max(0.00m, match.Price);
+        }
+
+        return Math.Max(0.00m, schedule?.Price ?? 0.00m);
+    }
+
+    /// <summary>
+    /// Picks the walk-in booth. A desk-chosen booth must offer the vaccine (when any
+    /// booth lists it). Otherwise auto-assign: an offering booth with on-duty staff
+    /// first, then the shortest open queue today, then booth order.
+    /// </summary>
+    private async Task<(Guid? Id, string? Label)> ResolveWalkInBoothAsync(
+        Guid hospitalUserId,
+        string vaccineName,
+        string? requestedLabel)
+    {
+        var requested = requestedLabel?.Trim();
+        var booths = await _context.HospitalBooths
+            .AsNoTracking()
+            .Include(b => b.Vaccines).ThenInclude(v => v.Vaccine)
+            .Where(b => b.HospitalUserId == hospitalUserId && b.IsActive)
+            .OrderBy(b => b.SortOrder).ThenBy(b => b.Code)
+            .ToListAsync();
+
+        if (booths.Count == 0)
+            return (null, string.IsNullOrWhiteSpace(requested) ? null : requested);
+
+        var wanted = vaccineName.Trim().ToLowerInvariant();
+        var offering = booths
+            .Where(b => b.Vaccines.Any(v =>
+            {
+                var name = v.Vaccine?.Name?.Trim().ToLowerInvariant();
+                return !string.IsNullOrEmpty(name) && (name == wanted || name.Contains(wanted) || wanted.Contains(name));
+            }))
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(requested))
+        {
+            var chosen = booths.FirstOrDefault(b =>
+                string.Equals(b.DisplayLabel, requested, StringComparison.OrdinalIgnoreCase));
+            if (chosen == null)
+                return (null, requested);
+            if (offering.Count > 0 && !offering.Contains(chosen))
+            {
+                throw new InvalidOperationException(
+                    $"{chosen.DisplayLabel} does not offer {vaccineName}. Choose " +
+                    $"{string.Join(", ", offering.Select(b => b.DisplayLabel))} or leave the booth on Auto.");
+            }
+            return (chosen.Id, chosen.DisplayLabel);
+        }
+
+        if (offering.Count == 0)
+            return (null, null);
+
+        var today = StaffDutyHelper.HospitalToday();
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
+        var offeringIds = offering.Select(b => b.Id).ToList();
+        var liveShifts = await _context.StaffShifts
+            .AsNoTracking()
+            .Where(s =>
+                s.BoothId != null &&
+                offeringIds.Contains(s.BoothId.Value) &&
+                s.ShiftDate == today &&
+                s.StartTime <= now &&
+                s.EndTime > now)
+            .Select(s => new { BoothId = s.BoothId!.Value, s.AffiliationId })
+            .ToListAsync();
+        var onDuty = await StaffDutyHelper.GetOnDutyAffiliationIdsAsync(
+            _context,
+            liveShifts.Select(s => s.AffiliationId).Distinct().ToList());
+        var staffedBoothIds = liveShifts
+            .Where(s => onDuty.Contains(s.AffiliationId))
+            .Select(s => s.BoothId)
+            .ToHashSet();
+
+        var openToday = await _context.Appointments
+            .AsNoTracking()
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.AppointmentDate == today &&
+                (a.Status == "Confirmed" || a.Status == "PendingPayment" || a.Status == "Administering"))
+            .Select(a => new { a.Notes, a.VaccineScheduleId })
+            .ToListAsync();
+        var scheduleIds = openToday
+            .Where(a => a.VaccineScheduleId.HasValue)
+            .Select(a => a.VaccineScheduleId!.Value)
+            .Distinct()
+            .ToList();
+        var boothBySchedule = await _context.VaccineSchedules
+            .AsNoTracking()
+            .Where(s => scheduleIds.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.BoothId);
+
+        int QueueLoad(HospitalBooth booth) => openToday.Count(a =>
+        {
+            var notesBooth = ExtractBoothFromNotes(a.Notes);
+            if (notesBooth != null)
+                return string.Equals(notesBooth, booth.DisplayLabel, StringComparison.OrdinalIgnoreCase);
+            return a.VaccineScheduleId.HasValue &&
+                   boothBySchedule.TryGetValue(a.VaccineScheduleId.Value, out var scheduleBooth) &&
+                   scheduleBooth == booth.Id;
+        });
+
+        var pick = offering
+            .OrderByDescending(b => staffedBoothIds.Contains(b.Id))
+            .ThenBy(QueueLoad)
+            .First();
+        return (pick.Id, pick.DisplayLabel);
     }
 
     private static string? ExtractBoothFromNotes(string? notes)
@@ -1593,8 +2081,8 @@ public class AppointmentService : IAppointmentService
             .Include(u => u.HospitalProfile)
             .FirstOrDefaultAsync(u => u.Id == actorUserId);
 
-        var actorName = actor?.DoctorProfile?.FullName is { Length: > 0 } docName ? $"Dr. {docName}"
-            : actor?.NurseProfile?.FullName is { Length: > 0 } nurseName ? $"Nurse {nurseName}"
+        var actorName = actor?.DoctorProfile?.FullName is { Length: > 0 } docName ? StaffNameFormatter.WithRolePrefix(docName, "Dr.")
+            : actor?.NurseProfile?.FullName is { Length: > 0 } nurseName ? StaffNameFormatter.WithRolePrefix(nurseName, "Nurse")
             : actor?.HospitalProfile?.HospitalName
             ?? actor?.Email
             ?? "Clinical staff";
@@ -1625,6 +2113,12 @@ public class AppointmentService : IAppointmentService
         var route = ParseVaccineRoute(dto.Route);
         var site = ParseInjectionSite(dto.InjectionSite);
         var noteParts = new List<string> { $"Linked to appointment {appointment.Id}" };
+        if (dto.DoseConfirmed == true)
+        {
+            noteParts.Add(
+                $"Prescribed dose {appointment.PrescribedDosage} " +
+                $"({appointment.PrescribedByDoctorName ?? "doctor"}) confirmed and given by {actorName}");
+        }
         if (dto.ConsentConfirmed == true)
             noteParts.Add("Informed consent confirmed");
         if (dto.VitalsConfirmed == true)
@@ -1711,16 +2205,34 @@ public class AppointmentService : IAppointmentService
         return null;
     }
 
+    private static AppointmentResponseDto MapToStaffListDto(Appointment a)
+    {
+        var dto = MapToDto(a);
+        dto.PatientNic = null;
+        dto.PatientPhone = null;
+        dto.PatientEmail = null;
+        return dto;
+    }
+
     private static AppointmentResponseDto MapToDto(Appointment a)
     {
+        var notesBooth = ExtractBoothFromNotes(a.Notes);
+        var profile = a.PatientUser?.PatientProfile;
+        var liveName = profile?.FullName?.Trim();
+        var livePhone = profile?.PhoneNumber?.Trim() ?? a.PatientUser?.PhoneNumber?.Trim();
+        var liveEmail = a.PatientUser?.Email?.Trim();
+        var liveNic = profile?.NicNumber?.Trim();
+
         return new AppointmentResponseDto
         {
             Id = a.Id,
             PatientUserId = a.PatientUserId,
-            PatientName = a.PatientName,
-            PatientNic = a.PatientNic,
-            PatientPhone = a.PatientPhone,
-            PatientEmail = a.PatientEmail,
+            PatientProfileId = a.PatientProfileId ?? profile?.Id,
+            // Prefer live profile fields so hospital/staff queues reflect profile edits.
+            PatientName = !string.IsNullOrWhiteSpace(liveName) ? liveName : a.PatientName,
+            PatientNic = !string.IsNullOrWhiteSpace(liveNic) ? liveNic : a.PatientNic,
+            PatientPhone = !string.IsNullOrWhiteSpace(livePhone) ? livePhone : a.PatientPhone,
+            PatientEmail = !string.IsNullOrWhiteSpace(liveEmail) ? liveEmail : a.PatientEmail,
             HospitalUserId = a.HospitalUserId,
             HospitalName = a.HospitalName,
             VaccineScheduleId = a.VaccineScheduleId,
@@ -1738,11 +2250,17 @@ public class AppointmentService : IAppointmentService
             PaymentStatus = a.PaymentStatus,
             PaymentTransactionId = a.PaymentTransactionId,
             Notes = a.Notes,
-            BoothLabel = ExtractBoothFromNotes(a.Notes),
+            // Walk-ins record their assigned booth in notes; it wins over a linked session's booth.
+            BoothId = notesBooth == null ||
+                      string.Equals(notesBooth, a.VaccineSchedule?.BoothLabel, StringComparison.OrdinalIgnoreCase)
+                ? a.VaccineSchedule?.BoothId
+                : null,
+            BoothLabel = notesBooth ?? a.VaccineSchedule?.BoothLabel,
             PrescribedDosage = a.PrescribedDosage,
             PrescribedByDoctorUserId = a.PrescribedByDoctorUserId,
             PrescribedByDoctorName = a.PrescribedByDoctorName,
             DosageUpdatedAt = a.DosageUpdatedAt,
+            CheckedInAt = a.CheckedInAt,
             CreatedAt = a.CreatedAt,
             UpdatedAt = a.UpdatedAt
         };

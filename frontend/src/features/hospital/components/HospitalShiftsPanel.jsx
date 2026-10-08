@@ -423,7 +423,18 @@ export default function HospitalShiftsPanel() {
         workflowId: res.workflowId || res.WorkflowId || null,
       });
     } catch (err) {
-      setSuggestModalError(err.message || 'Failed to suggest week shifts.');
+      // AI agent unavailable: fall back to the rules-based backend suggestions.
+      try {
+        const fallback = await staffService.suggestWeek({ from: weekStart, to: weekEnd });
+        const list = Array.isArray(fallback?.proposals) ? fallback.proposals : [];
+        if (list.length === 0) {
+          setSuggestModalError(fallback?.message || 'No new shifts to propose for this week.');
+        } else {
+          applyAgentProposals(list, {});
+        }
+      } catch (fallbackErr) {
+        setSuggestModalError(fallbackErr.message || err.message || 'Failed to suggest week shifts.');
+      }
     } finally {
       setSuggestingWeek(false);
     }
@@ -560,6 +571,7 @@ export default function HospitalShiftsPanel() {
     const id = proposalIdentity(proposal);
     setProposalActionId(id);
     setError('');
+    // Declining never depends on the agent; an alternative is a bonus when it answers.
     let alternative = null;
     try {
       const res = await agentService.sendMessage(
@@ -583,10 +595,8 @@ export default function HospitalShiftsPanel() {
       } else if (res.proposal) {
         alternative = res.proposal;
       }
-    } catch (err) {
-      setError(err.message || 'Failed to decline suggestion.');
-      setProposalActionId(null);
-      return;
+    } catch {
+      alternative = null;
     }
 
     setPendingProposals((prev) => {

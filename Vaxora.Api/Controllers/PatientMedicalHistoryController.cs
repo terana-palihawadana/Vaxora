@@ -24,6 +24,9 @@ public class PatientMedicalHistoryController : ControllerBase
     [HttpGet("patients/{patientProfileId:guid}/timeline")]
     public async Task<IActionResult> GetTimeline(Guid patientProfileId)
     {
+        var accessResult = await CheckPatientProfileAccessAsync(patientProfileId);
+        if (accessResult != null) return accessResult;
+
         try { return Ok(await _service.GetTimelineAsync(patientProfileId)); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (Exception ex)
@@ -36,6 +39,9 @@ public class PatientMedicalHistoryController : ControllerBase
     [HttpGet("patients/{patientProfileId:guid}/active")]
     public async Task<IActionResult> GetActiveConditions(Guid patientProfileId)
     {
+        var accessResult = await CheckPatientProfileAccessAsync(patientProfileId);
+        if (accessResult != null) return accessResult;
+
         try { return Ok(await _service.GetActiveConditionsAsync(patientProfileId)); }
         catch (Exception ex)
         {
@@ -47,6 +53,14 @@ public class PatientMedicalHistoryController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetById(Guid id)
     {
+        if (User.IsInRole("PATIENT"))
+        {
+            if (!TryGetUserId(out var userId))
+                return Unauthorized(new { message = "Invalid identity claim." });
+            if (!await _service.IsRecordOwnedByUserAsync(id, userId))
+                return Forbid();
+        }
+
         try { return Ok(await _service.GetByIdAsync(id)); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (Exception ex)
@@ -117,5 +131,18 @@ public class PatientMedicalHistoryController : ControllerBase
         var claim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
         return Guid.TryParse(claim, out userId);
+    }
+
+    private async Task<IActionResult?> CheckPatientProfileAccessAsync(Guid patientProfileId)
+    {
+        if (!User.IsInRole("PATIENT"))
+            return null;
+
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
+        return await _service.IsOwnedByUserAsync(patientProfileId, userId)
+            ? null
+            : Forbid();
     }
 }

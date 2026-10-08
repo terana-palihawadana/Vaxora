@@ -140,6 +140,8 @@ public class PatientVisitService : IPatientVisitService
         if (!string.IsNullOrWhiteSpace(dto.Status) && !Enum.TryParse(dto.Status, true, out status))
             throw new InvalidOperationException("Invalid status.");
 
+        await ValidateLinksAsync(patient.Id, dto);
+
         var (actorName, actorEmail) = await GetActorInfoAsync(actorUserId);
 
         var visitDate = dto.VisitDate.HasValue ? EnsureUtc(dto.VisitDate.Value) : DateTime.UtcNow;
@@ -185,6 +187,44 @@ public class PatientVisitService : IPatientVisitService
         _logger.LogInformation("Created visit {VisitId} for patient {PatientId}", visit.Id, patient.Id);
 
         return MapToDto(visit);
+    }
+
+    private async Task ValidateLinksAsync(Guid patientProfileId, CreatePatientVisitDto dto)
+    {
+        if (dto.AppointmentId.HasValue)
+        {
+            var appointment = await _context.Appointments.AsNoTracking()
+                .Where(a => a.Id == dto.AppointmentId.Value)
+                .Select(a => new { a.PatientProfileId, a.HospitalProfileId })
+                .FirstOrDefaultAsync()
+                ?? throw new InvalidOperationException("Appointment not found.");
+
+            if (appointment.PatientProfileId != patientProfileId)
+                throw new InvalidOperationException("Appointment does not belong to this patient.");
+
+            if (dto.HospitalProfileId.HasValue && appointment.HospitalProfileId != dto.HospitalProfileId)
+                throw new InvalidOperationException("Appointment belongs to a different hospital.");
+        }
+
+        var clinicianIds = new[] { dto.DoctorUserId, dto.NurseUserId }
+            .Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+        if (clinicianIds.Count == 0 || !dto.HospitalProfileId.HasValue) return;
+
+        var hospitalUserId = await _context.HospitalProfiles.AsNoTracking()
+            .Where(h => h.Id == dto.HospitalProfileId.Value)
+            .Select(h => (Guid?)h.UserId)
+            .FirstOrDefaultAsync()
+            ?? throw new InvalidOperationException("Hospital not found.");
+
+        var affiliated = await _context.StaffAffiliations.AsNoTracking()
+            .Where(a => a.HospitalUserId == hospitalUserId
+                        && a.Status == AffiliationStatus.Active
+                        && clinicianIds.Contains(a.StaffUserId))
+            .Select(a => a.StaffUserId)
+            .ToListAsync();
+
+        if (clinicianIds.Any(id => !affiliated.Contains(id)))
+            throw new InvalidOperationException("Assigned doctor or nurse is not an active staff member of this hospital.");
     }
 
     public async Task<bool> IsOwnedByUserAsync(Guid patientProfileId, Guid userId)

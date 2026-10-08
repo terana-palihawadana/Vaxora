@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/payhere_init_model.dart';
@@ -55,7 +54,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
   bool _isProcessing = false;
   String _processingStage = '';
   bool _paymentSuccess = false;
-  String? _transactionId;
+  bool _paymentPending = false;
 
   @override
   void initState() {
@@ -142,33 +141,40 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
       _processingStage = 'Authorizing transaction with Central Bank of Sri Lanka...';
     });
 
+    await _checkPaymentStatus(alreadyProcessing: true);
+  }
+
+  Future<void> _checkPaymentStatus({bool alreadyProcessing = false}) async {
+    if (_isProcessing && !alreadyProcessing) return;
+
+    setState(() {
+      _isProcessing = true;
+      _processingStage = 'Checking for PayHere payment confirmation...';
+      _errorMessage = null;
+    });
+
     try {
       final targetId = widget.appointment.rawId.isNotEmpty
           ? widget.appointment.rawId
           : widget.appointment.id;
 
-      // Generate verifiable PayHere transaction reference
-      final randomHex = Random().nextInt(999999).toString().padLeft(6, '0');
-      final txId = 'PH-LKR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}-$randomHex';
-
-      // Submit confirmation to backend ASP.NET Core API
-      await PaymentRepository.confirmPayment(
+      final result = await PaymentRepository.confirmPayment(
         appointmentId: targetId,
-        paymentId: txId,
       );
 
       if (mounted) {
         setState(() {
           _isProcessing = false;
-          _paymentSuccess = true;
-          _transactionId = txId;
+          _paymentSuccess = result['confirmed'] == true;
+          _paymentPending = result['confirmed'] != true;
         });
-        widget.onPaymentSuccess();
+        if (_paymentSuccess) widget.onPaymentSuccess();
       }
     } catch (e) {
       if (mounted) {
         setState(() {
           _isProcessing = false;
+          _paymentPending = false;
           _errorMessage = 'Payment authorization failed: ${e.toString().replaceFirst('ApiException: ', '')}';
         });
       }
@@ -282,8 +288,8 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                     children: [
                       const Icon(Icons.error_outline, color: AppColors.error, size: 48),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Unable to Initiate Payment',
+                      Text(
+                        _payHereData == null ? 'Unable to Initiate Payment' : 'Unable to Check Payment',
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 6),
@@ -300,6 +306,43 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                           foregroundColor: Colors.white,
                         ),
                         child: const Text('Retry Connection'),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else if (_paymentPending) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.hourglass_top_rounded, color: Color(0xFFB45309), size: 48),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Awaiting PayHere Confirmation',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textTitle),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'The server has not received a verified payment notification yet. This appointment is not marked as paid. Check again after completing payment with PayHere.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _isProcessing ? null : _checkPaymentStatus,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF003366),
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _isProcessing
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text('Check Payment Status', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),
@@ -343,7 +386,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                         ),
                         child: Column(
                           children: [
-                            _buildReceiptRow('Transaction Ref', _transactionId ?? 'N/A'),
+                            _buildReceiptRow('Payment verification', 'Confirmed by PayHere'),
                             const SizedBox(height: 8),
                             _buildReceiptRow('Order Reference', _payHereData?.orderId ?? 'APT-CONFIRMED'),
                             const SizedBox(height: 8),

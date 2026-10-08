@@ -205,7 +205,8 @@ public class AppointmentsController : ControllerBase
     }
 
     /// <summary>
-    /// Doctor/Nurse: list appointments for an affiliated hospital (optional date filter).
+    /// Doctor/Nurse: today's clinical queue for an affiliated hospital.
+    /// Date is optional and limited to hospital-local today ± 1 day.
     /// </summary>
     [HttpGet("staff")]
     [Authorize(Roles = "DOCTOR,NURSE")]
@@ -228,7 +229,10 @@ public class AppointmentsController : ControllerBase
 
         try
         {
-            var list = await _appointmentService.GetStaffHospitalAppointmentsAsync(staffUserId, hospitalUserId, parsedDate);
+            var list = await _appointmentService.GetStaffHospitalAppointmentsAsync(
+                staffUserId,
+                hospitalUserId,
+                parsedDate);
             return Ok(list);
         }
         catch (UnauthorizedAccessException)
@@ -243,6 +247,41 @@ public class AppointmentsController : ControllerBase
         {
             _logger.LogError(ex, "Error retrieving staff appointments for hospital {HospitalId}", hospitalUserId);
             return StatusCode(500, new { message = "Failed to load appointments." });
+        }
+    }
+
+    /// <summary>
+    /// Affiliated staff: reveal patient NIC/phone/email for one appointment.
+    /// </summary>
+    [HttpGet("{id:guid}/staff-contact")]
+    [Authorize(Roles = "DOCTOR,NURSE")]
+    public async Task<IActionResult> GetStaffAppointmentPatientContact(Guid id)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out var staffUserId))
+            return Unauthorized(new { message = "Invalid user token." });
+
+        try
+        {
+            var contact = await _appointmentService.GetStaffAppointmentPatientContactAsync(staffUserId, id);
+            return Ok(contact);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving staff contact for appointment {AppId}", id);
+            return StatusCode(500, new { message = "Failed to load patient contact details." });
         }
     }
 
@@ -280,6 +319,42 @@ public class AppointmentsController : ControllerBase
         {
             _logger.LogError(ex, "Error updating appointment {AppId} status", id);
             return StatusCode(500, new { message = "Failed to update appointment status." });
+        }
+    }
+
+    /// <summary>
+    /// Mark a patient as arrived (hospital desk or affiliated doctor/nurse), today only.
+    /// </summary>
+    [HttpPost("{id}/check-in")]
+    [Authorize(Roles = "HOSPITAL,DOCTOR,NURSE")]
+    public async Task<IActionResult> CheckIn(Guid id)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdStr, out var actorUserId))
+        {
+            return Unauthorized(new { message = "Invalid user token." });
+        }
+
+        try
+        {
+            return Ok(await _appointmentService.CheckInAsync(actorUserId, id));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking in appointment {AppId}", id);
+            return StatusCode(500, new { message = "Failed to check in patient." });
         }
     }
 

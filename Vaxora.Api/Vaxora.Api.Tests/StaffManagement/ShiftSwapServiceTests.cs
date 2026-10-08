@@ -51,7 +51,7 @@ public class ShiftSwapServiceTests
     }
 
     [Fact]
-    public async Task GetQuotaAsync_blocks_finished_shift()
+    public async Task GetQuotaAsync_blocks_shift_that_already_started()
     {
         await using var context = TestDb.CreateContext();
         var hospital = TestDb.AddHospital(context);
@@ -73,7 +73,7 @@ public class ShiftSwapServiceTests
         var quota = await service.GetQuotaAsync(doctor.Id, past.Id);
 
         Assert.False(quota.CanRequest);
-        Assert.Contains("finished", quota.BlockReason ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("already started", quota.BlockReason ?? string.Empty, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -192,6 +192,154 @@ public class ShiftSwapServiceTests
         Assert.Equal($"Dr. {replacement.DoctorProfile!.FullName}", requesterHistory.ReplacementName);
         Assert.Equal("Incoming", replacementHistory.Direction);
         Assert.Equal(requester.Id, replacementHistory.RequesterUserId);
+    }
+
+    [Fact]
+    public async Task DecideAsync_refuses_to_reassign_a_shift_that_already_started()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var requester = TestDb.AddDoctor(context, "requester@example.com", "VAX-D-2020");
+        var replacement = TestDb.AddDoctor(context, "replacement@example.com", "VAX-D-2021");
+        var requesterAffiliation = TestDb.AddActiveAffiliation(context, hospital, requester);
+        var replacementAffiliation = TestDb.AddActiveAffiliation(context, hospital, replacement);
+        var started = new StaffShift
+        {
+            AffiliationId = requesterAffiliation.Id,
+            Affiliation = requesterAffiliation,
+            ShiftDate = StaffDutyHelper.HospitalToday().AddDays(-1),
+            StartTime = new TimeOnly(9, 0),
+            EndTime = new TimeOnly(12, 0),
+            CreatedByUserId = hospital.Id
+        };
+        context.StaffShifts.Add(started);
+        // Request logged before the shift began, still pending afterwards.
+        var pending = new ShiftSwapRequest
+        {
+            ShiftId = started.Id,
+            HospitalUserId = hospital.Id,
+            RequesterUserId = requester.Id,
+            ShiftDate = started.ShiftDate,
+            ShiftWindow = "09:00–12:00",
+            Status = ShiftSwapStatus.Pending
+        };
+        context.ShiftSwapRequests.Add(pending);
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.DecideAsync(hospital.Id, pending.Id, new ShiftSwapDecisionDto
+            {
+                Approved = true,
+                ReplacementAffiliationId = replacementAffiliation.Id
+            }));
+
+        Assert.Contains("already started", exception.Message, StringComparison.OrdinalIgnoreCase);
+        var unchanged = await context.StaffShifts.SingleAsync(s => s.Id == started.Id);
+        Assert.Equal(requesterAffiliation.Id, unchanged.AffiliationId);
+    }
+
+    [Fact]
+    public async Task ListForHospitalAsync_never_waits_on_the_ai_agent()
+    {
+        await using var context = TestDb.CreateContext();
+        var (hospital, request, _, _) = await SeedPendingRequestWithTwoReplacementsAsync(context);
+        var gateway = new RankingGateway(reverse: true);
+        var service = new ShiftSwapService(context, gateway, NullLogger<ShiftSwapService>.Instance);
+
+        var list = await service.ListForHospitalAsync(hospital.Id);
+
+        Assert.Equal(0, gateway.Calls);
+        var dto = Assert.Single(list, r => r.Id == request.Id);
+        Assert.Equal(2, dto.Suggestions.Count);
+        Assert.False(dto.AiRanked);
+    }
+
+    [Fact]
+    public async Task RankWithAgentAsync_applies_ai_order_on_demand()
+    {
+        await using var context = TestDb.CreateContext();
+        var (hospital, request, first, second) = await SeedPendingRequestWithTwoReplacementsAsync(context);
+        var gateway = new RankingGateway(reverse: true);
+        var service = new ShiftSwapService(context, gateway, NullLogger<ShiftSwapService>.Instance);
+        var rosterOrder = (await service.ListForHospitalAsync(hospital.Id))
+            .Single(r => r.Id == request.Id)
+            .Suggestions.Select(s => s.AffiliationId)
+            .ToList();
+
+        var ranked = await service.RankWithAgentAsync(hospital.Id, request.Id, "token");
+
+        Assert.Equal(1, gateway.Calls);
+        Assert.True(ranked.AiRanked);
+        Assert.Equal(rosterOrder.AsEnumerable().Reverse(), ranked.Suggestions.Select(s => s.AffiliationId));
+        Assert.Contains(ranked.Suggestions, s => s.Why == "AI pick");
+        Assert.Contains(first.Id, rosterOrder);
+        Assert.Contains(second.Id, rosterOrder);
+    }
+
+    private static async Task<(User Hospital, ShiftSwapRequest Request, StaffAffiliation First, StaffAffiliation Second)>
+        SeedPendingRequestWithTwoReplacementsAsync(Vaxora.Api.Data.ApplicationDbContext context)
+    {
+        var hospital = TestDb.AddHospital(context);
+        var requester = TestDb.AddDoctor(context, "requester@example.com", "VAX-D-2030");
+        var first = TestDb.AddActiveAffiliation(context, hospital, TestDb.AddDoctor(context, "a@example.com", "VAX-D-2031"));
+        var second = TestDb.AddActiveAffiliation(context, hospital, TestDb.AddDoctor(context, "b@example.com", "VAX-D-2032"));
+        var requesterAffiliation = TestDb.AddActiveAffiliation(context, hospital, requester);
+        var shift = TestDb.AddFutureShift(context, requesterAffiliation, hospital, daysAhead: 5);
+        var request = new ShiftSwapRequest
+        {
+            ShiftId = shift.Id,
+            HospitalUserId = hospital.Id,
+            RequesterUserId = requester.Id,
+            ShiftDate = shift.ShiftDate,
+            ShiftWindow = "09:00–12:00",
+            Status = ShiftSwapStatus.Pending
+        };
+        context.ShiftSwapRequests.Add(request);
+        await context.SaveChangesAsync();
+        return (hospital, request, first, second);
+    }
+
+    /// <summary>Agent fake that ranks the given candidates in reverse order and counts calls.</summary>
+    private sealed class RankingGateway : IAgentGatewayService
+    {
+        private readonly bool _reverse;
+        public int Calls { get; private set; }
+
+        public RankingGateway(bool reverse) => _reverse = reverse;
+
+        public Task<AgentGatewayResult> ChatAsync(
+            AgentChatRequestDto request,
+            string? bearerToken,
+            IReadOnlyCollection<string>? allowedAgents = null,
+            CancellationToken ct = default)
+        {
+            Calls++;
+            var body = request.Messages[0].Content["RANK_COVER_REPLACEMENTS\n".Length..];
+            using var doc = System.Text.Json.JsonDocument.Parse(body);
+            var reviews = doc.RootElement.GetProperty("requests").EnumerateArray().Select(r =>
+            {
+                var ids = r.GetProperty("candidates").EnumerateArray()
+                    .Select(c => c.GetProperty("affiliationId").GetString())
+                    .ToList();
+                if (_reverse) ids.Reverse();
+                return new
+                {
+                    requestId = r.GetProperty("requestId").GetString(),
+                    summary = "AI reviewed",
+                    ranked = ids.Select(id => new { affiliationId = id, why = "AI pick" })
+                };
+            }).ToList();
+            var content = System.Text.Json.JsonSerializer.Serialize(new { reviews });
+            var json = System.Text.Json.JsonSerializer.Serialize(new { agent = "StaffSchedulingAgent", content });
+            return Task.FromResult(AgentGatewayResult.Ok(json));
+        }
+
+        public Task<AgentGatewayResult> PatientCarePlanAsync(Guid patientProfileId, string? bearerToken, CancellationToken ct = default) =>
+            Task.FromResult(AgentGatewayResult.Ok("{}"));
+
+        public Task<AgentHealthDto> HealthAsync(CancellationToken ct = default) =>
+            Task.FromResult(new AgentHealthDto { Online = true, Agents = new List<string>() });
     }
 
     private static ShiftSwapService CreateService(Vaxora.Api.Data.ApplicationDbContext context) =>

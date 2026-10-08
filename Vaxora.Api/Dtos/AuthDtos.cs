@@ -36,6 +36,11 @@ public class AuthResponseDto
     public string? Message { get; set; }
 }
 
+public class LogoutRequestDto
+{
+    public string? RefreshToken { get; set; }
+}
+
 public class RefreshTokenRequestDto
 {
     [Required]

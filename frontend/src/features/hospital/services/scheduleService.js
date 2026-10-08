@@ -74,6 +74,13 @@ export const scheduleService = {
       method: 'GET',
     });
   },
+
+  getStockHorizon(payload) {
+    return apiRequest('/schedule/stock-horizon', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 export default scheduleService;

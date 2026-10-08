@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/features/patient/presentation/screens/patient_appointments_screen.dart';
 import 'package:mobile/features/patient/presentation/widgets/appointment_card.dart';
+
 import 'test_helpers.dart';
 
 void main() {
@@ -103,24 +105,52 @@ void main() {
       await tester.pumpAndSettle();
 
       // Empty state for Upcoming filter
-      expect(
-        find.text('No upcoming sessions. Book a slot with AI or the form.'),
-        findsOneWidget,
-      );
+      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsOneWidget);
 
       // Switch to Past filter chip
       await tester.tap(find.text('Past').last);
       await tester.pumpAndSettle();
 
       // Empty state for Past filter
+      expect(find.text('No past appointments on record.'), findsOneWidget);
+    });
+
+    testWidgets('appointment load failures show an error and can be retried', (WidgetTester tester) async {
+      var failFirstRequest = true;
+      HttpOverrides.global = TestMockHttpOverrides((method, uri, body) async {
+        if (uri.path.contains('/appointments/my') && failFirstRequest) {
+          failFirstRequest = false;
+          return MockHttpResponse(
+            statusCode: 503,
+            body: jsonEncode({'message': 'Appointments are temporarily unavailable.'}),
+          );
+        }
+        if (uri.path.contains('/appointments/my')) {
+          return MockHttpResponse(statusCode: 200, body: '[]');
+        }
+        return MockHttpResponse(statusCode: 200, body: '{}');
+      });
+
+      await tester.pumpWidget(createTestApp(const PatientAppointmentsScreen()));
+      await tester.pumpAndSettle();
+
       expect(
-        find.text('No past appointments on record.'),
+        find.textContaining('Unable to load appointments: Appointments are temporarily unavailable.'),
         findsOneWidget,
       );
+      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsNothing);
+
+      await tester.tap(find.text('Retry'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsOneWidget);
+      expect(find.textContaining('Unable to load appointments:'), findsNothing);
     });
 
     // Scenario 8a: Loading state is displayed while fetching appointments
-    testWidgets('8a. Displays CircularProgressIndicator while fetching appointments from backend', (WidgetTester tester) async {
+    testWidgets('8a. Displays CircularProgressIndicator while fetching appointments from backend', (
+      WidgetTester tester,
+    ) async {
       HttpOverrides.global = TestMockHttpOverrides((method, uri, body) async {
         // Delay response to inspect loading spinner
         await Future.delayed(const Duration(milliseconds: 500));

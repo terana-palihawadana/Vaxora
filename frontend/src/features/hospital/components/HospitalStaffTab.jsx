@@ -16,7 +16,14 @@ import {
 function mapAffiliationToCard(item) {
   const isPending = item.status === 'Pending';
   const roleLabel = item.staffRole === 'DOCTOR' ? 'Doctor' : 'Nurse';
-  const liveDuty = item.isOnDutyNow ? 'On duty' : 'No active shift';
+  const liveDuty =
+    String(item.dutyStatus || '').toLowerCase() === 'onbreak'
+      ? 'On break'
+      : item.isOnDutyNow
+        ? item.isClockedIn
+          ? 'Clocked in'
+          : 'On shift'
+        : 'Not on duty';
 
   return {
     id: item.affiliationId,
@@ -45,6 +52,8 @@ export default function HospitalStaffTab() {
   const [loading, setLoading] = useState(true);
   const [staffList, setStaffList] = useState([]);
   const [actionId, setActionId] = useState(null);
+  // Removing staff also frees their upcoming shifts, so ask for a second click.
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [sortBy] = useState('name');
   const [page, setPage] = useState(1);
   const [pendingCoverCount, setPendingCoverCount] = useState(0);
@@ -131,10 +140,20 @@ export default function HospitalStaffTab() {
   };
 
   const handleRemoveStaff = async (affiliationId) => {
+    if (confirmRemoveId !== affiliationId) {
+      setConfirmRemoveId(affiliationId);
+      return;
+    }
+    setConfirmRemoveId(null);
     setActionId(affiliationId);
     try {
-      await staffService.removeAffiliation(affiliationId);
-      showToast('Staff removed from roster.');
+      const result = await staffService.removeAffiliation(affiliationId);
+      const freed = Number(result?.freedShiftCount) || 0;
+      showToast(
+        freed > 0
+          ? `Staff removed. ${freed} upcoming shift${freed === 1 ? ' was' : 's were'} freed — reassign them in Shifts.`
+          : 'Staff removed from roster.'
+      );
       await loadStaff();
     } catch (err) {
       setError(err.message || 'Failed to remove staff.');
@@ -455,7 +474,7 @@ export default function HospitalStaffTab() {
                       width: '6px',
                       height: '6px',
                       background:
-                        staff.status === 'On duty'
+                        staff.isOnDutyNow
                           ? '#22c55e'
                           : staff.affiliationStatus === 'Pending'
                             ? '#f59e0b'
@@ -465,7 +484,7 @@ export default function HospitalStaffTab() {
                   <span
                     style={{
                       color:
-                        staff.status === 'On duty'
+                        staff.isOnDutyNow
                           ? '#15803d'
                           : staff.affiliationStatus === 'Pending'
                             ? '#b45309'
@@ -525,21 +544,48 @@ export default function HospitalStaffTab() {
                     {actionId === staff.id ? 'Cancelling...' : 'Cancel Request'}
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveStaff(staff.id)}
-                    disabled={actionId === staff.id}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#dc2626',
-                      fontWeight: 600,
-                      fontSize: '0.78rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {actionId === staff.id ? 'Removing...' : 'Remove'}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStaff(staff.id)}
+                      disabled={actionId === staff.id}
+                      title={
+                        confirmRemoveId === staff.id
+                          ? 'Their upcoming shifts here will be freed for reassignment'
+                          : undefined
+                      }
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#dc2626',
+                        fontWeight: 600,
+                        fontSize: '0.78rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {actionId === staff.id
+                        ? 'Removing...'
+                        : confirmRemoveId === staff.id
+                          ? 'Confirm remove?'
+                          : 'Remove'}
+                    </button>
+                    {confirmRemoveId === staff.id && actionId !== staff.id ? (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmRemoveId(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#64748b',
+                          fontWeight: 600,
+                          fontSize: '0.78rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Keep
+                      </button>
+                    ) : null}
+                  </>
                 )}
               </div>
             </div>

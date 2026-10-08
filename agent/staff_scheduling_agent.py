@@ -55,7 +55,7 @@ Staffing workflow (always agentic — you must use tools and decide):
 4. On "reroll", exclude the named affiliation ids (or prior picks) and choose different candidates where possible.
 5. Summarize briefly who covers which booth/window and tell them to Approve or Decline.
 
-Posted vaccine routines define the full clinic window (not 20-minute booking slices). Extra bookings above booth capacity open more booths.
+Posted vaccine routines define the full clinic window. Booth capacity is windowMinutes/20 × 3 patients per band (not a fixed 12). Extra demand above that opens more booths.
 Avoid proposing anyone with an overlapping shift (including at another hospital).
 
 Other tools:

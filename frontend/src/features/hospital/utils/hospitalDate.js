@@ -1,21 +1,31 @@
-/** Same offset as StaffManagementService.HospitalUtcOffset (Sri Lanka). */
-const HOSPITAL_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+/** Same zone as StaffDutyHelper (Asia/Colombo). */
+const HOSPITAL_TIME_ZONE = 'Asia/Colombo';
 
-function hospitalClock() {
-  return new Date(Date.now() + HOSPITAL_OFFSET_MS);
-}
-
+/** Hospital-local calendar date (yyyy-MM-dd), matching patient booking. */
 export function hospitalToday() {
-  const date = hospitalClock();
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: HOSPITAL_TIME_ZONE });
 }
 
 export function hospitalMinutesNow() {
-  const date = hospitalClock();
-  return date.getUTCHours() * 60 + date.getUTCMinutes();
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: HOSPITAL_TIME_ZONE,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = Number(parts.find((p) => p.type === 'hour')?.value || 0);
+  const minute = Number(parts.find((p) => p.type === 'minute')?.value || 0);
+  return hour * 60 + minute;
+}
+
+/** Normalize API/date values to yyyy-MM-dd for reliable queue filtering. */
+export function toHospitalDateKey(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toLocaleDateString('en-CA', { timeZone: HOSPITAL_TIME_ZONE });
 }
 
 export function addHospitalDays(dateInput, days) {

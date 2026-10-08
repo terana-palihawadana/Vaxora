@@ -296,16 +296,24 @@ public class AuthController : ControllerBase
         }
     }
 
-    [Authorize]
+    /// <summary>
+    /// Clears server refresh session. Accepts an optional refresh token body so
+    /// clients can logout even when the short-lived access token has already expired.
+    /// </summary>
+    [AllowAnonymous]
     [HttpPost("logout")]
-    public async Task<IActionResult> Logout()
+    public async Task<IActionResult> Logout([FromBody] LogoutRequestDto? dto = null)
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
 
         if (Guid.TryParse(userIdClaim, out var userId))
         {
             await _authService.LogoutAsync(userId);
+        }
+        else if (!string.IsNullOrWhiteSpace(dto?.RefreshToken))
+        {
+            await _authService.LogoutByRefreshTokenAsync(dto.RefreshToken);
         }
 
         return Ok(new { message = "Logged out successfully." });

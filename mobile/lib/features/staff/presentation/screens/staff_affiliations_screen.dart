@@ -483,7 +483,7 @@ class _AffiliationCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           StaffStatusChip(
-            label: item.isOnDutyNow ? 'On duty' : 'No active shift',
+            label: item.dutyLabel,
             tone: item.isOnDutyNow
                 ? StaffChipTone.success
                 : StaffChipTone.neutral,

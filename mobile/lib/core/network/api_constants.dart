@@ -33,6 +33,8 @@ class ApiConstants {
   static const String signupDoctor = '/auth/signup/doctor';
   static const String signupNurse = '/auth/signup/nurse';
   static const String signupHospital = '/auth/signup/hospital';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String resetPassword = '/auth/reset-password';
   static const String currentUser = '/auth/me';
   static const String deleteAccount = '/auth/account';
 
@@ -105,6 +107,8 @@ class ApiConstants {
   static const String staffMyShiftSwaps = '/staff/shift-swaps/mine';
   static const String staffShiftSwapQuota = '/staff/shift-swaps/quota';
 
+  static String hospitalShiftSwapRank(String requestId) =>
+      '/staff/shift-swaps/$requestId/rank';
   static String hospitalShiftSwapDecision(String requestId) =>
       '/staff/shift-swaps/$requestId/decision';
 
@@ -114,5 +118,8 @@ class ApiConstants {
       '/staff/affiliations/$affiliationId';
 
   static String appointmentStatus(String id) => '/appointments/$id/status';
+  static String appointmentCheckIn(String id) => '/appointments/$id/check-in';
   static String appointmentAefi(String id) => '/appointments/$id/aefi';
+  static String appointmentDosage(String id) =>
+      '/clinical/appointments/$id/dosage';
 }

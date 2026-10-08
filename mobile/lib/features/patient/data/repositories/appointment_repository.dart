@@ -4,15 +4,17 @@ import '../models/appointment_model.dart';
 
 class AppointmentRepository {
   static Future<List<AppointmentModel>> getMyAppointments() async {
-    try {
-      final response = await ApiClient.get(ApiConstants.myAppointments);
-      if (response is List) {
-        return response
-            .map((item) => AppointmentModel.fromJson(item as Map<String, dynamic>))
-            .toList();
+    final response = await ApiClient.get(ApiConstants.myAppointments);
+    if (response is! List) {
+      throw ApiException('Failed to parse appointments from server response.');
+    }
+
+    return response.map((item) {
+      if (item is! Map<String, dynamic>) {
+        throw ApiException('Failed to parse an appointment from server response.');
       }
-    } catch (_) {}
-    return [];
+      return AppointmentModel.fromJson(item);
+    }).toList();
   }
 
   static Future<AppointmentModel> bookAppointment({

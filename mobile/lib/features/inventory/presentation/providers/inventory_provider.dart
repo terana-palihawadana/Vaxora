@@ -126,7 +126,11 @@ class InventoryProvider extends ChangeNotifier {
   }) async {
     try {
       _errorMessage = null;
+      final existing = _batches.where(
+        (b) => b.name.toLowerCase() == vaccineName.toLowerCase(),
+      );
       await InventoryRepository.restockBatch(
+        category: existing.isEmpty ? null : existing.first.category,
         vaccineName: vaccineName,
         lotNumber: lotNumber,
         quantity: quantity,

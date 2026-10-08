@@ -28,19 +28,19 @@ async def _api_get(endpoint: str, token: Optional[str] = None, params: Optional[
 # ============================================================
 
 async def tool_get_patient_profile(patient_profile_id: str, token: Optional[str] = None) -> Dict[str, Any]:
-    """Get the patient's core profile via /auth/me (uses the caller's own JWT)."""
+    """Get the requested patient's demographics via the ownership-checked timeline endpoint."""
     try:
-        data = await _api_get("/auth/me", token=token)
-        profile = data.get("profileDetails") or {}
+        data = await _api_get(
+            f"/patient-medical-history/patients/{patient_profile_id}/timeline",
+            token=token,
+        )
         return {
             "success": True,
             "profile": {
-                "name": data.get("name"),
-                "registration_number": data.get("registrationNumber"),
-                "email": data.get("email"),
-                "phone": data.get("phoneNumber") or profile.get("phoneNumber"),
-                "nic": profile.get("nicNumber"),
-                "date_of_birth": profile.get("dateOfBirth"),
+                "name": data.get("patientName"),
+                "phone": data.get("phoneNumber"),
+                "nic": data.get("nicNumber"),
+                "date_of_birth": data.get("dateOfBirth"),
             }
         }
     except Exception as e:

@@ -7,6 +7,7 @@ import { appointmentService } from '../../src/features/patient/services/appointm
 // Mock appointment service
 vi.mock('../../src/features/patient/services/appointmentService', () => ({
   appointmentService: {
+    getVaccinesWithHospitals: vi.fn(),
     getPatientAppointments: vi.fn(),
     getAvailableDates: vi.fn(),
     getAvailableSlots: vi.fn(),
@@ -42,10 +43,20 @@ describe('Booking Management - Create Booking Form & Validation', () => {
       json: async () => mockVaccines,
     });
 
+    appointmentService.getVaccinesWithHospitals.mockResolvedValue(mockVaccines);
     appointmentService.getPatientAppointments.mockResolvedValue([]);
   });
 
   // 3. Create booking form renders correctly
+  it('loads vaccine choices through the appointment API service', async () => {
+    render(<AppointmentsTab />);
+
+    expect(await screen.findByRole('option', {
+      name: 'COVID-19 mRNA Booster (Moderna) (Routine)',
+    })).toBeInTheDocument();
+    expect(appointmentService.getVaccinesWithHospitals).toHaveBeenCalledTimes(1);
+  });
+
   it('renders booking form fields and disabled states according to workflow steps', async () => {
     const { container } = render(<AppointmentsTab />);
 
@@ -60,9 +71,8 @@ describe('Booking Management - Create Booking Form & Validation', () => {
     const hospitalSelect = container.querySelector('#select-hospital');
     expect(hospitalSelect).toBeDisabled();
 
-    // Time slot dropdown should be disabled initially
-    const timeSelect = container.querySelector('#select-time');
-    expect(timeSelect).toBeDisabled();
+    // Time slots are not offered until a date is chosen
+    expect(container.querySelector('.slot-list')).not.toBeInTheDocument();
 
     // Book button should render and be disabled until form is complete
     const submitBtn = container.querySelector('.btn-book-appointment');
@@ -155,12 +165,8 @@ describe('Booking Management - Create Booking Form & Validation', () => {
     });
 
     // 4. Wait for slots to finish loading into select
-    const timeSelect = container.querySelector('#select-time');
-    await waitFor(() => {
-      expect(timeSelect).not.toBeDisabled();
-      expect(container.querySelector('option[value="09:00 - 09:20"]')).toBeInTheDocument();
-    });
-    fireEvent.change(timeSelect, { target: { value: '09:00 - 09:20' } });
+    const slotOption = await screen.findByRole('option', { name: /^09:00 - 09:20/ });
+    fireEvent.click(slotOption);
 
     // 5. Submit Booking via enabled CTA button
     const submitBtn = container.querySelector('.btn-book-appointment');
@@ -234,12 +240,8 @@ describe('Booking Management - Create Booking Form & Validation', () => {
     const availableDateCell = await screen.findByTitle(/2026-11-20/i);
     fireEvent.click(availableDateCell);
 
-    const timeSelect = container.querySelector('#select-time');
-    await waitFor(() => {
-      expect(timeSelect).not.toBeDisabled();
-      expect(container.querySelector('option[value="09:00 - 09:20"]')).toBeInTheDocument();
-    });
-    fireEvent.change(timeSelect, { target: { value: '09:00 - 09:20' } });
+    const slotOption = await screen.findByRole('option', { name: /^09:00 - 09:20/ });
+    fireEvent.click(slotOption);
 
     // Submit
     const submitBtn = container.querySelector('.btn-book-appointment');
@@ -298,12 +300,8 @@ describe('Booking Management - Create Booking Form & Validation', () => {
     const availableDateCell = await screen.findByTitle(/2026-11-20/i);
     fireEvent.click(availableDateCell);
 
-    const timeSelect = container.querySelector('#select-time');
-    await waitFor(() => {
-      expect(timeSelect).not.toBeDisabled();
-      expect(container.querySelector('option[value="09:00 - 09:20"]')).toBeInTheDocument();
-    });
-    fireEvent.change(timeSelect, { target: { value: '09:00 - 09:20' } });
+    const slotOption = await screen.findByRole('option', { name: /^09:00 - 09:20/ });
+    fireEvent.click(slotOption);
 
     const submitBtn = container.querySelector('.btn-book-appointment');
     await waitFor(() => {

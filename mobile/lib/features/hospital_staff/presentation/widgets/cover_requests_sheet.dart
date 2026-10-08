@@ -173,6 +173,11 @@ class _CoverRequestsSheetState extends State<CoverRequestsSheet> {
                     replacementAffiliationId: affiliationId,
                   ),
                   onDecline: () => _decide(r, approved: false),
+                  onRanked: (ranked) => setState(() {
+                    _requests = _requests
+                        .map((x) => x.id == ranked.id ? ranked : x)
+                        .toList();
+                  }),
                 ),
               ),
             ),

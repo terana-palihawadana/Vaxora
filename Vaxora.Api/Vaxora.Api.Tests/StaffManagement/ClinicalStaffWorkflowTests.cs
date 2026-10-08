@@ -34,11 +34,38 @@ public class ClinicalStaffWorkflowTests
         Assert.Contains("already passed", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("Administering")]
+    [InlineData("Observation")]
+    public async Task UpdatePrescribedDosageAsync_is_locked_once_administration_started(string status)
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var doctor = TestDb.AddDoctor(context, "doctor@example.com", "VAX-D-3010");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, doctor);
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: status);
+        appointment.PrescribedDosage = "0.5ml";
+        await context.SaveChangesAsync();
+
+        var service = new ClinicalPatientService(context, NullLogger<ClinicalPatientService>.Instance);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdatePrescribedDosageAsync(
+                doctor.Id,
+                appointment.Id,
+                new UpdatePrescribedDosageDto { Dosage = "1.0ml" }));
+
+        Assert.Contains("dose is locked", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("0.5ml", (await context.Appointments.SingleAsync()).PrescribedDosage);
+    }
+
     [Fact]
     public async Task GetPatientByVaxoraId_marks_past_pending_visit_as_overdue_missed()
     {
         await using var context = TestDb.CreateContext();
         var hospital = TestDb.AddHospital(context);
+        var doctor = TestDb.AddDoctor(context, "doctor@example.com", "VAX-D-3006");
+        TestDb.AddActiveAffiliation(context, hospital, doctor);
         var patient = new User
         {
             Email = "patient@example.com",
@@ -67,7 +94,7 @@ public class ClinicalStaffWorkflowTests
         await context.SaveChangesAsync();
 
         var service = new ClinicalPatientService(context, NullLogger<ClinicalPatientService>.Instance);
-        var detail = await service.GetPatientByVaxoraIdAsync("VAX-P-3001");
+        var detail = await service.GetPatientByVaxoraIdAsync("VAX-P-3001", doctor.Id);
 
         var pending = Assert.Single(detail.PendingVaccines);
         Assert.True(pending.IsOverdue);
@@ -83,6 +110,7 @@ public class ClinicalStaffWorkflowTests
         var affiliation = TestDb.AddActiveAffiliation(context, hospital, doctor);
         TestDb.AddLiveShift(context, affiliation, hospital);
         var appointment = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        appointment.PrescribedDosage = "0.5ml";
         await context.SaveChangesAsync();
 
         var service = CreateAppointmentService(context);
@@ -129,6 +157,8 @@ public class ClinicalStaffWorkflowTests
         var affiliation = TestDb.AddActiveAffiliation(context, hospital, doctor);
         TestDb.AddLiveShift(context, affiliation, hospital);
         var appointment = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        appointment.PrescribedDosage = "0.5ml";
+        appointment.CheckedInAt = DateTime.UtcNow;
         await context.SaveChangesAsync();
 
         var service = CreateAppointmentService(context);
@@ -138,6 +168,131 @@ public class ClinicalStaffWorkflowTests
             new UpdateAppointmentStatusDto { Status = "Administering" });
 
         Assert.Equal("Administering", updated.Status);
+    }
+
+    [Fact]
+    public async Task Discharge_is_refused_before_the_15_minute_observation_window()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "nurse@example.com", "VAX-N-3030");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Observation");
+        appointment.PrescribedDosage = "0.5ml";
+        appointment.UpdatedAt = DateTime.UtcNow.AddMinutes(-5);
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                nurse.Id,
+                appointment.Id,
+                new UpdateAppointmentStatusDto { Status = "Completed" }));
+
+        Assert.Contains("Observation is not complete", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Staff_cannot_call_a_patient_who_has_not_checked_in()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "nurse@example.com", "VAX-N-3020");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        appointment.PrescribedDosage = "0.5ml";
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                nurse.Id,
+                appointment.Id,
+                new UpdateAppointmentStatusDto { Status = "Administering" }));
+
+        Assert.Contains("not checked in", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task CheckInAsync_marks_today_patient_arrived_and_rejects_other_days()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var today = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        var tomorrow = TestDb.AddAppointment(
+            context,
+            hospital,
+            status: "Confirmed",
+            date: StaffDutyHelper.HospitalToday().AddDays(1));
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var checkedIn = await service.CheckInAsync(hospital.Id, today.Id);
+
+        Assert.NotNull(checkedIn.CheckedInAt);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.CheckInAsync(hospital.Id, tomorrow.Id));
+        Assert.Contains("day of their appointment", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Staff_cannot_start_administering_without_a_prescribed_dose()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddDoctor(context, "nurse@example.com", "VAX-D-3005");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        appointment.PrescribedDosage = null;
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                nurse.Id,
+                appointment.Id,
+                new UpdateAppointmentStatusDto { Status = "Administering" }));
+
+        Assert.Contains("must prescribe the dose", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Theory]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    [InlineData(true, true, false)]
+    [InlineData(null, null, null)]
+    public async Task Recording_administration_requires_dose_consent_and_vitals_sign_off(
+        bool? doseConfirmed,
+        bool? consentConfirmed,
+        bool? vitalsConfirmed)
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "nurse@example.com", "VAX-N-3010");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Administering");
+        appointment.PrescribedDosage = "0.5ml";
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                nurse.Id,
+                appointment.Id,
+                new UpdateAppointmentStatusDto
+                {
+                    Status = "Observation",
+                    DoseConfirmed = doseConfirmed,
+                    ConsentConfirmed = consentConfirmed,
+                    VitalsConfirmed = vitalsConfirmed
+                }));
+
+        Assert.Contains("Confirm the prescribed dose", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Administering", (await context.Appointments.SingleAsync()).Status);
     }
 
     [Fact]

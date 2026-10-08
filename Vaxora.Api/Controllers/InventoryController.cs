@@ -101,6 +101,30 @@ public class InventoryController : ControllerBase
         }
     }
 
+    [HttpPatch("formulary/{id:guid}/price")]
+    [Authorize(Roles = "HOSPITAL,ADMIN")]
+    public async Task<IActionResult> UpdateFormularyPrice(Guid id, [FromBody] UpdateFormularyPriceDto dto)
+    {
+        try
+        {
+            var result = await _inventoryService.UpdateFormularyPriceAsync(GetUserId(), id, dto);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating formulary price {FormularyId}", id);
+            return StatusCode(500, new { message = "Failed to update vaccine fee." });
+        }
+    }
+
     [HttpDelete("formulary/{id}")]
     [Authorize(Roles = "HOSPITAL,ADMIN")]
     public async Task<IActionResult> RemoveFormulary(Guid id)

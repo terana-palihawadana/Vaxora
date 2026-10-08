@@ -1,11 +1,249 @@
 import httpx
 import re
 from typing import Dict, Any, List, Optional
+from datetime import datetime, timezone, timedelta, date
 
 try:
     from .config import settings
 except ImportError:
     from config import settings
+
+MONTH_NAMES = {
+    "january": 1, "jan": 1,
+    "february": 2, "feb": 2,
+    "march": 3, "mar": 3,
+    "april": 4, "apr": 4,
+    "may": 5,
+    "june": 6, "jun": 6,
+    "july": 7, "jul": 7,
+    "august": 8, "aug": 8,
+    "september": 9, "sep": 9, "sept": 9,
+    "october": 10, "oct": 10,
+    "november": 11, "nov": 11,
+    "december": 12, "dec": 12,
+}
+
+WEEKDAY_NAMES = {
+    "monday": 0, "mon": 0,
+    "tuesday": 1, "tue": 1, "tues": 1,
+    "wednesday": 2, "wed": 2,
+    "thursday": 3, "thu": 3, "thur": 3, "thurs": 3,
+    "friday": 4, "fri": 4,
+    "saturday": 5, "sat": 5,
+    "sunday": 6, "sun": 6,
+}
+
+def _hospital_clock() -> datetime:
+    """Official Vaxora clock (UTC+5:30 / Sri Lanka Time)."""
+    return datetime.now(timezone(timedelta(hours=5, minutes=30)))
+
+def _hospital_today() -> str:
+    return _hospital_clock().date().isoformat()
+
+def _get_current_date() -> date:
+    return _hospital_clock().date()
+
+def _get_temporal_context() -> Dict[str, Any]:
+    now = _hospital_clock()
+    today_date = now.date()
+    today_iso = today_date.isoformat()
+    day_name = now.strftime("%A")
+    month_name = now.strftime("%B")
+    month_short = now.strftime("%b")
+    month_num = now.month
+    year = now.year
+    time_12 = now.strftime("%I:%M %p")
+    time_24 = now.strftime("%H:%M")
+
+    upcoming = {}
+    for offset in range(14):
+        target = today_date + timedelta(days=offset)
+        label = "Today" if offset == 0 else ("Tomorrow" if offset == 1 else target.strftime("%A"))
+        if offset >= 7 and label not in ("Today", "Tomorrow"):
+            label = f"Next {target.strftime('%A')}"
+        upcoming[label] = {
+            "date": target.isoformat(),
+            "dayOfWeek": target.strftime("%A"),
+            "formatted": target.strftime("%A, %B %d, %Y"),
+            "month": target.strftime("%B"),
+            "monthNumber": target.month,
+            "day": target.day,
+            "year": target.year
+        }
+
+    return {
+        "today": today_iso,
+        "day_of_week": day_name,
+        "month": month_name,
+        "month_short": month_short,
+        "month_number": month_num,
+        "year": year,
+        "time": time_12,
+        "time_24": time_24,
+        "timestamp_iso": now.isoformat(),
+        "formatted_datetime": f"{day_name}, {month_name} {today_date.day}, {year} at {time_12}",
+        "upcoming_calendar": upcoming
+    }
+
+def _parse_natural_date_to_iso(date_str: Any, base_date: Optional[date] = None) -> Optional[str]:
+    """
+    Parses natural language dates and months into ISO 'YYYY-MM-DD' format anchored to base_date (today).
+    Handles:
+    - '2026-10-16'
+    - 'October 16', '16th October', '16 Oct', 'Oct 16', '16th of October'
+    - 'today', 'tomorrow', 'day after tomorrow', 'next week'
+    - 'Wednesday', 'next Friday', 'coming Monday'
+    """
+    if not date_str:
+        return None
+    s = str(date_str).strip()
+    base = base_date or _get_current_date()
+
+    # 1. Exact ISO
+    m_iso = re.search(r'(\d{4}-\d{2}-\d{2})', s)
+    if m_iso:
+        return m_iso.group(1)
+
+    s_lower = s.lower()
+
+    # 2. Relative keywords
+    if "today" in s_lower:
+        return base.isoformat()
+    if "tomorrow" in s_lower and "day after" not in s_lower:
+        return (base + timedelta(days=1)).isoformat()
+    if "day after tomorrow" in s_lower:
+        return (base + timedelta(days=2)).isoformat()
+    if "next week" in s_lower:
+        return (base + timedelta(days=7)).isoformat()
+
+    # 3. Month + Day combinations: e.g. "October 16", "Oct 16th", "16th of October", "16 October"
+    # Pattern A: Month then Day -> "October 16", "Oct 16th"
+    p_month_first = re.search(
+        r'\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b\s*(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?',
+        s_lower
+    )
+    if p_month_first:
+        m_name = p_month_first.group(1)
+        day_num = int(p_month_first.group(2))
+        year_num = int(p_month_first.group(3)) if p_month_first.group(3) else None
+        m_num = MONTH_NAMES.get(m_name)
+        if m_num and 1 <= day_num <= 31:
+            if not year_num:
+                year_num = base.year if (m_num >= base.month or (m_num == base.month and day_num >= base.day)) else base.year + 1
+            try:
+                return date(year_num, m_num, day_num).isoformat()
+            except ValueError:
+                pass
+
+    # Pattern B: Day then Month -> "16th of October", "16 October", "16th Oct"
+    p_day_first = re.search(
+        r'\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)\b(?:\s*,?\s*(\d{4}))?',
+        s_lower
+    )
+    if p_day_first:
+        day_num = int(p_day_first.group(1))
+        m_name = p_day_first.group(2)
+        year_num = int(p_day_first.group(3)) if p_day_first.group(3) else None
+        m_num = MONTH_NAMES.get(m_name)
+        if m_num and 1 <= day_num <= 31:
+            if not year_num:
+                year_num = base.year if (m_num >= base.month or (m_num == base.month and day_num >= base.day)) else base.year + 1
+            try:
+                return date(year_num, m_num, day_num).isoformat()
+            except ValueError:
+                pass
+
+    # 4. Weekday names: e.g. "Wednesday", "next Friday"
+    for w_name, w_idx in WEEKDAY_NAMES.items():
+        if re.search(r'\b' + w_name + r'\b', s_lower):
+            offset = (w_idx - base.weekday()) % 7
+            if "next" in s_lower and offset == 0:
+                offset = 7
+            elif offset == 0 and "next" in s_lower:
+                offset = 7
+            elif offset == 0:
+                offset = 0
+            return (base + timedelta(days=offset)).isoformat()
+
+    return None
+
+def _resolve_preferred_date(
+    preferred_date_input: Optional[str],
+    available_dates: List[Dict[str, Any]],
+    base_date: Optional[date] = None
+) -> Optional[str]:
+    """
+    Intelligently resolves a patient's preferred date or month against the list of available clinic dates.
+    FIRST checks today's date to avoid proposing past sessions.
+    Supports:
+    - Specific ISO dates ('2026-10-16')
+    - Natural month+day ('October 16th', '16 Oct')
+    - Month-only queries ('in October', 'October') -> selects first session in October
+    - Relative days ('today', 'tomorrow', 'next week')
+    - Day of week ('Wednesday', 'Friday')
+    """
+    if not available_dates:
+        return None
+
+    base = base_date or _get_current_date()
+    today_str = base.isoformat()
+
+    # Filter out past dates so the agent never proposes past appointments
+    future_dates = [d for d in available_dates if (d.get("date") or "") >= today_str]
+    pool = future_dates if future_dates else available_dates
+
+    if not preferred_date_input or str(preferred_date_input).strip().lower() in ["earliest", "any", "first", "next available", "asap"]:
+        return pool[0].get("date")
+
+    s_raw = str(preferred_date_input).strip()
+    s_lower = s_raw.lower()
+
+    # 1. Direct ISO match
+    clean_iso = _clean_date_string(s_raw)
+    if clean_iso and re.match(r'^\d{4}-\d{2}-\d{2}$', clean_iso):
+        for d in pool:
+            if d.get("date") == clean_iso:
+                return clean_iso
+
+    # 2. Natural language parsing to ISO
+    parsed_iso = _parse_natural_date_to_iso(s_raw, base)
+    if parsed_iso:
+        # Exact match in available dates
+        for d in pool:
+            if d.get("date") == parsed_iso:
+                return parsed_iso
+        # If exact date not open, find closest available session on or after requested date
+        on_or_after = [d for d in pool if (d.get("date") or "") >= parsed_iso]
+        if on_or_after:
+            return on_or_after[0].get("date")
+
+    # 3. Month-only matching (e.g. "October", "in October", "Nov")
+    for m_name, m_num in MONTH_NAMES.items():
+        if re.search(r'\b' + m_name + r'\b', s_lower):
+            month_matches = [
+                d for d in pool
+                if len(d.get("date", "")) >= 7 and int(d.get("date", "")[5:7]) == m_num
+            ]
+            if month_matches:
+                return month_matches[0].get("date")
+
+    # 4. Day of week matching (e.g. "Wednesday", "Friday")
+    for d in pool:
+        dow = str(d.get("dayOfWeek") or "").lower()
+        if dow and dow in s_lower:
+            return d.get("date")
+
+    # 5. Day number matching (e.g. "16th", "on the 20th")
+    m_day = re.search(r'\b(\d{1,2})(?:st|nd|rd|th)\b', s_lower)
+    if m_day:
+        target_day = int(m_day.group(1))
+        for d in pool:
+            dt_val = str(d.get("date") or "")
+            if len(dt_val) >= 10 and int(dt_val[8:10]) == target_day:
+                return dt_val
+
+    # Default fallback
+    return pool[0].get("date")
 
 def _is_valid_uuid(val: Any) -> bool:
     if not val:
@@ -220,8 +458,6 @@ async def tool_get_available_vaccines_and_hospitals(token: Optional[str] = None)
                     h_copy["formattedPrice"] = matched_sched.get("formattedPrice") or (f"LKR {price:,.2f}" if price > 0 else "Free (0 LKR)")
                     h_copy["is_free"] = price <= 0
                     h_copy["vaccineScheduleId"] = matched_sched.get("id")
-                    h_copy["doctorName"] = matched_sched.get("doctorName")
-                    h_copy["nurseName"] = matched_sched.get("nurseName")
                     matched_prices.append(price)
                 else:
                     h_copy["price"] = 0.0
@@ -247,13 +483,69 @@ async def tool_get_available_vaccines_and_hospitals(token: Optional[str] = None)
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-async def tool_get_available_dates(hospital_user_id: str, vaccine_name: str, token: Optional[str] = None) -> Dict[str, Any]:
-    """Retrieve available clinic dates and schedules for a specific hospital and vaccine."""
+async def tool_get_current_date_time(token: Optional[str] = None) -> Dict[str, Any]:
+    """Retrieve today's date, current day of week, month, year, time, and 14-day upcoming calendar in Vaxora."""
+    return {
+        "success": True,
+        **_get_temporal_context()
+    }
+
+async def tool_get_available_dates(
+    hospital_user_id: str,
+    vaccine_name: str,
+    month: Optional[str] = None,
+    token: Optional[str] = None
+) -> Dict[str, Any]:
+    """Retrieve available clinic dates and schedules for a specific hospital and vaccine with temporal enrichment and optional month filtering."""
     try:
         hid, vname = await _resolve_hospital_and_vaccine(hospital_user_id, vaccine_name, token=token)
         params = {"hospitalUserId": hid, "vaccineName": vname}
         data = await api_get("/appointments/available-dates", token=token, params=params)
-        return {"success": True, "dates": data, "hospital_user_id": hid, "vaccine_name": vname}
+
+        today_obj = _get_current_date()
+        today_str = today_obj.isoformat()
+        current_month_name = today_obj.strftime("%B")
+        current_year = today_obj.year
+
+        enriched_dates = []
+        for d in (data if isinstance(data, list) else []):
+            d_copy = dict(d)
+            dt_str = str(d_copy.get("date") or "").strip()
+            if dt_str and len(dt_str) >= 10:
+                try:
+                    d_obj = datetime.strptime(dt_str[:10], "%Y-%m-%d").date()
+                    d_copy["month"] = d_obj.strftime("%B")
+                    d_copy["monthNumber"] = d_obj.month
+                    d_copy["year"] = d_obj.year
+                    d_copy["day"] = d_obj.day
+                    d_copy["isToday"] = (d_obj == today_obj)
+                    d_copy["isPast"] = (d_obj < today_obj)
+                    d_copy["formatted"] = d_obj.strftime("%A, %B %d, %Y")
+                except Exception:
+                    pass
+            enriched_dates.append(d_copy)
+
+        month_filtered_dates = None
+        if month:
+            m_target = None
+            m_clean = str(month).strip().lower()
+            if m_clean in MONTH_NAMES:
+                m_target = MONTH_NAMES[m_clean]
+            elif m_clean.isdigit():
+                m_target = int(m_clean)
+            if m_target:
+                month_filtered_dates = [d for d in enriched_dates if d.get("monthNumber") == m_target]
+
+        return {
+            "success": True,
+            "today": today_str,
+            "current_month": f"{current_month_name} {current_year}",
+            "dates": enriched_dates,
+            "month_filter": month,
+            "matching_dates_for_month": month_filtered_dates,
+            "hospital_user_id": hid,
+            "vaccine_name": vname
+        }
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -285,9 +577,8 @@ async def tool_autonomous_find_and_propose(
         # 1. Resolve hospital and vaccine name
         hid, vname = await _resolve_hospital_and_vaccine(hospital_name_or_id, vaccine_name, token=token)
 
-        # 2. Get schedule details for hospital name, price, doctor, etc.
+        # 2. Get schedule details for hospital name and price.
         hospital_name = "Hospital Center"
-        doctor_name = None
         schedule_id = None
         vaccine_id = None
         price = 0.0
@@ -301,7 +592,6 @@ async def tool_autonomous_find_and_propose(
                 s_vname = str(s.get("vaccineName") or "").strip().lower()
                 if (s_huid == str(hid).lower() or not hid) and (s_vname == vname.lower() or s_vname in vname.lower() or vname.lower() in s_vname):
                     hospital_name = s.get("hospitalName") or hospital_name
-                    doctor_name = s.get("doctorName")
                     schedule_id = s.get("id")
                     vaccine_id = s.get("vaccineId")
                     price = float(s.get("price") or 0.0)
@@ -330,25 +620,8 @@ async def tool_autonomous_find_and_propose(
                 "error": f"No clinic sessions found for {vname} at {hospital_name}. Please choose another vaccine or hospital."
             }
 
-        # Select date matching preference
-        selected_date = None
-        pref_date_clean = _clean_date_string(preferred_date) if preferred_date else None
-        pref_day_lower = str(preferred_date or "").lower().strip()
-
-        if pref_date_clean and re.match(r'^\d{4}-\d{2}-\d{2}$', pref_date_clean):
-            # Exact date match
-            for d in dates_res:
-                if d.get("date") == pref_date_clean:
-                    selected_date = d.get("date")
-                    break
-
-        if not selected_date and pref_day_lower:
-            # Check day of week match (e.g. "wednesday", "friday")
-            for d in dates_res:
-                if d.get("dayOfWeek", "").lower() in pref_day_lower or pref_day_lower in d.get("dayOfWeek", "").lower():
-                    selected_date = d.get("date")
-                    break
-
+        # Select date matching preference using intelligent calendar and month resolver
+        selected_date = _resolve_preferred_date(preferred_date, dates_res)
         if not selected_date:
             # Default to the earliest available date
             selected_date = dates_res[0].get("date")
@@ -411,8 +684,7 @@ async def tool_autonomous_find_and_propose(
             "appointment_date": selected_date,
             "time_slot": selected_slot,
             "price": price,
-            "is_free": is_free,
-            "doctor_name": doctor_name
+            "is_free": is_free
         }
 
         return {
@@ -680,6 +952,18 @@ TOOLS_SCHEMA = [
     {
         "type": "function",
         "function": {
+            "name": "get_current_date_time",
+            "description": "Get current real-time clock and calendar details in Vaxora: today's date, day of week, current month, year, time, and 14-day upcoming calendar reference. Use this to check today's date before performing date calculations or schedule queries.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_available_vaccines_and_hospitals",
             "description": "Get all vaccines, hospital locations, stock levels, and pricing details in Vaxora.",
             "parameters": {
@@ -707,7 +991,7 @@ TOOLS_SCHEMA = [
                     },
                     "preferred_date": {
                         "type": "string",
-                        "description": "Optional preferred date ('YYYY-MM-DD') or day of week ('Wednesday', 'Friday', 'next week') or 'earliest'."
+                        "description": "Optional preferred date (e.g. 'YYYY-MM-DD', 'October 16', '16th October', 'Friday', 'next week', 'tomorrow', 'in October', or 'earliest'). The agent resolves this relative to today's date."
                     },
                     "preferred_slot": {
                         "type": "string",
@@ -727,7 +1011,7 @@ TOOLS_SCHEMA = [
         "type": "function",
         "function": {
             "name": "get_available_dates",
-            "description": "Get available scheduled clinic dates for a specific hospital and vaccine name.",
+            "description": "Get available scheduled clinic dates for a specific hospital and vaccine name, with optional month filtering.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -738,6 +1022,10 @@ TOOLS_SCHEMA = [
                     "vaccine_name": {
                         "type": "string",
                         "description": "The name of the vaccine (e.g. 'COVID-19 (Pfizer-BioNTech)', 'Influenza')"
+                    },
+                    "month": {
+                        "type": "string",
+                        "description": "Optional month name or number (e.g. 'October', '10', 'November') to filter clinic dates."
                     }
                 },
                 "required": ["hospital_user_id", "vaccine_name"]
@@ -785,8 +1073,7 @@ TOOLS_SCHEMA = [
                     "appointment_date": {"type": "string", "description": "Date in 'YYYY-MM-DD' format"},
                     "time_slot": {"type": "string", "description": "Time slot like '09:00 AM - 09:20 AM'"},
                     "price": {"type": "number", "description": "Vaccine fee in LKR (0 for free)"},
-                    "is_free": {"type": "boolean", "description": "True if free, False if paid"},
-                    "doctor_name": {"type": "string", "description": "Assigned doctor if any"}
+                    "is_free": {"type": "boolean", "description": "True if free, False if paid"}
                 },
                 "required": ["hospital_user_id", "hospital_name", "vaccine_name", "appointment_date", "time_slot", "is_free"]
             }

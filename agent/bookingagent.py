@@ -11,6 +11,9 @@ try:
         TOOLS_SCHEMA,
         _clean_date_string,
         _clean_slot_string,
+        _get_temporal_context,
+        _hospital_today,
+        tool_get_current_date_time,
         tool_autonomous_find_and_propose,
         tool_get_available_vaccines_and_hospitals,
         tool_get_available_dates,
@@ -26,6 +29,9 @@ except ImportError:
         TOOLS_SCHEMA,
         _clean_date_string,
         _clean_slot_string,
+        _get_temporal_context,
+        _hospital_today,
+        tool_get_current_date_time,
         tool_autonomous_find_and_propose,
         tool_get_available_vaccines_and_hospitals,
         tool_get_available_dates,
@@ -107,6 +113,18 @@ You are STRICTLY FORBIDDEN from executing permanent database changes (`book_appo
    You are an administrative booking agent, NOT a medical doctor.
    You are strictly forbidden from prescribing vaccines, diagnosing conditions, or advising patients on what vaccines they should take based on vague inquiries (e.g. 'What vaccines can I take now?', 'Which vaccine should I take?').
    Always politely decline medical recommendations and advise the patient to consult a qualified physician or healthcare professional.
+
+7. REAL-TIME CALENDAR & TEMPORAL REASONING (MANDATORY):
+   You are equipped with a live clock and calendar. You always know today's exact date, current month, current year, day of week, and time.
+   - ALWAYS LOOK AT TODAY'S DATE FIRST: Before running queries, checking schedules, or proposing dates, first inspect today's date from the live system context (or call `get_current_date_time`).
+   - NATURAL DATE & MONTH CONVERSATION:
+     When patients talk to you using dates and months (e.g. "October 16", "16th October", "next Friday", "tomorrow", "this month", "what dates are open in October?", "what is today's date?"):
+     - You understand and talk about calendar dates, months, days of the week, and times naturally.
+     - You can directly answer questions about today's date, the current day of the week, the current month, and the current time.
+     - Always resolve relative terms ("today", "tomorrow", "this Wednesday", "next week", "16th of October") against today's date to standard 'YYYY-MM-DD' before making queries.
+     - If the user asks for a month (e.g., "dates in October" or "October"), query available dates and filter or highlight the clinic dates in that month.
+     - NEVER propose dates in the past (before today).
+     - When presenting proposals, always confirm the complete, friendly date (e.g., "Friday, October 16, 2026 at 09:00 AM").
 """
 
 INJECTION_PATTERNS = [
@@ -194,7 +212,9 @@ class BookingAgent:
     async def execute_tool(self, tool_name: str, arguments: Dict[str, Any], token: Optional[str]) -> Any:
         logger.info(f"[{self.name}] Tool Call: {tool_name} with args: {arguments}")
         
-        if tool_name == "autonomous_find_and_propose":
+        if tool_name == "get_current_date_time":
+            return await tool_get_current_date_time(token=token)
+        elif tool_name == "autonomous_find_and_propose":
             return await tool_autonomous_find_and_propose(
                 vaccine_name=arguments.get("vaccine_name"),
                 hospital_name_or_id=arguments.get("hospital_name_or_id"),
@@ -209,6 +229,7 @@ class BookingAgent:
             return await tool_get_available_dates(
                 hospital_user_id=arguments.get("hospital_user_id"),
                 vaccine_name=arguments.get("vaccine_name"),
+                month=arguments.get("month"),
                 token=token
             )
         elif tool_name == "get_available_slots":
@@ -390,7 +411,28 @@ class BookingAgent:
             except Exception as se:
                 logger.warning(f"Failed to set plan in state store: {se}")
 
-        conversation = [{"role": "system", "content": BOOKING_AGENT_SYSTEM_PROMPT}]
+        temporal = _get_temporal_context()
+        upcoming_sample = list(temporal["upcoming_calendar"].items())[:7]
+        cal_summary = ", ".join([f"{k}={v['date']}" for k, v in upcoming_sample])
+
+        temporal_system_prompt = (
+            f"REAL-TIME CLOCK & CALENDAR CONTEXT (GROUND TRUTH):\n"
+            f"• Current Date: {temporal['today']} ({temporal['day_of_week']})\n"
+            f"• Current Month: {temporal['month']} {temporal['year']} (Month #{temporal['month_number']})\n"
+            f"• Current Time: {temporal['time']} ({temporal['time_24']} 24h)\n"
+            f"• Reference Anchor: Today is {temporal['formatted_datetime']}.\n"
+            f"• Next 7 Days Reference: {cal_summary}\n\n"
+            f"DATE & QUERY RESOLUTION RULES:\n"
+            f"1. Always anchor any date calculation to today ({temporal['today']}).\n"
+            f"2. Resolve patient natural date phrases ('today', 'tomorrow', 'next week', 'Friday', 'October 16th', 'in October') relative to {temporal['today']}.\n"
+            f"3. Never propose past dates (dates before {temporal['today']}).\n"
+            f"4. You can freely answer questions about today's date, current month, or calendar details."
+        )
+
+        conversation = [
+            {"role": "system", "content": BOOKING_AGENT_SYSTEM_PROMPT},
+            {"role": "system", "content": temporal_system_prompt}
+        ]
         if patient_info:
             conversation.append({
                 "role": "system",

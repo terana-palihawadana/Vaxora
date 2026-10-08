@@ -121,8 +121,8 @@ public class AgentController : ControllerBase
 
     /// <summary>
     /// Runs the two-agent Patient Care workflow (PatientDataAgent -> CarePlanningAgent).
-    /// Ownership is enforced downstream — the Python agents call the patient endpoints
-    /// using the caller's JWT, and those endpoints verify ownership when the caller is a PATIENT.
+    /// Patient ownership is enforced by the medical-history endpoints called by the agents
+    /// using the caller's JWT.
     /// </summary>
     [HttpPost("patient-care-plan")]
     [Authorize(Roles = "DOCTOR,NURSE,HOSPITAL,ADMIN,PATIENT")]

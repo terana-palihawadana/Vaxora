@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../../../auth/data/repositories/auth_repository.dart';
@@ -33,6 +34,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
   late List<PatientAppointment> _appointments;
   UserModel? _user;
   bool _isLoading = true;
+  String? _loadError;
 
   @override
   void initState() {
@@ -42,33 +44,43 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
   }
 
   Future<void> _loadBackendAppointments() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
-      final userFuture = AuthRepository.getCurrentUser();
-      final apptsFuture = AppointmentRepository.getMyAppointments();
-      final user = await userFuture;
-      final backendList = await apptsFuture;
+      final backendList = await AppointmentRepository.getMyAppointments();
+      final user = await AuthRepository.getCurrentUser();
       if (mounted) {
         setState(() {
           _user = user;
-          _appointments = backendList.map((b) => PatientAppointment(
-            id: b.referenceNumber ?? (b.id.length > 8 ? b.id.substring(0, 8) : b.id),
-            rawId: b.id,
-            vaccineName: b.vaccineName,
-            hospitalName: b.hospitalName,
-            location: 'Assigned Vaccination Center',
-            date: b.appointmentDate,
-            time: b.timeSlot,
-            doctorName: 'Medical Officer',
-            status: b.status,
-            fee: b.fee ?? 0.0,
-            isPaid: b.isPaid || b.status.toLowerCase() == 'confirmed' || b.status.toLowerCase() == 'completed',
-          )).toList();
+          _appointments = backendList
+              .map(
+                (b) => PatientAppointment(
+                  id: b.referenceNumber ?? (b.id.length > 8 ? b.id.substring(0, 8) : b.id),
+                  rawId: b.id,
+                  vaccineName: b.vaccineName,
+                  hospitalName: b.hospitalName,
+                  location: 'Assigned Vaccination Center',
+                  date: b.appointmentDate,
+                  time: b.timeSlot,
+                  doctorName: 'Medical Officer',
+                  status: b.status,
+                  fee: b.fee ?? 0.0,
+                  isPaid: b.isPaid || b.status.toLowerCase() == 'confirmed' || b.status.toLowerCase() == 'completed',
+                ),
+              )
+              .toList();
           _isLoading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoading = false);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = error.toString();
+        });
+      }
     }
   }
 
@@ -169,32 +181,21 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: StaffSurfaces.cardBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(StaffSurfaces.cardRadius),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(StaffSurfaces.cardRadius)),
         title: const Text(
           'Cancel appointment?',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: StaffSurfaces.textPrimary,
-          ),
+          style: TextStyle(fontWeight: FontWeight.w700, color: StaffSurfaces.textPrimary),
         ),
         content: Text(
           'Cancel your ${apt.vaccineName} session at ${apt.hospitalName}?',
-          style: const TextStyle(
-            fontSize: 13.5,
-            color: StaffSurfaces.textSecondary,
-          ),
+          style: const TextStyle(fontSize: 13.5, color: StaffSurfaces.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: const Text(
               'Keep',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: StaffSurfaces.textSecondary,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600, color: StaffSurfaces.textSecondary),
             ),
           ),
           FilledButton(
@@ -206,8 +207,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
                 if (mounted) {
                   setState(() {
                     _appointments = _appointments.map((a) {
-                      if ((apt.rawId.isNotEmpty && a.rawId == apt.rawId) ||
-                          a.id == apt.id) {
+                      if ((apt.rawId.isNotEmpty && a.rawId == apt.rawId) || a.id == apt.id) {
                         return PatientAppointment(
                           id: a.id,
                           rawId: a.rawId,
@@ -249,10 +249,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
                 }
               }
             },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              elevation: 0,
-            ),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error, elevation: 0),
             child: const Text('Cancel session'),
           ),
         ],
@@ -293,11 +290,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final upcomingList =
-        _appointments.where(isUpcomingPatientAppointment).toList();
-    final pastList = _appointments
-        .where((a) => !isUpcomingPatientAppointment(a))
-        .toList();
+    final upcomingList = _appointments.where(isUpcomingPatientAppointment).toList();
+    final pastList = _appointments.where((a) => !isUpcomingPatientAppointment(a)).toList();
     final filteredAppointments = _selectedFilter == 0 ? upcomingList : pastList;
 
     return Scaffold(
@@ -307,16 +301,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
         subtitle: 'Patient · Bookings',
         photoUrl: resolveMediaUrl(_user?.profilePhotoUrl),
         actions: [
-          StaffHeaderAction(
-            icon: Icons.auto_awesome,
-            tooltip: 'Book with AI',
-            onPressed: _openAgentBookingSheet,
-          ),
-          StaffHeaderAction(
-            icon: Icons.add,
-            tooltip: 'Manual booking',
-            onPressed: _openBookSheet,
-          ),
+          StaffHeaderAction(icon: Icons.auto_awesome, tooltip: 'Book with AI', onPressed: _openAgentBookingSheet),
+          StaffHeaderAction(icon: Icons.add, tooltip: 'Manual booking', onPressed: _openBookSheet),
         ],
       ),
       body: RefreshIndicator(
@@ -337,9 +323,7 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
                   label: 'Upcoming',
                   value: '${upcomingList.length}',
                   icon: Icons.event_note_outlined,
-                  accent: upcomingList.isNotEmpty
-                      ? const Color(0xFFB2660A)
-                      : StaffSurfaces.brandSoft,
+                  accent: upcomingList.isNotEmpty ? const Color(0xFFB2660A) : StaffSurfaces.brandSoft,
                 ),
                 StaffIntroStat(
                   label: 'Past',
@@ -380,9 +364,18 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
             if (_isLoading && _appointments.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
-                child: Center(
-                  child: CircularProgressIndicator(color: StaffSurfaces.brandSoft),
-                ),
+                child: Center(child: CircularProgressIndicator(color: StaffSurfaces.brandSoft)),
+              )
+            else if (_loadError != null)
+              Column(
+                children: [
+                  StaffEmptyCard(message: 'Unable to load appointments: $_loadError', icon: Icons.cloud_off_outlined),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _loadBackendAppointments,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
               )
             else if (filteredAppointments.isEmpty)
               StaffEmptyCard(
@@ -397,7 +390,8 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
                   appointment: apt,
                   onViewSlip: () => _showSlipSheet(apt),
                   onCancel: () => _cancelAppointment(apt),
-                  onPayNow: (!apt.isPaid &&
+                  onPayNow:
+                      (!apt.isPaid &&
                           apt.status.toLowerCase() != 'confirmed' &&
                           apt.status.toLowerCase() != 'completed' &&
                           apt.status.toLowerCase() != 'cancelled')
@@ -417,11 +411,7 @@ class _FilterChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -433,9 +423,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? StaffSurfaces.cardBg : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: selected ? StaffSurfaces.cardBorder : Colors.transparent,
-          ),
+          border: Border.all(color: selected ? StaffSurfaces.cardBorder : Colors.transparent),
         ),
         child: Text(
           label,

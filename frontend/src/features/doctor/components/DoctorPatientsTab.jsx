@@ -1,7 +1,6 @@
 import { deferEffectCallback } from "../../../shared/utils/deferEffectCallback.js";
 import { useCallback, useEffect, useState } from "react";
 import clinicalPatientService from "../services/clinicalPatientService";
-import staffService from "../../hospital/services/staffService";
 import staffAppointmentService from "../../staff/services/staffAppointmentService";
 import {
   IconCheck,
@@ -151,15 +150,14 @@ export default function DoctorPatientsTab() {
   const [closingMissedId, setClosingMissedId] = useState(null);
   const [notification, setNotification] = useState("");
   const [error, setError] = useState("");
-  const [isOnDuty, setIsOnDuty] = useState(false);
   const [recordFilter, setRecordFilter] = useState("all");
 
-  // NEW: medical history state
+  // Medical history state
   const [medicalHistory, setMedicalHistory] = useState(null);
   const [loadingMedicalHistory, setLoadingMedicalHistory] = useState(false);
   const [medicalHistoryError, setMedicalHistoryError] = useState("");
 
-  // NEW: modal visibility
+  // Modal visibility
   const [showAddHistory, setShowAddHistory] = useState(false);
   const [showRecordVisit, setShowRecordVisit] = useState(false);
 
@@ -167,16 +165,6 @@ export default function DoctorPatientsTab() {
     setNotification(message);
     setTimeout(() => setNotification(""), 3000);
   };
-
-  const loadDutyStatus = useCallback(async () => {
-    try {
-      const list = await staffService.getMyAffiliations();
-      const active = Array.isArray(list) ? list : [];
-      setIsOnDuty(active.some((a) => a.isOnDutyNow));
-    } catch {
-      setIsOnDuty(false);
-    }
-  }, []);
 
   const loadRecent = useCallback(async () => {
     setRecentLoading(true);
@@ -215,23 +203,11 @@ export default function DoctorPatientsTab() {
     () =>
       deferEffectCallback(() => {
         loadRecent();
-        loadDutyStatus();
       }),
-    [loadRecent, loadDutyStatus],
+    [loadRecent],
   );
 
-  useEffect(
-    () =>
-      deferEffectCallback(() => {
-        if (!isOnDuty && editingDosageId) {
-          setEditingDosageId(null);
-          setDosageInput("");
-        }
-      }),
-    [isOnDuty, editingDosageId],
-  );
-
-  // NEW: reload medical history whenever the selected patient changes
+  // Reload medical history whenever the selected patient changes
   useEffect(
     () =>
       deferEffectCallback(() => {
@@ -300,7 +276,6 @@ export default function DoctorPatientsTab() {
       setShowDropdown(false);
       setSearchQuery(mapped.name || displayName || vaxoraId);
       showToast(`Record loaded: ${mapped.name} (${mapped.vaxoraId})`);
-      await loadDutyStatus();
     } catch (err) {
       setError(err.message || "Failed to load patient.");
     } finally {
@@ -309,11 +284,6 @@ export default function DoctorPatientsTab() {
   };
 
   const handleSaveDosage = async (pvId) => {
-    if (!isOnDuty) {
-      setError("You need an active shift to prescribe dosage.");
-      setEditingDosageId(null);
-      return;
-    }
     const row = selectedPatient?.pendingVaccines?.find((pv) => pv.id === pvId);
     if (row?.isOverdue) {
       setError(
@@ -894,19 +864,9 @@ export default function DoctorPatientsTab() {
                                           <button
                                             type="button"
                                             className="ph-dosage-icon-btn is-edit"
-                                            disabled={!isOnDuty}
-                                            title={
-                                              isOnDuty
-                                                ? "Edit dosage"
-                                                : "Active shift required to prescribe dosage"
-                                            }
-                                            aria-label={
-                                              isOnDuty
-                                                ? "Edit dosage"
-                                                : "Active shift required to prescribe dosage"
-                                            }
+                                            title="Edit dosage"
+                                            aria-label="Edit dosage"
                                             onClick={() => {
-                                              if (!isOnDuty) return;
                                               setEditingDosageId(pv.id);
                                               setDosageInput(pv.dosage || "");
                                             }}

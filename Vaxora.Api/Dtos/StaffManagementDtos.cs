@@ -139,11 +139,16 @@ public class StaffAffiliationDto
     public string? PhoneNumber { get; set; }
     public string? Email { get; set; }
     public string Status { get; set; } = string.Empty;
-    /// <summary>Legacy sticky flag. Prefer <see cref="IsOnDutyNow"/> for live presence.</summary>
+    /// <summary>Clock state: Off, OnDuty (clocked in) or OnBreak.</summary>
     public string DutyStatus { get; set; } = string.Empty;
     public DateTime? DutyUpdatedAt { get; set; }
-    /// <summary>True when this affiliation has a shift covering hospital-local now.</summary>
+    /// <summary>
+    /// True when the staff member may act clinically now: a live rostered shift or a
+    /// valid clock-in, and not on break.
+    /// </summary>
     public bool IsOnDutyNow { get; set; }
+    /// <summary>True when the staff member has a valid manual clock-in.</summary>
+    public bool IsClockedIn { get; set; }
     public DateTime InvitedAt { get; set; }
     public DateTime? RespondedAt { get; set; }
 }

@@ -85,6 +85,7 @@ builder.Services.AddScoped<IPayHereService, PayHereService>();
 builder.Services.AddScoped<IPatientVaccinationService, PatientVaccinationService>();
 builder.Services.AddScoped<IPatientMedicalHistoryService, PatientMedicalHistoryService>();
 builder.Services.AddScoped<IPatientVisitService, PatientVisitService>();
+builder.Services.AddScoped<IClinicalScopeService, ClinicalScopeService>();
 builder.Services.AddScoped<IClinicalPatientService, ClinicalPatientService>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 

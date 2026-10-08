@@ -6,6 +6,7 @@ import { appointmentService } from '../../src/features/patient/services/appointm
 // Mock appointment service
 vi.mock('../../src/features/patient/services/appointmentService', () => ({
   appointmentService: {
+    getVaccinesWithHospitals: vi.fn(),
     getPatientAppointments: vi.fn(),
     getAvailableDates: vi.fn(),
     getAvailableSlots: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('../../src/features/patient/services/appointmentService', () => ({
 describe('Booking Management - Cancellation & Status Updates (Scenario 9)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    appointmentService.getVaccinesWithHospitals.mockResolvedValue([]);
     window.alert = vi.fn();
     window.confirm = vi.fn(() => true);
 
@@ -83,15 +85,19 @@ describe('Booking Management - Cancellation & Status Updates (Scenario 9)', () =
   });
 
   // 9b. Same-day appointments are locked from online cancellation
-  it('prevents online cancellation for same-day appointments and displays Locked (Same-Day) indicator', async () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+  it('prevents online cancellation for imminent appointments and displays the Locked indicator', async () => {
+    const start = new Date(Date.now() + 2 * 60 * 60 * 1000 + 330 * 60 * 1000);
+    const todayStr = start.toISOString().slice(0, 10);
+    const slotStart =
+      `:`;
 
     const mockAppointments = [
       {
         id: 'apt-same-day',
         vaccineName: 'COVID-19 mRNA Booster (Moderna)',
         appointmentDate: todayStr,
-        timeSlot: '14:00 - 14:20',
+        startTime: slotStart,
+        timeSlot: ` - 23:59`,
         hospitalName: 'National Hospital Colombo',
         fee: 0,
         paymentStatus: 'Paid',
@@ -107,10 +113,38 @@ describe('Booking Management - Cancellation & Status Updates (Scenario 9)', () =
     await screen.findByText('COVID-19 mRNA Booster (Moderna)');
 
     // "Locked (Same-Day)" badge should be displayed
-    expect(screen.getByText('Locked (Same-Day)')).toBeInTheDocument();
+    expect(screen.getByText('Locked')).toBeInTheDocument();
 
     // Cancel button should NOT be present for same-day appointments
     expect(screen.queryByRole('button', { name: /^Cancel$/i })).not.toBeInTheDocument();
+  });
+
+  it('locks cancellation when the appointment start is less than 24 hours away', async () => {
+    const appointmentStart = new Date(Date.now() + 12 * 60 * 60 * 1000 + 330 * 60 * 1000);
+    const appointmentDate = appointmentStart.toISOString().slice(0, 10);
+    const appointmentTime =
+      `${String(appointmentStart.getUTCHours()).padStart(2, '0')}:` +
+      `${String(appointmentStart.getUTCMinutes()).padStart(2, '0')}`;
+
+    appointmentService.getPatientAppointments.mockResolvedValue([
+      {
+        id: 'apt-within-cutoff',
+        vaccineName: 'COVID-19 mRNA Booster (Moderna)',
+        appointmentDate,
+        startTime: appointmentTime,
+        timeSlot: `${appointmentTime} - 12:20`,
+        hospitalName: 'National Hospital Colombo',
+        fee: 0,
+        paymentStatus: 'Paid',
+        status: 'Confirmed',
+      },
+    ]);
+
+    render(<AppointmentsTab />);
+
+    await screen.findByText('COVID-19 mRNA Booster (Moderna)');
+    expect(screen.queryByRole('button', { name: /^Cancel$/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Locked')).toBeInTheDocument();
   });
 
   // 9c. Cancellation API failure handling
@@ -231,5 +265,26 @@ describe('Booking Management - Cancellation & Status Updates (Scenario 9)', () =
       })
     );
     expect(result.success).toBe(true);
+  });
+
+  it('service layer requests vaccines and hospitals from the configured API base', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      headers: {
+        get: (h) => (h === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => [],
+    });
+
+    const { appointmentService: realService } = await vi.importActual(
+      '../../src/features/patient/services/appointmentService'
+    );
+
+    await realService.getVaccinesWithHospitals();
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/inventory/vaccines-with-hospitals'),
+      expect.objectContaining({ method: 'GET' })
+    );
   });
 });

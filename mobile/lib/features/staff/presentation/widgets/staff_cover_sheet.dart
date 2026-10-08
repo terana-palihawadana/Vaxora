@@ -204,6 +204,7 @@ class _StaffCoverSheetState extends State<StaffCoverSheet> {
                                     'Pending',
                                     'Approved',
                                     'Declined',
+                                    'Cancelled',
                                   ],
                                   selected: _outgoingStatusFilter,
                                   onChanged: (value) => setState(
@@ -558,6 +559,7 @@ class _OutgoingTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final waiting = request.isPending;
     final approved = request.isApproved;
+    final cancelled = request.isCancelled;
     final replacementName = request.replacementName?.trim();
     final coveredBy = replacementName?.isNotEmpty == true
         ? replacementName!
@@ -566,11 +568,17 @@ class _OutgoingTile extends StatelessWidget {
         ? 'Waiting for the hospital to pick cover'
         : approved
         ? 'Covered by $coveredBy'
+        : cancelled
+        ? (request.decisionNote?.trim().isNotEmpty == true
+              ? request.decisionNote!.trim()
+              : 'Request closed — the shift was removed')
         : 'Hospital declined — this shift stays yours';
     final accentColor = waiting
         ? const Color(0xFFB2660A)
         : approved
         ? AppColors.success
+        : cancelled
+        ? StaffSurfaces.textSecondary
         : AppColors.error;
     final borderColor = waiting
         ? const Color(0xFFF5B168)
@@ -621,11 +629,15 @@ class _OutgoingTile extends StatelessWidget {
                       ? 'Waiting'
                       : approved
                       ? 'Approved'
+                      : cancelled
+                      ? 'Cancelled'
                       : 'Declined',
                   tone: waiting
                       ? StaffChipTone.warning
                       : approved
                       ? StaffChipTone.success
+                      : cancelled
+                      ? StaffChipTone.neutral
                       : StaffChipTone.danger,
                 ),
               ],

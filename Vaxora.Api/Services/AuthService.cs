@@ -16,6 +16,7 @@ public interface IAuthService
     Task<AuthResponseDto> LoginAsync(LoginDto dto);
     Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequestDto dto);
     Task<bool> LogoutAsync(Guid userId);
+    Task<bool> LogoutByRefreshTokenAsync(string? refreshToken);
     Task<UserDto> GetCurrentUserAsync(Guid userId);
     Task<bool> ForgotPasswordAsync(ForgotPasswordDto dto);
     Task<bool> ResetPasswordAsync(ResetPasswordDto dto);
@@ -120,7 +121,7 @@ public class AuthService : IAuthService
 
         var refreshToken = _tokenService.GenerateRefreshToken();
         user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiration();
 
         await _context.SaveChangesAsync();
 
@@ -575,7 +576,7 @@ public class AuthService : IAuthService
         var refreshToken = _tokenService.GenerateRefreshToken();
 
         user.RefreshToken = refreshToken;
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiration();
         user.LastLoginAt = DateTime.UtcNow;
 
         _context.AuditLogs.Add(new AuditLog
@@ -625,27 +626,26 @@ public class AuthService : IAuthService
             throw new SecurityException("Invalid or expired refresh token.");
         }
 
-        if (user.Status == UserStatus.Pending)
+        if (user.Status != UserStatus.Active)
         {
-            throw new InvalidOperationException("Account is pending verification.");
-        }
-
-        if (user.Status == UserStatus.Suspended)
-        {
-            throw new InvalidOperationException("Account is suspended.");
-        }
-
-        if (user.Status == UserStatus.Rejected)
-        {
-            throw new InvalidOperationException("Account registration was rejected.");
+            user.RefreshToken = null;
+            user.RefreshTokenExpiryTime = null;
+            await _context.SaveChangesAsync();
+            throw new InvalidOperationException(
+                user.Status == UserStatus.Pending
+                    ? "Account is pending verification."
+                    : user.Status == UserStatus.Suspended
+                        ? "Account is suspended."
+                        : "Account is not allowed to refresh sessions.");
         }
 
         var displayName = GetUserDisplayName(user);
         var newAccessToken = _tokenService.GenerateAccessToken(user, displayName);
+        // Rotate refresh token so a stolen token cannot be reused after a successful refresh.
         var newRefreshToken = _tokenService.GenerateRefreshToken();
 
         user.RefreshToken = newRefreshToken;
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiryTime = _tokenService.GetRefreshTokenExpiration();
         await _context.SaveChangesAsync();
 
         return new AuthResponseDto
@@ -679,6 +679,24 @@ public class AuthService : IAuthService
             return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Revoke session by refresh token when the access token has already expired.
+    /// </summary>
+    public async Task<bool> LogoutByRefreshTokenAsync(string? refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return false;
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.RefreshToken == refreshToken);
+        if (user == null)
+            return false;
+
+        user.RefreshToken = null;
+        user.RefreshTokenExpiryTime = null;
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<UserDto> GetCurrentUserAsync(Guid userId)
@@ -907,6 +925,24 @@ public class AuthService : IAuthService
                     if (!string.IsNullOrWhiteSpace(dto.FullName)) user.PatientProfile.FullName = dto.FullName.Trim();
                     if (!string.IsNullOrWhiteSpace(dto.PhoneNumber)) user.PatientProfile.PhoneNumber = dto.PhoneNumber.Trim();
                     if (dto.DateOfBirth.HasValue) user.PatientProfile.DateOfBirth = dto.DateOfBirth.Value;
+
+                    // Keep denormalized appointment rows aligned with the live profile.
+                    var syncedName = user.PatientProfile.FullName;
+                    var syncedPhone = user.PatientProfile.PhoneNumber ?? user.PhoneNumber;
+                    var linkedAppointments = await _context.Appointments
+                        .Where(a => a.PatientUserId == user.Id)
+                        .ToListAsync();
+                    foreach (var appointment in linkedAppointments)
+                    {
+                        if (!string.IsNullOrWhiteSpace(syncedName))
+                            appointment.PatientName = syncedName;
+                        if (!string.IsNullOrWhiteSpace(syncedPhone))
+                            appointment.PatientPhone = syncedPhone;
+                        appointment.PatientEmail = user.Email;
+                        if (!string.IsNullOrWhiteSpace(user.PatientProfile.NicNumber))
+                            appointment.PatientNic = user.PatientProfile.NicNumber;
+                        appointment.UpdatedAt = DateTime.UtcNow;
+                    }
                 }
                 break;
 
@@ -1164,14 +1200,7 @@ public class AuthService : IAuthService
         }
         else
         {
-            // For Doctor or Nurse, unlink from schedules and appointments without breaking hospital history
-            var staffSchedules = await _context.VaccineSchedules.Where(s => s.DoctorUserId == userId || s.NurseUserId == userId).ToListAsync();
-            foreach (var s in staffSchedules)
-            {
-                if (s.DoctorUserId == userId) s.DoctorUserId = null;
-                if (s.NurseUserId == userId) s.NurseUserId = null;
-            }
-
+            // For Doctor or Nurse, unlink from appointments without breaking hospital history.
             var staffAppointments = await _context.Appointments
                 .Where(a => a.DoctorUserId == userId || a.NurseUserId == userId || a.PrescribedByDoctorUserId == userId)
                 .ToListAsync();

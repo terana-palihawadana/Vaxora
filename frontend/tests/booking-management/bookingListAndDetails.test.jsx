@@ -6,6 +6,7 @@ import { appointmentService } from '../../src/features/patient/services/appointm
 // Mock appointment service
 vi.mock('../../src/features/patient/services/appointmentService', () => ({
   appointmentService: {
+    getVaccinesWithHospitals: vi.fn(),
     getPatientAppointments: vi.fn(),
     getAvailableDates: vi.fn(),
     getAvailableSlots: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock('../../src/features/patient/services/appointmentService', () => ({
 describe('Booking Management - Booking List and Details', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    appointmentService.getVaccinesWithHospitals.mockResolvedValue([]);
 
     // Default mock for fetch vaccines
     global.fetch = vi.fn().mockResolvedValue({
@@ -139,7 +141,7 @@ describe('Booking Management - Booking List and Details', () => {
     expect(screen.getByText('✓ Paid Online')).toBeInTheDocument();
 
     // Verify Status badge
-    expect(screen.getByText('Confirmed')).toBeInTheDocument();
+    expect(document.querySelector('.apt-status-pill')).toHaveTextContent('Confirmed');
   });
 
   it('displays subsidized badge when fee is zero and payment due badge when unpaid', async () => {

@@ -24,9 +24,15 @@ public class ClinicalPatientController : ControllerBase
     [HttpGet("patients/search")]
     public async Task<IActionResult> Search([FromQuery] string? q, [FromQuery] int limit = 10)
     {
+        if (!TryGetUserId(out var viewerUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
         try
         {
-            var result = await _service.SearchPatientsAsync(q ?? string.Empty, limit);
+            var result = await _service.SearchPatientsAsync(
+                q ?? string.Empty,
+                viewerUserId,
+                limit);
             return Ok(result);
         }
         catch (Exception ex)
@@ -39,9 +45,12 @@ public class ClinicalPatientController : ControllerBase
     [HttpGet("patients/recent")]
     public async Task<IActionResult> GetRecent([FromQuery] int limit = 10)
     {
+        if (!TryGetUserId(out var viewerUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
         try
         {
-            var result = await _service.GetRecentDosageUpdatesAsync(limit);
+            var result = await _service.GetRecentDosageUpdatesAsync(viewerUserId, limit);
             return Ok(result);
         }
         catch (Exception ex)
@@ -54,9 +63,14 @@ public class ClinicalPatientController : ControllerBase
     [HttpGet("patients/{vaxoraId}")]
     public async Task<IActionResult> GetByVaxoraId(string vaxoraId)
     {
+        if (!TryGetUserId(out var viewerUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
         try
         {
-            var result = await _service.GetPatientByVaxoraIdAsync(vaxoraId);
+            var result = await _service.GetPatientByVaxoraIdAsync(
+                vaxoraId,
+                viewerUserId);
             return Ok(result);
         }
         catch (KeyNotFoundException ex)

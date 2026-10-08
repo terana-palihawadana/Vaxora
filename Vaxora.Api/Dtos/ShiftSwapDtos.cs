@@ -62,6 +62,8 @@ public class ShiftSwapRequestDto
     /// <summary>Outgoing for the requester, Incoming when this staff was assigned cover.</summary>
     public string? Direction { get; set; }
     public string? ReviewSummary { get; set; }
+    /// <summary>True when Suggestions were ordered by the AI agent (Rank with AI).</summary>
+    public bool AiRanked { get; set; }
     public List<ShiftSwapReplacementDto> Suggestions { get; set; } = new();
 }
 

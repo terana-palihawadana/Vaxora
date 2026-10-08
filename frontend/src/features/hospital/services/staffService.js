@@ -156,6 +156,13 @@ export const staffService = {
     });
   },
 
+  suggestWeek({ from, to, defaultStart, defaultEnd }) {
+    return apiRequest('/staff/shifts/suggest-week', {
+      method: 'POST',
+      body: JSON.stringify({ from, to, defaultStart, defaultEnd }),
+    });
+  },
+
   getMyShifts({ from, to } = {}) {
     return apiRequest(`/staff/shifts/mine${buildQuery({ from, to })}`);
   },
@@ -180,6 +187,10 @@ export const staffService = {
 
   getHospitalShiftSwaps({ status, limit = 40 } = {}) {
     return apiRequest(`/staff/shift-swaps/hospital${buildQuery({ status, limit })}`);
+  },
+
+  rankShiftSwap(requestId) {
+    return apiRequest(`/staff/shift-swaps/${requestId}/rank`, { method: 'POST' });
   },
 
   decideShiftSwap(requestId, { approved, note, replacementAffiliationId } = {}) {

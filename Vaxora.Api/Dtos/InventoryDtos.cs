@@ -44,6 +44,10 @@ public class FormularyEntryDto
     public Guid VaccineId { get; set; }
     public string VaccineName { get; set; } = string.Empty;
     public string Manufacturer { get; set; } = string.Empty;
+    public string Category { get; set; } = "routine";
+    public decimal Price { get; set; }
+    public bool IsFree => Price <= 0;
+    public string FormattedPrice => Price <= 0 ? "Free" : $"LKR {Price:N2}";
     public DateTime RegisteredAt { get; set; }
 }
 
@@ -120,6 +124,24 @@ public class RegisterFormularyDto
 
     [MaxLength(200)]
     public string? Manufacturer { get; set; }
+
+    /// <summary>Catalog category: routine | mrna | seasonal | pediatric. Defaults to routine.</summary>
+    [MaxLength(40)]
+    public string? Category { get; set; }
+
+    /// <summary>Hospital fee per person in LKR (0 = Free).</summary>
+    [Range(0, 1000000)]
+    public decimal Price { get; set; } = 0.00m;
+}
+
+public class UpdateFormularyPriceDto
+{
+    [Range(0, 1000000)]
+    public decimal Price { get; set; }
+
+    /// <summary>Optional catalog category update: routine | mrna | seasonal | pediatric.</summary>
+    [MaxLength(40)]
+    public string? Category { get; set; }
 }
 
 public class RestockBatchDto
@@ -143,6 +165,10 @@ public class RestockBatchDto
 
     [MaxLength(200)]
     public string? Supplier { get; set; }
+
+    /// <summary>Used when creating a brand-new vaccine from restock. Defaults to routine.</summary>
+    [MaxLength(40)]
+    public string? Category { get; set; }
 }
 
 public class WastageDto

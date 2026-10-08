@@ -17,11 +17,13 @@ class StaffAppointmentModel {
   final String status;
   final String paymentStatus;
   final String? notes;
+  final String? boothId;
   final String? boothLabel;
   final String? prescribedDosage;
   final String? prescribedByDoctorName;
   final String? dosageUpdatedAt;
   final String? updatedAt;
+  final String? checkedInAt;
 
   const StaffAppointmentModel({
     required this.id,
@@ -42,11 +44,13 @@ class StaffAppointmentModel {
     required this.status,
     required this.paymentStatus,
     this.notes,
+    this.boothId,
     this.boothLabel,
     this.prescribedDosage,
     this.prescribedByDoctorName,
     this.dosageUpdatedAt,
     this.updatedAt,
+    this.checkedInAt,
   });
 
   /// UI queue bucket mirrored from web StaffClinicalDashboard.
@@ -59,7 +63,11 @@ class StaffAppointmentModel {
     return 'waiting';
   }
 
+  /// Patient has arrived and been checked in at the desk (or by staff).
+  bool get isCheckedIn => (checkedInAt ?? '').isNotEmpty;
+
   String get statusLabel {
+    if (uiStatus == 'waiting' && !isCheckedIn) return 'Not arrived';
     switch (uiStatus) {
       case 'completed':
         return 'Completed';
@@ -114,11 +122,13 @@ class StaffAppointmentModel {
       status: json['status']?.toString() ?? 'Confirmed',
       paymentStatus: json['paymentStatus']?.toString() ?? '—',
       notes: json['notes']?.toString(),
+      boothId: json['boothId']?.toString(),
       boothLabel: json['boothLabel']?.toString(),
       prescribedDosage: json['prescribedDosage']?.toString(),
       prescribedByDoctorName: json['prescribedByDoctorName']?.toString(),
       dosageUpdatedAt: json['dosageUpdatedAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
+      checkedInAt: json['checkedInAt']?.toString(),
     );
   }
 }

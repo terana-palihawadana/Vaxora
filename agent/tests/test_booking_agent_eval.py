@@ -301,3 +301,92 @@ async def test_booking_agent_rejects_vague_clinical_advice_queries():
         assert "consult a qualified doctor" in result["content"].lower()
 
 
+def test_booking_agent_temporal_context_anchor():
+    from tools import _get_temporal_context, _hospital_today
+    ctx = _get_temporal_context()
+    assert "today" in ctx
+    assert "day_of_week" in ctx
+    assert "month" in ctx
+    assert "year" in ctx
+    assert "time" in ctx
+    assert "upcoming_calendar" in ctx
+    assert ctx["today"] == _hospital_today()
+    assert len(ctx["upcoming_calendar"]) >= 7
+
+
+def test_natural_date_and_month_parsing():
+    from tools import _parse_natural_date_to_iso
+    base = date(2026, 10, 6)  # Tuesday, Oct 6, 2026
+
+    # Specific month and day
+    assert _parse_natural_date_to_iso("October 16", base_date=base) == "2026-10-16"
+    assert _parse_natural_date_to_iso("16th October", base_date=base) == "2026-10-16"
+    assert _parse_natural_date_to_iso("16th of October", base_date=base) == "2026-10-16"
+    assert _parse_natural_date_to_iso("Oct 16", base_date=base) == "2026-10-16"
+
+    # Relative days
+    assert _parse_natural_date_to_iso("today", base_date=base) == "2026-10-06"
+    assert _parse_natural_date_to_iso("tomorrow", base_date=base) == "2026-10-07"
+    assert _parse_natural_date_to_iso("next week", base_date=base) == "2026-10-13"
+
+    # Weekdays
+    wednesday_iso = _parse_natural_date_to_iso("Wednesday", base_date=base)
+    assert wednesday_iso == "2026-10-07"
+
+    friday_iso = _parse_natural_date_to_iso("Friday", base_date=base)
+    assert friday_iso == "2026-10-09"
+
+
+def test_resolve_preferred_date_with_months_and_relative_days():
+    from tools import _resolve_preferred_date
+    base = date(2026, 10, 6)
+
+    available = [
+        {"date": "2026-10-09", "dayOfWeek": "Friday"},
+        {"date": "2026-10-16", "dayOfWeek": "Friday"},
+        {"date": "2026-11-06", "dayOfWeek": "Friday"},
+    ]
+
+    # Exact date
+    assert _resolve_preferred_date("2026-10-16", available, base_date=base) == "2026-10-16"
+
+    # Natural month + day
+    assert _resolve_preferred_date("October 16th", available, base_date=base) == "2026-10-16"
+    assert _resolve_preferred_date("16th October", available, base_date=base) == "2026-10-16"
+
+    # Month only
+    assert _resolve_preferred_date("in November", available, base_date=base) == "2026-11-06"
+    assert _resolve_preferred_date("October", available, base_date=base) == "2026-10-09"
+
+    # Earliest
+    assert _resolve_preferred_date("earliest", available, base_date=base) == "2026-10-09"
+    assert _resolve_preferred_date(None, available, base_date=base) == "2026-10-09"
+
+
+def test_resolve_preferred_date_rejects_past_dates():
+    from tools import _resolve_preferred_date
+    base = date(2026, 10, 6)
+
+    available = [
+        {"date": "2026-10-02", "dayOfWeek": "Friday"},  # past
+        {"date": "2026-10-09", "dayOfWeek": "Friday"},  # future
+        {"date": "2026-10-16", "dayOfWeek": "Friday"},  # future
+    ]
+
+    # Never selects the past date even if earliest is requested
+    assert _resolve_preferred_date("earliest", available, base_date=base) == "2026-10-09"
+
+
+@pytest.mark.asyncio
+async def test_booking_agent_execute_tool_get_current_date_time():
+    agent = BookingAgent()
+    res = await agent.execute_tool("get_current_date_time", {}, token=None)
+    assert res["success"] is True
+    assert "today" in res
+    assert "month" in res
+    assert "year" in res
+    assert "day_of_week" in res
+    assert "upcoming_calendar" in res
+
+
+

@@ -10,6 +10,8 @@ public interface IPatientMedicalHistoryService
     Task<PatientMedicalTimelineDto> GetTimelineAsync(Guid patientProfileId);
     Task<List<PatientMedicalHistoryDto>> GetActiveConditionsAsync(Guid patientProfileId);
     Task<PatientMedicalHistoryDto> GetByIdAsync(Guid id);
+    Task<bool> IsOwnedByUserAsync(Guid patientProfileId, Guid userId);
+    Task<bool> IsRecordOwnedByUserAsync(Guid recordId, Guid userId);
     Task<PatientMedicalHistoryDto> CreateAsync(Guid actorUserId, Guid patientProfileId, CreatePatientMedicalHistoryDto dto);
     Task<PatientMedicalHistoryDto> UpdateAsync(Guid actorUserId, Guid id, UpdatePatientMedicalHistoryDto dto);
     Task DeleteAsync(Guid actorUserId, Guid id);
@@ -44,6 +46,8 @@ public class PatientMedicalHistoryService : IPatientMedicalHistoryService
             PatientProfileId = patient.Id,
             PatientName = patient.FullName,
             NicNumber = patient.NicNumber,
+            DateOfBirth = patient.DateOfBirth,
+            PhoneNumber = patient.PhoneNumber,
             TotalRecords = records.Count,
             ActiveConditions = records.Count(r => r.Status == MedicalRecordStatus.Active || r.Status == MedicalRecordStatus.Chronic),
             CriticalOrSevere = records.Count(r => r.Severity == MedicalRecordSeverity.Severe || r.Severity == MedicalRecordSeverity.Critical),
@@ -72,6 +76,20 @@ public class PatientMedicalHistoryService : IPatientMedicalHistoryService
             ?? throw new KeyNotFoundException("Medical history record not found.");
 
         return MapToDto(record);
+    }
+
+    public async Task<bool> IsOwnedByUserAsync(Guid patientProfileId, Guid userId)
+    {
+        return await _context.PatientProfiles
+            .AsNoTracking()
+            .AnyAsync(p => p.Id == patientProfileId && p.UserId == userId);
+    }
+
+    public async Task<bool> IsRecordOwnedByUserAsync(Guid recordId, Guid userId)
+    {
+        return await _context.PatientMedicalHistories
+            .AsNoTracking()
+            .AnyAsync(r => r.Id == recordId && r.PatientProfile.UserId == userId);
     }
 
     public async Task<PatientMedicalHistoryDto> CreateAsync(Guid actorUserId, Guid patientProfileId, CreatePatientMedicalHistoryDto dto)

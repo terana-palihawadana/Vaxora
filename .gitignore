@@ -61,6 +61,7 @@ scratch/
 [Oo]bj/
 **/[Bb]in/
 **/[Oo]bj/
+.tmp_build_out/
 appsettings.local.json
 appsettings.*.local.json
 

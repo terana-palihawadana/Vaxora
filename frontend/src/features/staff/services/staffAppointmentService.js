@@ -61,6 +61,10 @@ export const staffAppointmentService = {
     return apiRequest('/staff/my-affiliations');
   },
 
+  getPatientContact(appointmentId) {
+    return apiRequest(`/appointments/${appointmentId}/staff-contact`);
+  },
+
   getHospitalAppointments(hospitalUserId, date) {
     return apiRequest(
       `/appointments/staff${buildQuery({
@@ -68,6 +72,10 @@ export const staffAppointmentService = {
         date: date || undefined,
       })}`
     );
+  },
+
+  checkIn(id) {
+    return apiRequest(`/appointments/${id}/check-in`, { method: 'POST' });
   },
 
   updateAppointmentStatus(id, status, remarks, administration) {
@@ -82,6 +90,9 @@ export const staffAppointmentService = {
         ...(administration?.route ? { route: administration.route } : {}),
         ...(administration?.administrationNotes
           ? { administrationNotes: administration.administrationNotes }
+          : {}),
+        ...(administration?.doseConfirmed != null
+          ? { doseConfirmed: administration.doseConfirmed }
           : {}),
         ...(administration?.consentConfirmed != null
           ? { consentConfirmed: administration.consentConfirmed }

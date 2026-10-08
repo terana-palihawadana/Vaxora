@@ -1,12 +1,13 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import WalkInRegistrationModal from './WalkInRegistrationModal';
+import scheduleService from '../services/scheduleService';
 import RestockVaccineModal from './RestockVaccineModal';
 import staffService from '../services/staffService';
 import { inventoryService } from '../services/inventoryService';
 import { appointmentService } from '../../patient/services/appointmentService';
 import { authService } from '../../auth';
-import { hospitalMinutesNow, hospitalToday } from '../utils/hospitalDate';
+import { hospitalMinutesNow, hospitalToday, toHospitalDateKey } from '../utils/hospitalDate';
 import {
   mapDbStatusToQueueStatus,
   queueStatusLabel,
@@ -45,8 +46,27 @@ function roleLabel(role) {
   return role || 'Staff';
 }
 
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** True when an active vaccine session runs on `day` (yyyy-MM-dd). */
+function sessionRunsOn(schedule, day) {
+  if (String(schedule?.status || 'Active').toLowerCase() !== 'active') return false;
+  const type = String(schedule.scheduleType || 'OneTime').toLowerCase();
+  if (type !== 'weekly') return String(schedule.specificDate || '').slice(0, 10) === day;
+  const start = String(schedule.startDate || '').slice(0, 10);
+  const end = String(schedule.endDate || '').slice(0, 10);
+  if (start && day < start) return false;
+  if (end && day > end) return false;
+  const weekday = WEEKDAYS[new Date(`${day}T00:00:00`).getDay()];
+  return (schedule.daysOfWeek || []).some((d) => {
+    const value = String(d || '').trim().toLowerCase();
+    return value === weekday.toLowerCase() || value === weekday.slice(0, 3).toLowerCase();
+  });
+}
+
 function boothStatusClass(status) {
-  if (status === 'Unstaffed') return 'is-unstaffed';
+  if (status === 'Unstaffed' || status === 'No session today') return 'is-unstaffed';
+  if (status === 'Needs staff') return 'is-needs-staff';
   if (status === 'On duty') return 'is-on-duty';
   if (status === 'In session') return 'is-in-session';
   return 'is-scheduled';
@@ -177,6 +197,30 @@ export default function HospitalDashboardOverview() {
     }
   };
 
+  const handleDeskCheckIn = async (appointmentId) => {
+    try {
+      await appointmentService.checkIn(appointmentId);
+      showToast('Patient checked in — now in the clinical queue.');
+      await loadAppointmentsQueue();
+    } catch (err) {
+      showToast(err.message || 'Failed to check in patient.');
+    }
+  };
+
+  const handleDeskNoShow = async (appointmentId) => {
+    if (!window.confirm('Mark this patient as a no-show?')) return;
+    try {
+      await appointmentService.updateAppointmentStatus(appointmentId, {
+        status: 'Cancelled',
+        remarks: 'No-show — patient did not arrive',
+      });
+      showToast('Marked as no-show.');
+      await loadAppointmentsQueue();
+    } catch (err) {
+      showToast(err.message || 'Failed to mark no-show.');
+    }
+  };
+
   const handleDeskDeclineUnpaid = async (appointmentId) => {
     if (!window.confirm('Decline this unpaid appointment?')) return;
     try {
@@ -273,21 +317,25 @@ export default function HospitalDashboardOverview() {
           const rawStatus = a.status || a.Status || 'Pending';
           const queueStatus = mapDbStatusToQueueStatus(rawStatus);
 
+          const appointmentDate =
+            toHospitalDateKey(a.appointmentDate || a.AppointmentDate || a.date) || todayStr;
+
           return {
             id: rawId,
             token: shortRef,
-            name: a.patientName || a.pName || 'Patient',
-            phone: a.patientPhone || '',
-            nic: a.patientNic || '',
-            date: a.appointmentDate || todayStr,
-            vaccine: a.vaccineName || 'Vaccine',
-            dose: a.prescribedDosage || 'Primary / Booster Dose',
+            name: a.patientName || a.PatientName || a.pName || a.patientEmail || a.PatientEmail || 'Patient',
+            phone: a.patientPhone || a.PatientPhone || '',
+            nic: a.patientNic || a.PatientNic || '',
+            date: appointmentDate,
+            vaccine: a.vaccineName || a.VaccineName || 'Vaccine',
+            dose: a.prescribedDosage || a.PrescribedDosage || 'Primary / Booster Dose',
             booth: resolveQueueBooth(a, boothCards),
             practitioner: a.doctorName ? `Dr. ${a.doctorName.replace(/^Dr\.\s*/i, '')}` : (a.nurseName ? `Nurse ${a.nurseName}` : 'Staff Duty Officer'),
-            time: a.timeSlot || '09:00 AM - 09:20 AM',
+            time: a.timeSlot || a.TimeSlot || '09:00 AM - 09:20 AM',
             status: queueStatus,
             dbStatus: rawStatus,
             paymentStatus: a.paymentStatus || a.PaymentStatus || '—',
+            checkedIn: Boolean(a.checkedInAt || a.CheckedInAt),
           };
         });
 
@@ -308,28 +356,31 @@ export default function HospitalDashboardOverview() {
     const nowMinutes = hospitalMinutesNow();
 
     try {
-      const [boothList, shiftList, staffList] = await Promise.all([
+      const [boothList, shiftList, staffList, scheduleList] = await Promise.all([
         staffService.getHospitalBooths({ activeOnly: true }),
         staffService.getHospitalShifts({ from: today, to: today }),
         staffService.getHospitalStaff({ status: 'Active' }),
+        scheduleService.getHospitalSchedules().catch(() => null),
       ]);
+      // Booths that run a vaccine session today (null when sessions could not be loaded).
+      const sessionBoothIds = Array.isArray(scheduleList)
+        ? new Set(
+            scheduleList
+              .filter((sch) => sch.boothId && sessionRunsOn(sch, today))
+              .map((sch) => sch.boothId)
+          )
+        : null;
 
       const booths = Array.isArray(boothList) ? boothList : [];
       const shifts = Array.isArray(shiftList) ? shiftList : [];
       const staff = Array.isArray(staffList) ? staffList : [];
 
-      // Live on-duty = unique affiliations with a shift covering hospital-local now
-      // (same clock as booth cards — don't rely only on roster flag).
-      const liveAffiliationIds = new Set();
-      shifts.forEach((s) => {
-        const start = timeToMinutes(s.startTime);
-        const end = timeToMinutes(s.endTime);
-        if (start != null && end != null && start <= nowMinutes && nowMinutes < end) {
-          if (s.affiliationId) liveAffiliationIds.add(s.affiliationId);
-        }
-      });
-      const rosterLive = staff.filter((s) => s.isOnDutyNow).length;
-      setOnDutyCount(Math.max(liveAffiliationIds.size, rosterLive));
+      // The server decides who is on duty (live shift or clock-in, not on break),
+      // so the count and booth badges match what clinical staff can actually do.
+      const onDutyAffiliationIds = new Set(
+        staff.filter((s) => s.isOnDutyNow).map((s) => s.affiliationId)
+      );
+      setOnDutyCount(onDutyAffiliationIds.size);
 
       const photoByAffiliation = new Map(
         staff.map((s) => [s.affiliationId, s.staffProfilePhotoUrl || null])
@@ -343,7 +394,13 @@ export default function HospitalDashboardOverview() {
         const liveShift = boothShifts.find((s) => {
           const start = timeToMinutes(s.startTime);
           const end = timeToMinutes(s.endTime);
-          return start != null && end != null && start <= nowMinutes && nowMinutes < end;
+          return (
+            start != null &&
+            end != null &&
+            start <= nowMinutes &&
+            nowMinutes < end &&
+            onDutyAffiliationIds.has(s.affiliationId)
+          );
         });
 
         const primary = liveShift || boothShifts[0] || null;
@@ -365,7 +422,16 @@ export default function HospitalDashboardOverview() {
           name: booth.name || booth.displayLabel || 'Booth',
           boothName: booth.displayLabel || `${booth.code} · ${booth.name}`,
           staffMembers,
-          status: !primary ? 'Unstaffed' : isLive ? 'On duty' : 'Scheduled',
+          vaccineNames: booth.vaccineNames || [],
+          status: primary
+            ? isLive
+              ? 'On duty'
+              : 'Scheduled'
+            : !sessionBoothIds
+              ? 'Unstaffed'
+              : sessionBoothIds.has(booth.boothId)
+                ? 'Needs staff'
+                : 'No session today',
           shiftCount: boothShifts.length,
         };
       });
@@ -393,7 +459,7 @@ export default function HospitalDashboardOverview() {
 
   // 1. Walk-in Registration (persisted appointment for registered patient NIC)
   const handleAddWalkIn = async (payload) => {
-    await appointmentService.createWalkIn({
+    const created = await appointmentService.createWalkIn({
       patientNic: payload.patientNic,
       patientName: payload.patientName,
       patientEmail: payload.patientEmail,
@@ -405,8 +471,13 @@ export default function HospitalDashboardOverview() {
       gender: payload.gender,
     });
     await loadAppointmentsQueue();
+    const unpaid = String(created?.paymentStatus || '').toLowerCase() !== 'paid';
     showToast(
-      `Guest ${payload.patientName} queued. Login email is theirs; guest password is their NIC.`
+      created?.matchedExistingBooking
+        ? `${payload.patientName} already booked ${created.vaccineName || 'this vaccine'} today${created.timeSlot ? ` (${created.timeSlot})` : ''} — checked in their booking.`
+        : unpaid
+        ? `Guest ${payload.patientName} registered — collect the fee and click Mark paid. Guest password is their NIC.`
+        : `Guest ${payload.patientName} queued — awaiting a doctor's prescription. Login email is theirs; guest password is their NIC.`
     );
   };
 
@@ -433,13 +504,14 @@ export default function HospitalDashboardOverview() {
   // ==================== FILTERING & COMPUTED STATS ====================
   const todayStr = hospitalToday();
 
-  const filteredQueue = useMemo(() => {
-    const list = queuePatients.filter((p) => {
-      // Scope filter (Today vs All)
-      if (viewScope === 'today' && p.date && p.date !== todayStr) {
-        return false;
-      }
+  const todayQueuePatients = useMemo(
+    () => queuePatients.filter((p) => toHospitalDateKey(p.date) === todayStr),
+    [queuePatients, todayStr]
+  );
 
+  const filteredQueue = useMemo(() => {
+    const scoped = viewScope === 'today' ? todayQueuePatients : queuePatients;
+    const list = scoped.filter((p) => {
       // Status filter
       if (statusFilter !== 'all' && p.status !== statusFilter) {
         return false;
@@ -461,16 +533,13 @@ export default function HospitalDashboardOverview() {
       if (byTime !== 0) return byTime;
       return String(a.token || '').localeCompare(String(b.token || ''));
     });
-  }, [queuePatients, viewScope, statusFilter, searchQuery, todayStr]);
+  }, [queuePatients, todayQueuePatients, viewScope, statusFilter, searchQuery]);
 
   const totalStock = useMemo(() => {
     return inventory.reduce((acc, curr) => acc + (curr.available || 0), 0);
   }, [inventory]);
 
-  const todayPatients = useMemo(
-    () => queuePatients.filter((p) => !p.date || p.date === todayStr),
-    [queuePatients, todayStr]
-  );
+  const todayPatients = todayQueuePatients;
 
   const completedTodayCount = useMemo(() => {
     return todayPatients.filter((p) => p.status === 'completed').length;
@@ -679,7 +748,7 @@ export default function HospitalDashboardOverview() {
                   className={`queue-scope-btn${viewScope === 'today' ? ' active' : ''}`}
                   onClick={() => setViewScope('today')}
                 >
-                  Today ({queuePatients.filter((p) => p.date === todayStr).length})
+                  Today ({todayQueuePatients.length})
                 </button>
                 <button
                   type="button"
@@ -820,6 +889,16 @@ export default function HospitalDashboardOverview() {
                         {patient.status === 'awaiting_payment' ? (
                           <div className="hospital-action-buttons-wrapper">
                             <span className="mockup-status-badge pending">Awaiting payment</span>
+                            {!patient.checkedIn && patient.date === todayStr ? (
+                              <button
+                                type="button"
+                                className="btn-hospital-confirm-action"
+                                title="Patient has arrived at the hospital"
+                                onClick={() => handleDeskCheckIn(patient.id)}
+                              >
+                                Check in
+                              </button>
+                            ) : null}
                             <button
                               type="button"
                               className="btn-hospital-confirm-action"
@@ -837,9 +916,31 @@ export default function HospitalDashboardOverview() {
                               ✕ Decline
                             </button>
                           </div>
+                        ) : patient.status === 'waiting' && !patient.checkedIn && patient.date === todayStr ? (
+                          <div className="hospital-action-buttons-wrapper">
+                            <span className="mockup-status-badge pending">Not arrived</span>
+                            <button
+                              type="button"
+                              className="btn-hospital-confirm-action"
+                              title="Patient has arrived at the hospital"
+                              onClick={() => handleDeskCheckIn(patient.id)}
+                            >
+                              Check in
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-hospital-cancel-action"
+                              title="Patient did not come"
+                              onClick={() => handleDeskNoShow(patient.id)}
+                            >
+                              No-show
+                            </button>
+                          </div>
                         ) : (
                           <span className={`queue-status-badge status-${patient.status}`}>
-                            {queueStatusLabel(patient.status)}
+                            {patient.status === 'waiting' && patient.checkedIn
+                              ? 'Checked in'
+                              : queueStatusLabel(patient.status)}
                           </span>
                         )}
                       </td>
@@ -1091,15 +1192,22 @@ export default function HospitalDashboardOverview() {
         onClose={() => setIsWalkInOpen(false)}
         onAddPatient={handleAddWalkIn}
         vaccines={formularyVaccines.map((f) => f.vaccineName || f.name).filter(Boolean)}
-        booths={boothCards.map((b) => ({ id: b.id, label: b.boothName }))}
+        vaccinePrices={Object.fromEntries(
+          formularyVaccines
+            .filter((f) => (f.vaccineName || f.name) && f.formattedPrice)
+            .map((f) => [f.vaccineName || f.name, f.formattedPrice])
+        )}
+        booths={boothCards.map((b) => ({ id: b.id, label: b.boothName, vaccineNames: b.vaccineNames }))}
       />
 
-      <RestockVaccineModal
-        isOpen={isRestockOpen}
-        onClose={() => setIsRestockOpen(false)}
-        onAddStock={handleAddStock}
-        registeredVaccines={formularyVaccines.map((f) => f.vaccineName || f.name)}
-      />
+      {isRestockOpen && (
+        <RestockVaccineModal
+          isOpen={isRestockOpen}
+          onClose={() => setIsRestockOpen(false)}
+          onAddStock={handleAddStock}
+          registeredVaccines={formularyVaccines.map((f) => f.vaccineName || f.name)}
+        />
+      )}
     </div>
   );
 }

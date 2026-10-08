@@ -20,6 +20,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 ALLOWED_BOOKING_TOOLS = frozenset(
     {
+        "get_current_date_time",
         "autonomous_find_and_propose",
         "get_available_vaccines_and_hospitals",
         "get_available_dates",

@@ -70,6 +70,14 @@ export const clinicalPatientService = {
     return apiRequest(`/clinical/patients/recent${buildQuery({ limit })}`);
   },
 
+  getMedicalTimeline(patientProfileId) {
+    return apiRequest(`/patient-medical-history/patients/${encodeURIComponent(patientProfileId)}/timeline`);
+  },
+
+  getVaccinationTimeline(patientProfileId) {
+    return apiRequest(`/patient-vaccinations/patients/${encodeURIComponent(patientProfileId)}/timeline`);
+  },
+
   updateDosage(appointmentId, dosage) {
     return apiRequest(`/clinical/appointments/${appointmentId}/dosage`, {
       method: "PUT",

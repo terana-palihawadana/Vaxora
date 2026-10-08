@@ -105,7 +105,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
           final minute = int.tryParse(parts[1]);
           if (hour == null || minute == null) return true;
           final start = hour * 60 + minute;
-          final now = DateTime.now();
+          final now = hospitalNow();
           return start >= now.hour * 60 + now.minute;
         })
         .toList()
@@ -126,7 +126,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   }
 
   String get _greeting {
-    final hour = DateTime.now().hour;
+    final hour = hospitalNow().hour;
     final salutation = hour < 12
         ? 'Good morning'
         : hour < 17
@@ -278,7 +278,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
   String _todayLabel() {
     const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    final now = DateTime.now();
+    final now = hospitalNow();
     return '${weekdays[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
   }
 }

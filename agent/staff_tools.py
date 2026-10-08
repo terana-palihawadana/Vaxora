@@ -292,7 +292,32 @@ def _booth_label(booth: Dict[str, Any]) -> str:
     )
 
 
-PATIENTS_PER_BOOTH = 12
+# Clinical booth throughput: several patients can move through each 20-minute band.
+SLOT_BAND_MINUTES = 20
+PATIENTS_PER_SLOT = 3
+# When no real window is known, assume a classic 4-hour half-day (AM/PM fallback).
+_FALLBACK_WINDOW_MINUTES = 4 * 60
+
+
+def _session_patient_capacity(slot_start_minutes=None, slot_end_minutes=None) -> int:
+    """Max patients one booth can handle in a clinic window.
+
+    seats = floor(windowMinutes / 20) * PATIENTS_PER_SLOT
+    Example: 2h → 6 bands × 3 = 18; 4h → 12 × 3 = 36.
+    """
+    try:
+        start = int(slot_start_minutes) if slot_start_minutes is not None else None
+        end = int(slot_end_minutes) if slot_end_minutes is not None else None
+    except (TypeError, ValueError):
+        start = end = None
+
+    if start is None or end is None or end <= start:
+        minutes = _FALLBACK_WINDOW_MINUTES
+    else:
+        minutes = end - start
+
+    bands = max(1, minutes // SLOT_BAND_MINUTES)
+    return bands * PATIENTS_PER_SLOT
 
 
 def _sorted_booths(booths):
@@ -621,7 +646,7 @@ def _booth_serves(booth: Dict[str, Any], vaccine_key: str, label: str) -> bool:
 
 
 def _place_vaccine_demand(booths, group, open_booths, booth_room, preferred_booth_id=None):
-    """Fill booths that list this vaccine. Each booth holds 12 patients in the slot."""
+    """Fill booths that list this vaccine. Room = window length × PATIENTS_PER_SLOT."""
     capable = [booth for booth in booths if _booth_serves(booth, group["key"], group["label"])]
     if preferred_booth_id:
         preferred = [
@@ -638,13 +663,14 @@ def _place_vaccine_demand(booths, group, open_booths, booth_room, preferred_boot
                 capable.insert(0, booth)
     if not capable:
         return [], group["count"]
+    default_room = _session_patient_capacity(group.get("slotStart"), group.get("slotEnd"))
     remaining = group["count"]
     used = []
     for booth in capable:
         if remaining <= 0:
             break
         room_key = str(_booth_id(booth) or id(booth))
-        room = booth_room.get(room_key, PATIENTS_PER_BOOTH)
+        room = booth_room.get(room_key, default_room)
         if room <= 0:
             continue
         take = min(room, remaining)

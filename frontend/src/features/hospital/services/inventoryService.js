@@ -54,10 +54,24 @@ export const inventoryService = {
     return await apiRequest('/inventory/formulary', { method: 'GET' });
   },
 
-  async registerFormulary(vaccineName, manufacturer = '') {
+  async registerFormulary(vaccineName, manufacturer = '', price = 0, category = 'routine') {
     return await apiRequest('/inventory/formulary', {
       method: 'POST',
-      body: JSON.stringify({ vaccineName, manufacturer }),
+      body: JSON.stringify({
+        vaccineName,
+        manufacturer,
+        price: Number(price) || 0,
+        category: category || 'routine',
+      }),
+    });
+  },
+
+  async updateFormularyPrice(formularyId, price, category) {
+    const body = { price: Number(price) || 0 };
+    if (category) body.category = category;
+    return await apiRequest(`/inventory/formulary/${formularyId}/price`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
     });
   },
 
@@ -75,7 +89,7 @@ export const inventoryService = {
     return await apiRequest(`/inventory/batches${qs}`, { method: 'GET' });
   },
 
-  async restockBatch({ vaccineName, lotNumber, quantity, storageUnit, expiryDate, supplier }) {
+  async restockBatch({ vaccineName, lotNumber, quantity, storageUnit, expiryDate, supplier, category }) {
     return await apiRequest('/inventory/batches', {
       method: 'POST',
       body: JSON.stringify({
@@ -85,6 +99,7 @@ export const inventoryService = {
         storageUnit,
         expiryDate,
         supplier,
+        ...(category ? { category } : {}),
       }),
     });
   },

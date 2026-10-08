@@ -959,7 +959,15 @@ class _ShiftActionSheet extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Divider(color: StaffSurfaces.divider, height: 1),
-            if (shift.isCoverRequested)
+            if (!shift.isCoverRequested &&
+                hasShiftStarted(shift.shiftDate, shift.startTime))
+              _MenuTile(
+                icon: Icons.schedule,
+                label: 'Shift already started',
+                subtitle: 'Cover can no longer be requested — tell the hospital desk directly',
+                onTap: () => Navigator.of(context).pop(),
+              )
+            else if (shift.isCoverRequested)
               _MenuTile(
                 icon: Icons.hourglass_top_outlined,
                 label: 'Cover requested',

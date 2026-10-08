@@ -41,8 +41,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Attempt to log in with invalid/unauthenticated credentials
-      final emailField = find.widgetWithText(TextFormField, 'Email address');
-      final passwordField = find.widgetWithText(TextFormField, 'Password');
+      final emailField = find.byType(TextFormField).at(0);
+      final passwordField = find.byType(TextFormField).at(1);
       await tester.enterText(emailField, 'unauthorized@vaxora.lk');
       await tester.enterText(passwordField, 'wrongpassword');
 
@@ -58,10 +58,12 @@ void main() {
       await tester.pumpWidget(createTestApp(const PatientAppointmentsScreen()));
       await tester.pumpAndSettle();
 
-      // Displays fallback guest title 'Citizen' instead of user profile
+      // The unauthenticated request stays on the guest profile and shows the
+      // authorization error instead of presenting the failure as an empty list.
       expect(find.text('Citizen'), findsOneWidget);
       expect(find.byType(AppointmentCard), findsNothing);
-      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsOneWidget);
+      expect(find.textContaining('Unable to load appointments: Unauthorized'), findsOneWidget);
+      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsNothing);
     });
 
     // Scenario 2: Booking list server error
@@ -89,9 +91,13 @@ void main() {
       // Verify loading indicator is removed
       expect(find.byType(CircularProgressIndicator), findsNothing);
 
-      // Verify empty/fallback state card is displayed instead of crashing or spinning infinitely
-      expect(find.byIcon(Icons.event_busy_outlined), findsOneWidget);
-      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsOneWidget);
+      // Verify the server failure is shown as an error rather than an empty list.
+      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+      expect(
+        find.textContaining('Unable to load appointments: Internal database connection failed.'),
+        findsOneWidget,
+      );
+      expect(find.text('No upcoming sessions. Book a slot with AI or the form.'), findsNothing);
       expect(find.byType(AppointmentCard), findsNothing);
     });
 

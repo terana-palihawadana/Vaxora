@@ -96,6 +96,11 @@ public class Appointment
 
     public DateTime? DosageUpdatedAt { get; set; }
 
+    /// <summary>When the patient arrived and was checked in (UTC). Only checked-in patients can be called.</summary>
+    public DateTime? CheckedInAt { get; set; }
+
+    public Guid? CheckedInByUserId { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }

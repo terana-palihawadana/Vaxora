@@ -24,11 +24,7 @@ class PatientDashboardScreen extends StatefulWidget {
   final Function(int targetTab) onNavigateTab;
   final Function(Map<String, dynamic> appointmentData)? onAppointmentBooked;
 
-  const PatientDashboardScreen({
-    super.key,
-    required this.onNavigateTab,
-    this.onAppointmentBooked,
-  });
+  const PatientDashboardScreen({super.key, required this.onNavigateTab, this.onAppointmentBooked});
 
   @override
   State<PatientDashboardScreen> createState() => _PatientDashboardScreenState();
@@ -39,6 +35,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   List<AppointmentModel> _appointments = [];
   PatientVaccinationTimelineModel? _timeline;
   bool _isLoading = true;
+  String? _appointmentsError;
 
   @override
   void initState() {
@@ -58,25 +55,27 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     } catch (_) {}
 
     // 2. Fetch real appointments from backend
-    List<AppointmentModel> appts = [];
+    List<AppointmentModel>? appts;
+    String? appointmentsError;
     try {
       appts = await AppointmentRepository.getMyAppointments();
-    } catch (_) {}
+    } catch (error) {
+      appointmentsError = error.toString();
+    }
 
     // 3. Fetch real vaccination timeline if profile ID exists
     PatientVaccinationTimelineModel? timeline;
     if (user?.patientProfileId != null && user!.patientProfileId!.isNotEmpty) {
       try {
-        timeline = await PatientRepository.getVaccinationTimeline(
-          user.patientProfileId!,
-        );
+        timeline = await PatientRepository.getVaccinationTimeline(user.patientProfileId!);
       } catch (_) {}
     }
 
     if (mounted) {
       setState(() {
         _user = user;
-        _appointments = appts;
+        if (appts != null) _appointments = appts;
+        _appointmentsError = appointmentsError;
         _timeline = timeline;
         _isLoading = false;
       });
@@ -133,10 +132,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
       return;
     }
 
-    CarePlanSheet.show(
-      context,
-      loader: () => AgentRepository.generatePatientCarePlan(profileId),
-    );
+    CarePlanSheet.show(context, loader: () => AgentRepository.generatePatientCarePlan(profileId));
   }
 
   void _openDigitalPassSheet(BuildContext context, {AppointmentModel? appt}) {
@@ -146,15 +142,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
     final vaccineName =
         appt?.vaccineName ??
-        (_timeline?.records.isNotEmpty == true
-            ? _timeline!.records.first.vaccineName
-            : 'Vaxora Certified Health Pass');
+        (_timeline?.records.isNotEmpty == true ? _timeline!.records.first.vaccineName : 'Vaxora Certified Health Pass');
 
     final dose = appt != null
         ? (appt.doseNumber ?? 'Scheduled Dose')
-        : (_timeline?.records.isNotEmpty == true
-              ? 'Dose ${_timeline!.records.first.doseNumber}'
-              : 'Pass Active');
+        : (_timeline?.records.isNotEmpty == true ? 'Dose ${_timeline!.records.first.doseNumber}' : 'Pass Active');
 
     final date =
         appt?.appointmentDate ??
@@ -250,20 +242,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
   Widget build(BuildContext context) {
     final userName = _user?.name.isNotEmpty == true ? _user!.name : 'Citizen';
     final upcomingAppointments = _appointments
-        .where(
-          (a) =>
-              a.status.toLowerCase() != 'cancelled' &&
-              a.status.toLowerCase() != 'completed',
-        )
+        .where((a) => a.status.toLowerCase() != 'cancelled' && a.status.toLowerCase() != 'completed')
         .toList();
-    final nextAppointment = upcomingAppointments.isNotEmpty
-        ? upcomingAppointments.first
-        : null;
+    final nextAppointment = upcomingAppointments.isNotEmpty ? upcomingAppointments.first : null;
     final totalDoses =
-        _timeline?.totalDoses ??
-        _appointments
-            .where((a) => a.status.toLowerCase() == 'completed')
-            .length;
+        _timeline?.totalDoses ?? _appointments.where((a) => a.status.toLowerCase() == 'completed').length;
     final scheduledCount = upcomingAppointments.length;
     final photoUrl = resolveMediaUrl(_user?.profilePhotoUrl);
 
@@ -277,14 +260,9 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
           StaffHeaderAction(
             icon: Icons.qr_code_2,
             tooltip: 'Health pass',
-            onPressed: () =>
-                _openDigitalPassSheet(context, appt: nextAppointment),
+            onPressed: () => _openDigitalPassSheet(context, appt: nextAppointment),
           ),
-          StaffHeaderAction(
-            icon: Icons.refresh,
-            tooltip: 'Refresh',
-            onPressed: _isLoading ? null : _loadDashboardData,
-          ),
+          StaffHeaderAction(icon: Icons.refresh, tooltip: 'Refresh', onPressed: _isLoading ? null : _loadDashboardData),
         ],
       ),
       body: RefreshIndicator(
@@ -297,23 +275,23 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
             StaffPageIntro(
               eyebrow: 'Patient home',
               title: 'Your immunization',
-              subtitle: nextAppointment != null
+              subtitle: _appointmentsError != null
+                  ? 'Unable to load appointments: $_appointmentsError'
+                  : nextAppointment != null
                   ? 'Next: ${nextAppointment.vaccineName} on ${nextAppointment.appointmentDate}.'
                   : 'No upcoming session. Book a dose with AI or the form.',
               stats: [
                 StaffIntroStat(
                   label: 'Received',
-                  value: '$totalDoses',
+                  value: _appointmentsError != null && _timeline == null ? '—' : '$totalDoses',
                   icon: Icons.vaccines_outlined,
                   accent: AppColors.success,
                 ),
                 StaffIntroStat(
                   label: 'Upcoming',
-                  value: '$scheduledCount',
+                  value: _appointmentsError == null ? '$scheduledCount' : '—',
                   icon: Icons.event_note_outlined,
-                  accent: scheduledCount > 0
-                      ? const Color(0xFFB2660A)
-                      : StaffSurfaces.brandSoft,
+                  accent: scheduledCount > 0 ? const Color(0xFFB2660A) : StaffSurfaces.brandSoft,
                 ),
                 StaffIntroStat(
                   label: 'Vaccines',
@@ -362,13 +340,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),
@@ -386,11 +359,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
             if (_isLoading && _appointments.isEmpty && _timeline == null) ...[
               const SizedBox(height: 36),
-              Center(
-                child: CircularProgressIndicator(
-                  color: StaffSurfaces.brandSoft,
-                ),
-              ),
+              Center(child: CircularProgressIndicator(color: StaffSurfaces.brandSoft)),
             ],
             const SizedBox(height: 18),
             StaffSectionHeader(
@@ -403,16 +372,26 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: StaffSurfaces.brandSoft,
                 ),
-                child: const Text(
-                  'View all',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
+                child: const Text('View all', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),
             ),
-            if (nextAppointment == null)
+            if (nextAppointment == null && _appointmentsError != null)
+              Column(
+                children: [
+                  StaffEmptyCard(
+                    message: 'Unable to load appointments: $_appointmentsError',
+                    icon: Icons.cloud_off_outlined,
+                  ),
+                  TextButton.icon(
+                    onPressed: _isLoading ? null : _loadDashboardData,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Retry'),
+                  ),
+                ],
+              )
+            else if (nextAppointment == null)
               const StaffEmptyCard(
-                message:
-                    'No upcoming sessions. Book a dose with AI or the form.',
+                message: 'No upcoming sessions. Book a dose with AI or the form.',
                 icon: Icons.event_available_outlined,
               )
             else
@@ -420,10 +399,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 padding: const EdgeInsets.all(14),
                 decoration: StaffSurfaces.card(
                   borderColor: switch (_chipTone(nextAppointment.status)) {
-                    StaffChipTone.success =>
-                      AppColors.success.withValues(alpha: 0.28),
-                    StaffChipTone.danger =>
-                      AppColors.error.withValues(alpha: 0.28),
+                    StaffChipTone.success => AppColors.success.withValues(alpha: 0.28),
+                    StaffChipTone.danger => AppColors.error.withValues(alpha: 0.28),
                     StaffChipTone.warning => const Color(0xFFF5B168),
                     _ => StaffSurfaces.cardBorder,
                   },
@@ -452,27 +429,17 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                     const SizedBox(height: 6),
                     Text(
                       nextAppointment.vaccineName,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: StaffSurfaces.brandSoft,
-                      ),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: StaffSurfaces.brandSoft),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Ref ${nextAppointment.referenceNumber ?? (nextAppointment.id.length > 8 ? nextAppointment.id.substring(0, 8) : nextAppointment.id)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: StaffSurfaces.textSecondary,
-                      ),
+                      style: const TextStyle(fontSize: 12, color: StaffSurfaces.textSecondary),
                     ),
                     const SizedBox(height: 10),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       decoration: StaffSurfaces.softWell(),
                       child: Text(
                         '${nextAppointment.appointmentDate}  ·  ${nextAppointment.timeSlot}',
@@ -488,12 +455,9 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                       children: [
                         if (!nextAppointment.isPaid &&
                             (nextAppointment.fee ?? 0) > 0 &&
-                            nextAppointment.status.toLowerCase() !=
-                                'confirmed' &&
-                            nextAppointment.status.toLowerCase() !=
-                                'completed' &&
-                            nextAppointment.status.toLowerCase() !=
-                                'cancelled') ...[
+                            nextAppointment.status.toLowerCase() != 'confirmed' &&
+                            nextAppointment.status.toLowerCase() != 'completed' &&
+                            nextAppointment.status.toLowerCase() != 'cancelled') ...[
                           Expanded(
                             child: FilledButton.icon(
                               onPressed: () {
@@ -521,23 +485,14 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                                 );
                               },
                               icon: const Icon(Icons.payment, size: 16),
-                              label: Text(
-                                'Pay LKR ${(nextAppointment.fee ?? 0).toStringAsFixed(0)}',
-                              ),
+                              label: Text('Pay LKR ${(nextAppointment.fee ?? 0).toStringAsFixed(0)}'),
                               style: FilledButton.styleFrom(
                                 backgroundColor: AppColors.success,
                                 foregroundColor: Colors.white,
                                 elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
                               ),
                             ),
                           ),
@@ -553,10 +508,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: FilledButton(
-                            onPressed: () => _openDigitalPassSheet(
-                              context,
-                              appt: nextAppointment,
-                            ),
+                            onPressed: () => _openDigitalPassSheet(context, appt: nextAppointment),
                             style: _ctaStyle,
                             child: const Text('View slip'),
                           ),
@@ -577,15 +529,8 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   Container(
                     width: 36,
                     height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.infoBg,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.flight_takeoff_outlined,
-                      size: 18,
-                      color: AppColors.accent,
-                    ),
+                    decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(10)),
+                    child: const Icon(Icons.flight_takeoff_outlined, size: 18, color: AppColors.accent),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -594,31 +539,19 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                       children: [
                         const Text(
                           'International travel',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: StaffSurfaces.textPrimary,
-                          ),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: StaffSurfaces.textPrimary),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           'Renew Yellow Fever and Meningococcal records 14 days before departure.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: StaffSurfaces.textSecondary,
-                            height: 1.4,
-                          ),
+                          style: TextStyle(fontSize: 12.5, color: StaffSurfaces.textSecondary, height: 1.4),
                         ),
                         const SizedBox(height: 8),
                         GestureDetector(
                           onTap: () => widget.onNavigateTab(2),
                           child: Text(
                             'Check certificates',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: StaffSurfaces.brandSoft,
-                            ),
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: StaffSurfaces.brandSoft),
                           ),
                         ),
                       ],
@@ -638,10 +571,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   foregroundColor: StaffSurfaces.brandSoft,
                 ),
-                child: const Text(
-                  'Full history',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                ),
+                child: const Text('Full history', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               ),
             ),
             if (_timeline != null && _timeline!.records.isNotEmpty)
@@ -650,18 +580,12 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 decoration: StaffSurfaces.card(),
                 child: Column(
                   children: [
-                    for (
-                      int i = 0;
-                      i < _timeline!.records.length && i < 4;
-                      i++
-                    ) ...[
-                      if (i > 0)
-                        const Divider(color: StaffSurfaces.divider, height: 1),
+                    for (int i = 0; i < _timeline!.records.length && i < 4; i++) ...[
+                      if (i > 0) const Divider(color: StaffSurfaces.divider, height: 1),
                       ImmunizationTimelineItem(
                         icon: Icons.vaccines_outlined,
                         name: _timeline!.records[i].vaccineName,
-                        target:
-                            'Dose ${_timeline!.records[i].doseNumber} · ${_timeline!.records[i].route}',
+                        target: 'Dose ${_timeline!.records[i].doseNumber} · ${_timeline!.records[i].route}',
                         status: 'Completed',
                         date:
                             '${_timeline!.records[i].administeredAt.year}-${_timeline!.records[i].administeredAt.month.toString().padLeft(2, '0')}-${_timeline!.records[i].administeredAt.day.toString().padLeft(2, '0')}',
@@ -677,13 +601,11 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                 child: Column(
                   children: [
                     for (int i = 0; i < _appointments.length && i < 3; i++) ...[
-                      if (i > 0)
-                        const Divider(color: StaffSurfaces.divider, height: 1),
+                      if (i > 0) const Divider(color: StaffSurfaces.divider, height: 1),
                       ImmunizationTimelineItem(
                         icon: Icons.event_outlined,
                         name: _appointments[i].vaccineName,
-                        target:
-                            '${_appointments[i].hospitalName} · ${_appointments[i].doseNumber ?? "Dose 1"}',
+                        target: '${_appointments[i].hospitalName} · ${_appointments[i].doseNumber ?? "Dose 1"}',
                         status: _appointments[i].status,
                         date: _appointments[i].appointmentDate,
                       ),
@@ -691,11 +613,16 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   ],
                 ),
               )
+            else if (_appointmentsError != null)
+              StaffEmptyCard(
+                compact: true,
+                message: 'Unable to load appointment data: $_appointmentsError',
+                icon: Icons.cloud_off_outlined,
+              )
             else
               const StaffEmptyCard(
                 compact: true,
-                message:
-                    'Completed doses recorded by officers will appear here.',
+                message: 'Completed doses recorded by officers will appear here.',
                 icon: Icons.vaccines_outlined,
               ),
           ],

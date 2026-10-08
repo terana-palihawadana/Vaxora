@@ -13,11 +13,13 @@ namespace Vaxora.Api.Controllers;
 public class PatientVaccinationController : ControllerBase
 {
     private readonly IPatientVaccinationService _service;
+    private readonly IClinicalScopeService _scope;
     private readonly ILogger<PatientVaccinationController> _logger;
 
-    public PatientVaccinationController(IPatientVaccinationService service, ILogger<PatientVaccinationController> logger)
+    public PatientVaccinationController(IPatientVaccinationService service, IClinicalScopeService scope, ILogger<PatientVaccinationController> logger)
     {
         _service = service;
+        _scope = scope;
         _logger = logger;
     }
 
@@ -32,6 +34,10 @@ public class PatientVaccinationController : ControllerBase
         {
             var owns = await _service.IsOwnedByUserAsync(patientProfileId, currentUserId);
             if (!owns) return Forbid();
+        }
+        else if (!await _scope.CanAccessPatientAsync(currentUserId, role, patientProfileId))
+        {
+            return Forbid();
         }
 
         try
@@ -51,9 +57,13 @@ public class PatientVaccinationController : ControllerBase
     [Authorize(Roles = "DOCTOR,NURSE,HOSPITAL,ADMIN")]
     public async Task<IActionResult> GetById(Guid id)
     {
+        if (!TryGetUserId(out var currentUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
         try
         {
             var result = await _service.GetByIdAsync(id);
+            if (!await _scope.CanAccessPatientAsync(currentUserId, CurrentRole, result.PatientProfileId)) return Forbid();
             return Ok(result);
         }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -72,12 +82,16 @@ public class PatientVaccinationController : ControllerBase
         if (!TryGetUserId(out var actorUserId))
             return Unauthorized(new { message = "Invalid identity claim." });
 
+        var hospitalIds = await _scope.GetHospitalProfileIdsAsync(actorUserId, CurrentRole);
+        if (hospitalIds != null && hospitalIds.Count == 0) return Forbid();
+
         try
         {
             var result = await _service.CreateAsync(actorUserId, patientProfileId, dto);
             return Ok(result);
         }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
+        catch (UnauthorizedAccessException) { return Forbid(); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
         catch (Exception ex)
         {
@@ -85,6 +99,8 @@ public class PatientVaccinationController : ControllerBase
             return StatusCode(500, new { message = "Failed to record vaccination." });
         }
     }
+
+    private string CurrentRole => User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
 
     private bool TryGetUserId(out Guid userId)
     {

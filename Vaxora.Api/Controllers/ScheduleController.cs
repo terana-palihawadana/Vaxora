@@ -101,6 +101,10 @@ public class ScheduleController : ControllerBase
         {
             return NotFound(new { message = ex.Message });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling schedule {ScheduleId}", id);
@@ -121,6 +125,42 @@ public class ScheduleController : ControllerBase
         {
             _logger.LogError(ex, "Error fetching available schedules for booking");
             return StatusCode(500, new { message = "Failed to fetch available schedule slots." });
+        }
+    }
+
+    /// <summary>
+    /// Preview how long current usable stock can cover a proposed clinic window (soft planning; no vial deduct).
+    /// </summary>
+    [HttpPost("stock-horizon")]
+    [Authorize(Roles = "HOSPITAL")]
+    public async Task<IActionResult> GetStockHorizon([FromBody] ScheduleStockHorizonRequestDto dto)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var hospitalUserId))
+        {
+            return Unauthorized(new { message = "Invalid authentication claims." });
+        }
+
+        try
+        {
+            var result = await _scheduleService.GetStockHorizonAsync(hospitalUserId, dto);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(403, new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error computing stock horizon for hospital {HospitalUserId}", hospitalUserId);
+            return StatusCode(500, new { message = "Failed to estimate stock coverage for this schedule." });
         }
     }
 }

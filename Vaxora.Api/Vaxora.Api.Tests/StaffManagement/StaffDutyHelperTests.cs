@@ -89,7 +89,50 @@ public class StaffDutyHelperTests
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             StaffDutyHelper.EnsureStaffOnDutyAsync(context, doctor.Id, hospital.Id));
 
-        Assert.Contains("active shift at this hospital", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not on duty at this hospital", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task IsStaffOnDutyAsync_returns_true_for_clock_in_without_shift()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "walkin.nurse@example.com", "VAX-N-7010");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        affiliation.DutyStatus = DutyStatus.OnDuty;
+        affiliation.DutyUpdatedAt = DateTime.UtcNow.AddMinutes(-10);
+        await context.SaveChangesAsync();
+
+        Assert.True(await StaffDutyHelper.IsStaffOnDutyAsync(context, nurse.Id, hospital.Id));
+    }
+
+    [Fact]
+    public async Task IsStaffOnDutyAsync_returns_false_for_expired_clock_in()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "stale.nurse@example.com", "VAX-N-7011");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, nurse);
+        affiliation.DutyStatus = DutyStatus.OnDuty;
+        affiliation.DutyUpdatedAt = DateTime.UtcNow - StaffDutyHelper.ClockInValidity - TimeSpan.FromMinutes(1);
+        await context.SaveChangesAsync();
+
+        Assert.False(await StaffDutyHelper.IsStaffOnDutyAsync(context, nurse.Id, hospital.Id));
+    }
+
+    [Fact]
+    public async Task IsStaffOnDutyAsync_returns_false_on_break_even_with_live_shift()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var doctor = TestDb.AddDoctor(context, "break.doc@example.com", "VAX-D-7012");
+        var affiliation = TestDb.AddActiveAffiliation(context, hospital, doctor);
+        affiliation.DutyStatus = DutyStatus.OnBreak;
+        affiliation.DutyUpdatedAt = DateTime.UtcNow;
+        TestDb.AddLiveShift(context, affiliation, hospital);
+        await context.SaveChangesAsync();
+
+        Assert.False(await StaffDutyHelper.IsStaffOnDutyAsync(context, doctor.Id, hospital.Id));
     }
 
     [Fact]
@@ -105,7 +148,7 @@ public class StaffDutyHelperTests
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             StaffDutyHelper.EnsureHospitalHasOnDutyStaffAsync(context, hospital.Id));
-        Assert.Contains("At least one affiliated doctor or nurse must be on an active shift", ex.Message);
+        Assert.Contains("At least one affiliated doctor or nurse must be on duty", ex.Message);
 
         // Add an on-duty nurse
         var nurse = TestDb.AddNurse(context, "live.nurse@example.com", "VAX-N-7005");

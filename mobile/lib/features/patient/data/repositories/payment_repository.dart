@@ -16,17 +16,13 @@ class PaymentRepository {
     throw ApiException('Failed to initialize PayHere checkout.');
   }
 
-  /// Calls POST /api/payment/confirm to verify payment, confirm appointment, and trigger emails
+  /// Checks whether the server has confirmed payment through PayHere's IPN.
   static Future<Map<String, dynamic>> confirmPayment({
     required String appointmentId,
-    required String paymentId,
   }) async {
     final response = await ApiClient.post(
       ApiConstants.confirmPayment,
-      body: {
-        'appointmentId': appointmentId,
-        'paymentId': paymentId,
-      },
+      body: {'appointmentId': appointmentId},
     );
 
     if (response is Map<String, dynamic>) {

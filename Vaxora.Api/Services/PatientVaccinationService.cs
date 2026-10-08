@@ -16,11 +16,13 @@ public interface IPatientVaccinationService
 public class PatientVaccinationService : IPatientVaccinationService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IClinicalScopeService _scope;
     private readonly ILogger<PatientVaccinationService> _logger;
 
-    public PatientVaccinationService(ApplicationDbContext context, ILogger<PatientVaccinationService> logger)
+    public PatientVaccinationService(ApplicationDbContext context, IClinicalScopeService scope, ILogger<PatientVaccinationService> logger)
     {
         _context = context;
+        _scope = scope;
         _logger = logger;
     }
 
@@ -91,6 +93,10 @@ public class PatientVaccinationService : IPatientVaccinationService
                 .Include(b => b.Vaccine)
                 .FirstOrDefaultAsync(b => b.Id == dto.BatchId.Value)
                 ?? throw new KeyNotFoundException("Batch not found.");
+
+            var actorRole = await _context.Users.Where(u => u.Id == actorUserId).Select(u => u.Role.ToString()).FirstOrDefaultAsync() ?? string.Empty;
+            if (!await _scope.CanActForHospitalAsync(actorUserId, actorRole, batch.HospitalProfileId))
+                throw new UnauthorizedAccessException("The selected batch belongs to a different hospital.");
 
             if (batch.VaccineId != vaccine.Id)
                 throw new InvalidOperationException("The selected batch does not match the vaccine being administered.");

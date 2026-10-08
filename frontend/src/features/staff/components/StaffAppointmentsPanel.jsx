@@ -1,27 +1,24 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import staffAppointmentService from '../services/staffAppointmentService';
+import { addHospitalDays, hospitalToday } from '../../hospital/utils/hospitalDate';
 import { IconCalendar } from '../../../shared/icons/AppIcons';
 import StaffSubpageHeader from './StaffSubpageHeader';
-
-function toDateInputValue(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
 
 /**
  * Shared doctor/nurse appointments roster.
  * Hospital switch shows whenever the staff member has multiple affiliations.
  * Prefer the hospital where they are on duty now as the default selection.
+ * Date browsing is limited to hospital-local today ± 1 day (clinical session).
  * No Action column (view-only roster).
  */
 export default function StaffAppointmentsPanel({
   allowHospitalSwitch = true,
   facilitySuffix = '',
 }) {
-  const today = useMemo(() => toDateInputValue(), []);
+  const today = useMemo(() => hospitalToday(), []);
+  const minDate = useMemo(() => addHospitalDays(today, -1), [today]);
+  const maxDate = useMemo(() => addHospitalDays(today, 1), [today]);
   const [hospitals, setHospitals] = useState([]);
   const [selectedHospitalUserId, setSelectedHospitalUserId] = useState('');
   const [filterDate, setFilterDate] = useState(today);
@@ -70,7 +67,7 @@ export default function StaffAppointmentsPanel({
     try {
       const list = await staffAppointmentService.getHospitalAppointments(
         selectedHospitalUserId,
-        filterDate || undefined
+        filterDate || today
       );
       setAppointments(Array.isArray(list) ? list : []);
     } catch (err) {
@@ -79,7 +76,7 @@ export default function StaffAppointmentsPanel({
     } finally {
       setLoadingAppointments(false);
     }
-  }, [selectedHospitalUserId, filterDate]);
+  }, [selectedHospitalUserId, filterDate, today]);
 
   useEffect(() => deferEffectCallback(() => {
     loadHospitals();
@@ -95,12 +92,26 @@ export default function StaffAppointmentsPanel({
       ? 'Loading hospital...'
       : 'No affiliated hospital';
 
+  const onFilterDateChange = (value) => {
+    if (!value) {
+      setFilterDate(today);
+      return;
+    }
+    if (value < minDate || value > maxDate) {
+      setError(`Clinical roster is limited to ${minDate} … ${maxDate} (hospital today ± 1 day).`);
+      setFilterDate(today);
+      return;
+    }
+    setError('');
+    setFilterDate(value);
+  };
+
   return (
     <div className="staff-workspace-page staff-appointments-page">
       <StaffSubpageHeader
         eyebrow="Clinical workflow"
         title="Appointments"
-        subtitle="Review upcoming vaccination visits at your affiliated hospital."
+        subtitle="Today’s vaccination visits at your affiliated hospital (session window ± 1 day)."
       />
       {error && (
         <div
@@ -155,32 +166,26 @@ export default function StaffAppointmentsPanel({
           <div className="doctor-appointments-filter-bar">
             <div className="doctor-filter-group">
               <label htmlFor="staff-filter-date" className="doctor-filter-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                <IconCalendar size={16} /> Filter Date:
+                <IconCalendar size={16} /> Session date:
               </label>
               <input
                 id="staff-filter-date"
                 type="date"
                 value={filterDate}
-                onChange={(e) => setFilterDate(e.target.value)}
+                min={minDate}
+                max={maxDate}
+                onChange={(e) => onFilterDateChange(e.target.value)}
                 className="doctor-filter-date-input"
-                aria-label="Filter appointments by date"
+                aria-label="Filter appointments by session date"
                 disabled={!selectedHospitalUserId}
               />
               <button
                 type="button"
-                className={`doctor-filter-btn ${!filterDate ? 'active' : ''}`}
-                onClick={() => setFilterDate('')}
-                disabled={!selectedHospitalUserId}
-              >
-                All Dates
-              </button>
-              <button
-                type="button"
                 className={`doctor-filter-btn ${filterDate === today ? 'active' : ''}`}
-                onClick={() => setFilterDate(today)}
+                onClick={() => onFilterDateChange(today)}
                 disabled={!selectedHospitalUserId}
               >
-                {today} (Today)
+                Today
               </button>
               <button
                 type="button"

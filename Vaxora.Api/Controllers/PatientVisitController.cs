@@ -13,11 +13,13 @@ namespace Vaxora.Api.Controllers;
 public class PatientVisitController : ControllerBase
 {
     private readonly IPatientVisitService _service;
+    private readonly IClinicalScopeService _scope;
     private readonly ILogger<PatientVisitController> _logger;
 
-    public PatientVisitController(IPatientVisitService service, ILogger<PatientVisitController> logger)
+    public PatientVisitController(IPatientVisitService service, IClinicalScopeService scope, ILogger<PatientVisitController> logger)
     {
         _service = service;
+        _scope = scope;
         _logger = logger;
     }
 
@@ -32,6 +34,10 @@ public class PatientVisitController : ControllerBase
         {
             var owns = await _service.IsOwnedByUserAsync(patientProfileId, currentUserId);
             if (!owns) return Forbid();
+        }
+        else if (!await _scope.CanAccessPatientAsync(currentUserId, role, patientProfileId))
+        {
+            return Forbid();
         }
 
         try { return Ok(await _service.GetTimelineAsync(patientProfileId)); }
@@ -55,6 +61,10 @@ public class PatientVisitController : ControllerBase
             var owns = await _service.IsOwnedByUserAsync(patientProfileId, currentUserId);
             if (!owns) return Forbid();
         }
+        else if (!await _scope.CanAccessPatientAsync(currentUserId, role, patientProfileId))
+        {
+            return Forbid();
+        }
 
         try { return Ok(await _service.GetUpcomingFollowUpsAsync(patientProfileId)); }
         catch (Exception ex)
@@ -68,7 +78,15 @@ public class PatientVisitController : ControllerBase
     [Authorize(Roles = "DOCTOR,NURSE,HOSPITAL,ADMIN")]
     public async Task<IActionResult> GetById(Guid id)
     {
-        try { return Ok(await _service.GetByIdAsync(id)); }
+        if (!TryGetUserId(out var currentUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
+        try
+        {
+            var visit = await _service.GetByIdAsync(id);
+            if (!await _scope.CanAccessPatientAsync(currentUserId, CurrentRole, visit.PatientProfileId)) return Forbid();
+            return Ok(visit);
+        }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (Exception ex)
         {
@@ -81,7 +99,15 @@ public class PatientVisitController : ControllerBase
     [Authorize(Roles = "DOCTOR,NURSE,HOSPITAL,ADMIN")]
     public async Task<IActionResult> GetSummary(Guid id)
     {
-        try { return Ok(await _service.GetSummaryAsync(id)); }
+        if (!TryGetUserId(out var currentUserId))
+            return Unauthorized(new { message = "Invalid identity claim." });
+
+        try
+        {
+            var visit = await _service.GetByIdAsync(id);
+            if (!await _scope.CanAccessPatientAsync(currentUserId, CurrentRole, visit.PatientProfileId)) return Forbid();
+            return Ok(await _service.GetSummaryAsync(id));
+        }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (Exception ex)
         {
@@ -97,6 +123,16 @@ public class PatientVisitController : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
         if (!TryGetUserId(out var actorUserId))
             return Unauthorized(new { message = "Invalid identity claim." });
+
+        var hospitalIds = await _scope.GetHospitalProfileIdsAsync(actorUserId, CurrentRole);
+        if (hospitalIds != null)
+        {
+            if (hospitalIds.Count == 0) return Forbid();
+            if (dto.HospitalProfileId.HasValue && !hospitalIds.Contains(dto.HospitalProfileId.Value))
+                return Forbid();
+            if (!dto.HospitalProfileId.HasValue && hospitalIds.Count == 1)
+                dto.HospitalProfileId = hospitalIds[0];
+        }
 
         try { return Ok(await _service.CreateAsync(actorUserId, patientProfileId, dto)); }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
@@ -116,7 +152,12 @@ public class PatientVisitController : ControllerBase
         if (!TryGetUserId(out var actorUserId))
             return Unauthorized(new { message = "Invalid identity claim." });
 
-        try { return Ok(await _service.UpdateAsync(actorUserId, id, dto)); }
+        try
+        {
+            var existing = await _service.GetByIdAsync(id);
+            if (!await _scope.CanAccessPatientAsync(actorUserId, CurrentRole, existing.PatientProfileId)) return Forbid();
+            return Ok(await _service.UpdateAsync(actorUserId, id, dto));
+        }
         catch (KeyNotFoundException ex) { return NotFound(new { message = ex.Message }); }
         catch (InvalidOperationException ex) { return BadRequest(new { message = ex.Message }); }
         catch (Exception ex)
@@ -135,6 +176,8 @@ public class PatientVisitController : ControllerBase
 
         try
         {
+            var existing = await _service.GetByIdAsync(id);
+            if (!await _scope.CanAccessPatientAsync(actorUserId, CurrentRole, existing.PatientProfileId)) return Forbid();
             await _service.DeleteAsync(actorUserId, id);
             return Ok(new { message = "Visit deleted." });
         }
@@ -145,6 +188,8 @@ public class PatientVisitController : ControllerBase
             return StatusCode(500, new { message = "Failed to delete visit." });
         }
     }
+
+    private string CurrentRole => User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
 
     private bool TryGetUserId(out Guid userId)
     {

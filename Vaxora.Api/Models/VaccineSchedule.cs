@@ -13,18 +13,6 @@ public class VaccineSchedule
 
     public Guid? HospitalProfileId { get; set; }
 
-    public Guid? DoctorUserId { get; set; }
-
-    [Required]
-    [MaxLength(200)]
-    public string DoctorName { get; set; } = string.Empty;
-
-    public Guid? NurseUserId { get; set; }
-
-    [Required]
-    [MaxLength(200)]
-    public string NurseName { get; set; } = string.Empty;
-
     public Guid? BoothId { get; set; }
 
     [MaxLength(120)]
@@ -67,12 +55,6 @@ public class VaccineSchedule
     // Navigation properties
     [ForeignKey(nameof(HospitalUserId))]
     public User? HospitalUser { get; set; }
-
-    [ForeignKey(nameof(DoctorUserId))]
-    public User? DoctorUser { get; set; }
-
-    [ForeignKey(nameof(NurseUserId))]
-    public User? NurseUser { get; set; }
 
     [ForeignKey(nameof(BoothId))]
     public HospitalBooth? Booth { get; set; }

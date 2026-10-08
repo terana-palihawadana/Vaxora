@@ -2,10 +2,6 @@ class HospitalScheduleModel {
   final String id;
   final String hospitalUserId;
   final String hospitalName;
-  final String? doctorUserId;
-  final String doctorName;
-  final String? nurseUserId;
-  final String nurseName;
   final String? vaccineId;
   final String vaccineName;
   final String scheduleType;
@@ -25,10 +21,6 @@ class HospitalScheduleModel {
     required this.id,
     required this.hospitalUserId,
     required this.hospitalName,
-    this.doctorUserId,
-    required this.doctorName,
-    this.nurseUserId,
-    required this.nurseName,
     this.vaccineId,
     required this.vaccineName,
     required this.scheduleType,
@@ -50,10 +42,6 @@ class HospitalScheduleModel {
       id: json['id']?.toString() ?? '',
       hospitalUserId: json['hospitalUserId']?.toString() ?? '',
       hospitalName: json['hospitalName']?.toString() ?? 'Hospital',
-      doctorUserId: json['doctorUserId']?.toString(),
-      doctorName: json['doctorName']?.toString() ?? '',
-      nurseUserId: json['nurseUserId']?.toString(),
-      nurseName: json['nurseName']?.toString() ?? '',
       vaccineId: json['vaccineId']?.toString(),
       vaccineName: json['vaccineName']?.toString() ?? '',
       scheduleType: json['scheduleType']?.toString() ?? 'OneTime',

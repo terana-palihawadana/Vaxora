@@ -13,6 +13,7 @@ public interface ITokenService
     string GenerateRefreshToken();
     ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
     DateTime GetTokenExpiration();
+    DateTime GetRefreshTokenExpiration();
 }
 
 public class TokenService : ITokenService
@@ -42,7 +43,7 @@ public class TokenService : ITokenService
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpiryInMinutes"], out var exp) ? exp : 120; // 2 hours default
+        var expirationMinutes = GetAccessTokenMinutes();
         var expires = DateTime.UtcNow.AddMinutes(expirationMinutes);
 
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -98,7 +99,25 @@ public class TokenService : ITokenService
 
     public DateTime GetTokenExpiration()
     {
-        var expirationMinutes = int.TryParse(_configuration["Jwt:ExpiryInMinutes"], out var exp) ? exp : 120;
-        return DateTime.UtcNow.AddMinutes(expirationMinutes);
+        return DateTime.UtcNow.AddMinutes(GetAccessTokenMinutes());
+    }
+
+    public DateTime GetRefreshTokenExpiration()
+    {
+        return DateTime.UtcNow.AddDays(GetRefreshTokenDays());
+    }
+
+    private int GetAccessTokenMinutes()
+    {
+        return int.TryParse(_configuration["Jwt:ExpiryInMinutes"], out var exp) && exp > 0
+            ? exp
+            : 120;
+    }
+
+    private int GetRefreshTokenDays()
+    {
+        return int.TryParse(_configuration["Jwt:RefreshTokenExpiryInDays"], out var days) && days > 0
+            ? days
+            : 2;
     }
 }
