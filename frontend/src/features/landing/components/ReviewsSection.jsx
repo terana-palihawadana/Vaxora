@@ -27,9 +27,9 @@ const PLACEHOLDER_REVIEWS = [
 ];
 
 const renderStars = (rating) => (
-  <span style={{ color: "#fbbf24", fontSize: "0.9rem", letterSpacing: 1 }}>
+  <span style={{ color: "var(--color-rating)", fontSize: "0.9rem", letterSpacing: 1 }}>
     {"★".repeat(rating)}
-    <span style={{ color: "#cbd5e1" }}>{"★".repeat(5 - rating)}</span>
+    <span style={{ color: "var(--color-border-card)" }}>{"★".repeat(5 - rating)}</span>
   </span>
 );
 
@@ -84,7 +84,7 @@ export default function ReviewsSection() {
       <h2 className="reviews-title">Watch our user reviews</h2>
 
       {loading ? (
-        <p style={{ textAlign: "center", color: "#64748b", padding: 40 }}>
+        <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: 40 }}>
           Loading reviews…
         </p>
       ) : (
@@ -141,7 +141,7 @@ export default function ReviewsSection() {
                             style={{
                               marginTop: 8,
                               fontSize: "0.72rem",
-                              color: "#64748b",
+                              color: "var(--color-text-muted)",
                             }}
                           >
                             {item.category}

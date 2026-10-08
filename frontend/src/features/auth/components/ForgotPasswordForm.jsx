@@ -77,19 +77,19 @@ export default function ForgotPasswordForm({ onSwitchToLogin, onSuccess }) {
     <>
       {step === 1 && (
         <form onSubmit={handleSendEmail} className="auth-form">
-          <p style={{ fontSize: '0.92rem', color: '#475569', textAlign: 'center', marginBottom: '8px' }}>
+          <p style={{ fontSize: '0.92rem', color: 'var(--color-text-body)', textAlign: 'center', marginBottom: '8px' }}>
             Enter your registered email address and we will send you a verification code to reset your password.
           </p>
 
           {error && (
             <div style={{ 
-              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-              color: '#dc2626', 
+              backgroundColor: 'rgba(var(--rgb-error), 0.1)', 
+              color: 'var(--color-error)', 
               padding: '10px 14px', 
               borderRadius: '8px', 
               fontSize: '0.85rem', 
               fontWeight: 600,
-              border: '1px solid rgba(239, 68, 68, 0.2)' 
+              border: '1px solid rgba(var(--rgb-error), 0.2)' 
             }}>
               {error}
             </div>
@@ -127,19 +127,19 @@ export default function ForgotPasswordForm({ onSwitchToLogin, onSuccess }) {
 
       {step === 2 && (
         <form onSubmit={handleResetPassword} className="auth-form">
-          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px', fontSize: '0.86rem', color: '#1e40af', textAlign: 'center' }}>
+          <div style={{ background: 'var(--color-info-bg)', border: '1px solid var(--color-info-border)', borderRadius: '10px', padding: '12px', fontSize: '0.86rem', color: 'var(--color-primary)', textAlign: 'center' }}>
             Password reset verification token for <strong>{email}</strong>
           </div>
 
           {error && (
             <div style={{ 
-              backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-              color: '#dc2626', 
+              backgroundColor: 'rgba(var(--rgb-error), 0.1)', 
+              color: 'var(--color-error)', 
               padding: '10px 14px', 
               borderRadius: '8px', 
               fontSize: '0.85rem', 
               fontWeight: 600,
-              border: '1px solid rgba(239, 68, 68, 0.2)' 
+              border: '1px solid rgba(var(--rgb-error), 0.2)' 
             }}>
               {error}
             </div>

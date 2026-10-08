@@ -206,13 +206,13 @@ export default function HospitalSignupForm({ onSuccess }) {
     <form onSubmit={handleSubmit} className="auth-form auth-form-scrollable">
       {error && (
         <div style={{ 
-          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-          color: '#dc2626', 
+          backgroundColor: 'rgba(var(--rgb-error), 0.1)', 
+          color: 'var(--color-error)', 
           padding: '10px 14px', 
           borderRadius: '8px', 
           fontSize: '0.85rem', 
           fontWeight: 600,
-          border: '1px solid rgba(239, 68, 68, 0.2)' 
+          border: '1px solid rgba(var(--rgb-error), 0.2)' 
         }}>
           {error}
         </div>
@@ -344,7 +344,7 @@ export default function HospitalSignupForm({ onSuccess }) {
         return (
           <div className="auth-grid-2col">
             <div className="auth-input-group">
-              <label className="auth-label" style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
+              <label className="auth-label" style={{ fontSize: '0.82rem', color: 'var(--color-text-body)', fontWeight: 600 }}>
                 Province *
               </label>
               <select
@@ -365,7 +365,7 @@ export default function HospitalSignupForm({ onSuccess }) {
             </div>
 
             <div className="auth-input-group">
-              <label className="auth-label" style={{ fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
+              <label className="auth-label" style={{ fontSize: '0.82rem', color: 'var(--color-text-body)', fontWeight: 600 }}>
                 District *
               </label>
               <select

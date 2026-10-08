@@ -41,13 +41,13 @@ export default function LoginForm({ onSwitchToSignup, onForgotPassword, onSucces
     <form onSubmit={handleSubmit} className="auth-form">
       {error && (
         <div style={{ 
-          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-          color: '#dc2626', 
+          backgroundColor: 'rgba(var(--rgb-error), 0.1)', 
+          color: 'var(--color-error)', 
           padding: '10px 14px', 
           borderRadius: '8px', 
           fontSize: '0.85rem', 
           fontWeight: 600,
-          border: '1px solid rgba(239, 68, 68, 0.2)' 
+          border: '1px solid rgba(var(--rgb-error), 0.2)' 
         }}>
           {error}
         </div>
@@ -55,13 +55,13 @@ export default function LoginForm({ onSwitchToSignup, onForgotPassword, onSucces
 
       {!error && notice && (
         <div style={{ 
-          backgroundColor: 'rgba(2, 132, 199, 0.1)', 
-          color: '#0369a1', 
+          backgroundColor: 'rgba(var(--rgb-info), 0.1)', 
+          color: 'var(--color-accent)', 
           padding: '10px 14px', 
           borderRadius: '8px', 
           fontSize: '0.85rem', 
           fontWeight: 600,
-          border: '1px solid rgba(2, 132, 199, 0.2)' 
+          border: '1px solid rgba(var(--rgb-info), 0.2)' 
         }}>
           ℹ️ {notice}
         </div>

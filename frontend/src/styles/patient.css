@@ -1043,7 +1043,7 @@
 }
 
 .star-btn.gold {
-  color: var(--color-warning);
+  color: var(--color-rating);
 }
 
 .star-btn:hover {
@@ -2046,7 +2046,7 @@
 }
 
 .star-icon-btn.active {
-  color: var(--color-warning);
+  color: var(--color-rating);
 }
 
 .star-icon-btn:hover {

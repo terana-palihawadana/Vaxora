@@ -108,13 +108,13 @@ export default function DoctorSignupForm({ onSuccess }) {
     <form onSubmit={handleSubmit} className="auth-form auth-form-scrollable">
       {error && (
         <div style={{ 
-          backgroundColor: 'rgba(239, 68, 68, 0.1)', 
-          color: '#dc2626', 
+          backgroundColor: 'rgba(var(--rgb-error), 0.1)', 
+          color: 'var(--color-error)', 
           padding: '10px 14px', 
           borderRadius: '8px', 
           fontSize: '0.85rem', 
           fontWeight: 600,
-          border: '1px solid rgba(239, 68, 68, 0.2)' 
+          border: '1px solid rgba(var(--rgb-error), 0.2)' 
         }}>
           {error}
         </div>

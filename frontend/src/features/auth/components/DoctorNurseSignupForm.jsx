@@ -54,7 +54,7 @@ export default function DoctorNurseSignupForm({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} className="auth-form auth-form-scrollable">
-      {error && <div style={{ color: '#dc2626', fontSize: '0.85rem', fontWeight: 600 }}>{error}</div>}
+      {error && <div style={{ color: 'var(--color-error)', fontSize: '0.85rem', fontWeight: 600 }}>{error}</div>}
 
       <div className="auth-input-group">
         <input
