@@ -797,14 +797,14 @@ export default function AppointmentsTab() {
                 alignItems: 'center',
                 gap: '8px',
                 padding: '9px 18px',
-                background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
-                color: '#ffffff',
+                background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)',
+                color: 'var(--color-text-inverse)',
                 border: 'none',
                 borderRadius: '10px',
                 fontSize: '14px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)',
+                boxShadow: '0 4px 12px rgba(var(--rgb-info), 0.35)',
                 transition: 'all 0.2s ease'
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
@@ -837,7 +837,7 @@ export default function AppointmentsTab() {
               {/* 1. Select Vaccine (Always Enabled) */}
               <div className="book-form-group">
                 <label className="book-form-label" htmlFor="select-vaccine">
-                  Select Vaccine <span style={{ color: '#dc2626' }}>*</span>
+                  Select Vaccine <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <div className="select-dropdown-wrap">
                   <select
@@ -876,7 +876,7 @@ export default function AppointmentsTab() {
                   className={`book-form-label ${!isVaccineSelected ? 'disabled' : ''}`}
                   htmlFor="select-hospital"
                 >
-                  Select Hospital <span style={{ color: '#dc2626' }}>*</span>
+                  Select Hospital <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
                 <div className={`select-dropdown-wrap ${!isVaccineSelected ? 'disabled' : ''}`}>
                   <select
@@ -920,7 +920,7 @@ export default function AppointmentsTab() {
                   className={`book-form-label ${!isHospitalSelected ? 'disabled' : ''}`}
                   htmlFor="select-date-trigger"
                 >
-                  Date <span style={{ color: '#dc2626' }}>*</span>
+                  Date <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
 
                 <div className={`select-dropdown-wrap ${!isHospitalSelected ? 'disabled' : ''}`}>
@@ -937,7 +937,7 @@ export default function AppointmentsTab() {
                   >
                     <span style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <IconCalendar size={16} />
-                      <span style={{ color: formData.date ? '#0f172a' : '#94a3b8', fontWeight: formData.date ? '600' : 'normal' }}>
+                      <span style={{ color: formData.date ? 'var(--color-text-title)' : 'var(--color-text-placeholder)', fontWeight: formData.date ? '600' : 'normal' }}>
                         {!isHospitalSelected
                           ? 'Select Hospital first...'
                           : loadingDates
@@ -949,7 +949,7 @@ export default function AppointmentsTab() {
                           : 'Click to select available date from calendar'}
                       </span>
                     </span>
-                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                       {showCalendarPopup ? '▲' : '▼'}
                     </span>
                   </button>
@@ -1105,7 +1105,7 @@ export default function AppointmentsTab() {
                   className={`book-form-label ${!isDateSelected ? 'disabled' : ''}`}
                   id="select-time-label"
                 >
-                  Time Slot (20-Minute Sessions) <span style={{ color: '#dc2626' }}>*</span>
+                  Time Slot (20-Minute Sessions) <span style={{ color: 'var(--color-error)' }}>*</span>
                 </label>
 
                 {!isDateSelected ? (
@@ -1193,17 +1193,17 @@ export default function AppointmentsTab() {
                   margin: '22px 0 10px 0',
                   padding: '20px',
                   borderRadius: '14px',
-                  background: selectedFee > 0 ? '#f0f9ff' : '#f0fdf4',
-                  border: `1.5px solid ${selectedFee > 0 ? '#38bdf8' : '#86efac'}`,
+                  background: selectedFee > 0 ? 'var(--color-info-bg)' : 'var(--color-success-bg)',
+                  border: `1.5px solid ${selectedFee > 0 ? 'var(--color-info-border)' : 'var(--color-success-border)'}`,
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
-                    <div style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.6px', color: selectedFee > 0 ? '#0369a1' : '#15803d', fontWeight: 800 }}>
+                    <div style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '0.6px', color: selectedFee > 0 ? 'var(--color-accent)' : 'var(--color-success)', fontWeight: 800 }}>
                       Vaccination Fee (Configured by Hospital)
                     </div>
-                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: selectedFee > 0 ? '#0369a1' : '#16a34a', marginTop: '2px' }}>
+                    <div style={{ fontSize: '1.45rem', fontWeight: 800, color: selectedFee > 0 ? 'var(--color-accent)' : 'var(--color-success)', marginTop: '2px' }}>
                       {selectedFee > 0 ? `Rs. ${selectedFee.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Free (0 Rs - Fully Subsidized)'}
                     </div>
                   </div>
@@ -1211,8 +1211,8 @@ export default function AppointmentsTab() {
                     style={{
                       padding: '6px 14px',
                       borderRadius: '20px',
-                      background: selectedFee > 0 ? '#e0f2fe' : '#dcfce7',
-                      color: selectedFee > 0 ? '#0369a1' : '#15803d',
+                      background: selectedFee > 0 ? 'var(--color-info-bg)' : 'var(--color-success-bg)',
+                      color: selectedFee > 0 ? 'var(--color-accent)' : 'var(--color-success)',
                       fontSize: '0.82rem',
                       fontWeight: 700,
                     }}
@@ -1223,7 +1223,7 @@ export default function AppointmentsTab() {
 
                 {/* If fee > 0: Card payment required notice */}
                 {selectedFee > 0 && (
-                  <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #bae6fd' }}>
+                  <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--color-info-border)' }}>
                     <div
                       style={{
                         display: 'flex',
@@ -1231,16 +1231,16 @@ export default function AppointmentsTab() {
                         gap: '12px',
                         padding: '12px 16px',
                         borderRadius: '10px',
-                        border: '1px solid #bae6fd',
-                        background: '#ffffff',
+                        border: '1px solid var(--color-info-border)',
+                        background: 'var(--color-surface)',
                       }}
                     >
                       <span style={{ fontSize: '1.4rem' }}>💳</span>
                       <div>
-                        <div style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.92rem' }}>
+                        <div style={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: '0.92rem' }}>
                           Online Card Payment Required
                         </div>
-                        <div style={{ fontSize: '0.82rem', color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', marginTop: '2px', lineHeight: 1.4 }}>
                           Payment of <strong>Rs. {selectedFee.toLocaleString()}</strong> is completed securely via online card payment to confirm your booking.
                         </div>
                       </div>
@@ -1281,7 +1281,7 @@ export default function AppointmentsTab() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backgroundColor: 'rgba(var(--rgb-primary-dark), 0.65)',
               backdropFilter: 'blur(5px)',
               display: 'flex',
               alignItems: 'center',
@@ -1424,34 +1424,34 @@ export default function AppointmentsTab() {
                         <td className="td-vaccine">
                           <div style={{ fontWeight: 600 }}>{apt.vaccineName || apt.vaccine}</div>
                           {apt.doctorName && (
-                            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                               Dr. {apt.doctorName.replace(/^(?:(?:dr\.|dr\s|doctor\s)\s*)+/i, '')}
                             </div>
                           )}
                         </td>
                         <td className="td-date">{apt.appointmentDate || apt.date}</td>
                         <td className="td-time">
-                          <span style={{ fontWeight: 600, color: '#1e40af' }}>
+                          <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                             {apt.timeSlot || apt.time}
                           </span>
                         </td>
                         <td className="td-location">{apt.hospitalName || apt.location}</td>
                         <td style={{ textAlign: 'center' }}>
-                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: feeNum > 0 ? '#0369a1' : '#16a34a' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', color: feeNum > 0 ? 'var(--color-accent)' : 'var(--color-success)' }}>
                             {feeNum > 0 ? `LKR ${feeNum.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : 'Free'}
                           </div>
                           <div style={{ marginTop: '3px' }}>
                             {feeNum <= 0 ? (
-                              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.74rem', fontWeight: 700, backgroundColor: '#dcfce7', color: '#15803d' }}>
+                              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.74rem', fontWeight: 700, backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
                                 ✓ Subsidized
                               </span>
                             ) : payStatus === 'Paid' ? (
-                              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.74rem', fontWeight: 700, backgroundColor: '#dcfce7', color: '#15803d' }}>
+                              <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.74rem', fontWeight: 700, backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' }}>
                                 ✓ Paid Online
                               </span>
                             ) : (
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: '#fee2e2', color: '#b91c1c' }}>
+                                <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 700, backgroundColor: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
                                   Payment Due
                                 </span>
                                 {(apt.status || '').toLowerCase() !== 'cancelled' && (
@@ -1461,8 +1461,8 @@ export default function AppointmentsTab() {
                                     disabled={isProcessingPayment}
                                     style={{
                                       padding: '3px 8px',
-                                      backgroundColor: '#0369a1',
-                                      color: '#ffffff',
+                                      backgroundColor: 'var(--color-accent)',
+                                      color: 'var(--color-text-inverse)',
                                       border: 'none',
                                       borderRadius: '4px',
                                       fontSize: '0.72rem',
