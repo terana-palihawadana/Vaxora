@@ -95,7 +95,7 @@
 }
 
 .auth-welcome-text {
-  font-family: var(--font-heading, "Outfit", sans-serif);
+  font-family: var(--font-heading);
   font-size: clamp(2.2rem, 3.8vw, 3.2rem);
   font-weight: 700;
   color: var(--color-text-inverse);

@@ -2634,7 +2634,7 @@
 }
 
 .hospital-staff-heading {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -2674,7 +2674,7 @@
 }
 
 .hospital-staff-name {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-text-title);
@@ -2732,7 +2732,7 @@
 }
 
 .hospital-manage-title {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 2.2rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -2752,7 +2752,7 @@
 }
 
 .hospital-inner-facility-name {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.45rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -2782,7 +2782,7 @@
 }
 
 .hospital-filter-label {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -2837,7 +2837,7 @@
   border: 1.5px solid var(--color-primary);
   background: var(--color-surface);
   color: var(--color-primary);
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 0.9rem;
   font-weight: 700;
   cursor: pointer;
@@ -2867,7 +2867,7 @@
 .hospital-appointments-mockup-table thead tr th {
   background-color: var(--color-text-muted);
   color: var(--color-text-inverse);
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.15rem;
   font-weight: 700;
   padding: 13px 16px;
@@ -2882,7 +2882,7 @@
 .hospital-appointments-mockup-table tbody tr td {
   background-color: var(--color-surface-subtle);
   color: var(--color-text-title);
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 600;
   padding: 14px 16px;
@@ -3068,7 +3068,7 @@
 .empty-table-cell {
   background-color: var(--color-surface-subtle) !important;
   color: var(--color-text-body) !important;
-  font-family: 'Lora', Georgia, serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   font-style: italic;
   padding: 24px !important;
@@ -3088,7 +3088,7 @@
 }
 
 .schedule-create-title {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -3241,7 +3241,7 @@
 }
 
 .schedule-input-label {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--color-text-title);
@@ -3282,7 +3282,7 @@ select.schedule-input-field {
 .btn-add-schedule {
   background-color: var(--color-primary);
   color: var(--color-text-inverse);
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 0.95rem;
   font-weight: 700;
   padding: 9px 24px;
@@ -3299,7 +3299,7 @@ select.schedule-input-field {
 }
 
 .schedule-section-heading {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--color-text-title);
@@ -3309,7 +3309,7 @@ select.schedule-input-field {
 .btn-cancel-schedule {
   background-color: var(--color-error);
   color: var(--color-text-inverse);
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-body);
   font-size: 0.95rem;
   font-weight: 600;
   padding: 5px 22px;
@@ -4571,7 +4571,7 @@ select.schedule-input-field {
 }
 
 .inv-card-name {
-  font-family: 'Lora', 'Playfair Display', Georgia, serif;
+  font-family: var(--font-heading);
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--color-text-title);

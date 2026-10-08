@@ -12,7 +12,7 @@ export default function PatientAboutTab() {
           style={{
             textAlign: 'center',
             color: 'var(--color-text-body)',
-            fontFamily: "'Lora', Georgia, serif",
+            fontFamily: "var(--font-body)",
             fontSize: '1.05rem',
             maxWidth: '680px',
             margin: '0 auto 36px',
@@ -34,7 +34,7 @@ export default function PatientAboutTab() {
             }}
           >
             <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconShield size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Cryptographically Verified
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
@@ -51,7 +51,7 @@ export default function PatientAboutTab() {
             }}
           >
             <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconRocket size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Instant Scheduling
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
@@ -68,7 +68,7 @@ export default function PatientAboutTab() {
             }}
           >
             <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconShield size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Patient Privacy First
             </h3>
             <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
@@ -92,7 +92,7 @@ export default function PatientAboutTab() {
           }}
         >
           <div>
-            <div style={{ fontFamily: "'Lora', Georgia, serif", fontWeight: 700, color: 'var(--color-text-title)', fontSize: '1.05rem' }}>
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: 'var(--color-text-title)', fontSize: '1.05rem' }}>
               Need Help or Medical Inquiries?
             </div>
             <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
