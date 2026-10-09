@@ -10,6 +10,8 @@
 
 /* 3. Feature: Landing Page */
 @import './landing.css';
+@import './landing-motion.css';
+@import './landing-accents.css';
 
 /* 4. Feature: Authentication (Login & Signup) */
 @import './auth.css';

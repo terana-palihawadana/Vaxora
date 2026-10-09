@@ -10,26 +10,31 @@ const roles = [
   {
     Icon: IconUser,
     name: 'Patient',
+    tone: 'teal',
     tasks: ['Book appointments', 'View vaccination history', 'Get a care plan'],
   },
   {
     Icon: IconDoctor,
     name: 'Doctor',
+    tone: 'blue',
     tasks: ['Run the booth queue', 'Prescribe vaccines', 'Report reactions'],
   },
   {
     Icon: IconNurse,
     name: 'Nurse',
+    tone: 'green',
     tasks: ['Administer doses', 'Record observations', 'Check patient history'],
   },
   {
     Icon: IconHospital,
     name: 'Hospital',
+    tone: 'amber',
     tasks: ['Manage staff and rosters', 'Set up booths', 'Track vaccine stock'],
   },
   {
     Icon: IconShield,
     name: 'Ministry admin',
+    tone: 'purple',
     tasks: ['Verify staff and hospitals', 'Review audit logs', 'Read feedback'],
   },
 ];
@@ -46,8 +51,8 @@ export default function RolesSection() {
       </div>
 
       <div className="role-grid">
-        {roles.map(({ Icon, name, tasks }) => (
-          <article key={name} className="role-card">
+        {roles.map(({ Icon, name, tasks, tone }) => (
+          <article key={name} className={`role-card tone-${tone}`}>
             <span className="role-icon">
               <Icon size={22} />
             </span>

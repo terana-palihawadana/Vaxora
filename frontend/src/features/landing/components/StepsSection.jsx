@@ -13,6 +13,9 @@ const steps = [
   },
 ];
 
+// Cool-to-fresh progression: blue, teal, green.
+const STEP_TONES = ['blue', 'teal', 'green'];
+
 export default function StepsSection() {
   return (
     <section id="how-it-works" className="landing-section">
@@ -23,7 +26,7 @@ export default function StepsSection() {
 
       <ol className="steps-list">
         {steps.map((step, idx) => (
-          <li key={step.title} className="step-card">
+          <li key={step.title} className={`step-card tone-${STEP_TONES[idx]}`}>
             <span className="step-number">{idx + 1}</span>
             <h3 className="step-title">{step.title}</h3>
             <p className="step-text">{step.text}</p>

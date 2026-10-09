@@ -1,28 +1,59 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../../../assets/images/logo.png';
+import { NAV_ITEMS as navItems } from './navItems';
 
-const navItems = [
-  { id: 'home', label: 'Home' },
-  { id: 'features', label: 'Features' },
-  { id: 'about', label: 'About' },
-  { id: 'faq', label: 'FAQ' },
-  { id: 'contact', label: 'Contact us' },
-];
-
+// How the logo stays readable over the hero photo:
+// 'chip' = frosted white tile behind it, 'wordmark' = word turns white.
+const LOGO_STYLE = 'wordmark';
 export default function Navbar({ activeNav, onNavClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [overHero, setOverHero] = useState(true);
+
+  // The header blends into the hero carousel, then turns solid once the
+  // carousel has scrolled out from under it.
+  useEffect(() => {
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const hero = document.getElementById('home');
+      const header = document.querySelector('.site-header');
+      if (!hero || !header) return;
+      setOverHero(hero.getBoundingClientRect().bottom > header.offsetHeight);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
 
   const handleNavClick = (section) => {
     onNavClick(section);
     setMobileMenuOpen(false);
   };
 
+  const transparent = overHero && !mobileMenuOpen;
+
   return (
-    <header className="site-header">
+    <header
+      className={`site-header ${transparent ? 'is-over-hero' : ''}`}
+      data-logo={LOGO_STYLE}
+    >
       <div className="header-inner">
         <a href="#home" className="brand-logo" onClick={() => handleNavClick('home')}>
-          <img src={logo} alt="Vaxora Logo" className="logo-img" />
+          <span className="logo-stack">
+            <img src={logo} alt="Vaxora Logo" className="logo-img" />
+            {/* White copy of the wordmark, shown over the hero in the
+                "wordmark" style; the coloured mark above it stays as is. */}
+            <img src={logo} alt="" aria-hidden="true" className="logo-img logo-img-word" />
+          </span>
         </a>
 
         {/* Desktop Navigation Pill */}
