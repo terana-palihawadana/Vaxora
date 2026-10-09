@@ -68,10 +68,10 @@ function prefersReducedMotion() {
 export default function HeroSection() {
   const [index, setIndex] = useState(0);
   const [userPaused, setUserPaused] = useState(prefersReducedMotion);
-  const [hoverPaused, setHoverPaused] = useState(false);
   const touchStartX = useRef(null);
 
-  const paused = userPaused || hoverPaused;
+  // Add a hover-pause state back if the card deck returns.
+  const paused = userPaused;
   const count = slides.length;
 
   const go = useCallback((next) => {

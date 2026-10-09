@@ -1,3 +1,4 @@
+import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../../auth/services/authService';
 import inventoryService from '../../hospital/services/inventoryService';
@@ -377,8 +378,8 @@ export default function StaffClinicalDashboard({
       return undefined;
     }
     if (contactCache[activePatient.id]) return undefined;
-    revealPatientContact(activePatient.id);
-    return undefined;
+    const patientId = activePatient.id;
+    return deferEffectCallback(() => revealPatientContact(patientId));
   }, [activePatient?.id, activePatient?.status, contactCache, revealPatientContact]);
 
   const persistStatus = async (appointmentId, dbStatus) => {

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useState } from 'react';
 
 const DEFAULT_LIST = [
   'Pfizer-BioNTech Bivalent (mRNA)',
@@ -40,22 +40,15 @@ export default function RestockVaccineModal({
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset before paint when opening, and again when closing — avoids flashing custom-mode UI.
-  useLayoutEffect(() => {
-    if (isOpen) {
-      setIsCustomMode(false);
-      setSubmitting(false);
-      setFormData(emptyForm());
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setIsCustomMode(false);
-      setSubmitting(false);
-      setFormData(emptyForm());
-    }
-  }, [isOpen]);
+  // Reset whenever the modal opens or closes. Adjusting state during render
+  // (instead of in an effect) applies before paint, so custom mode never flashes.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    setIsCustomMode(false);
+    setSubmitting(false);
+    setFormData(emptyForm());
+  }
 
   if (!isOpen) return null;
 

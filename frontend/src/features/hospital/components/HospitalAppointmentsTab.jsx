@@ -252,7 +252,7 @@ export default function HospitalAppointmentsTab() {
   }), [scheduleForm.vaccineType, scheduleForm.boothId, matchingBooths]);
 
   // Soft stock horizon preview (does not deduct vials)
-  useEffect(() => {
+  useEffect(() => deferEffectCallback(() => {
     if (!scheduleForm.vaccineType || !scheduleForm.startTime || !scheduleForm.endTime) {
       setStockHorizon(null);
       return undefined;
@@ -305,7 +305,7 @@ export default function HospitalAppointmentsTab() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [
+  }), [
     scheduleForm.vaccineType,
     scheduleForm.scheduleType,
     scheduleForm.specificDate,

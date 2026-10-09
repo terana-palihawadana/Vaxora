@@ -482,14 +482,6 @@ export default function AppointmentsTab() {
     }
   };
 
-  // 6. Handle Time Slot Selection
-  const handleTimeChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      time: e.target.value,
-    }));
-  };
-
   // 7. Handle Form Submission -> Persists Appointment to Database
   const handleBook = async (e) => {
     e.preventDefault();
