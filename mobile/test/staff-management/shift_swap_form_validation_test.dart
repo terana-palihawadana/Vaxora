@@ -134,6 +134,11 @@ void main() {
       await tester.tap(find.text('Send short-notice request'));
       await tester.pumpAndSettle();
 
+      // Confirm dialog before the API post.
+      expect(find.text('Request cover?'), findsOneWidget);
+      await tester.tap(find.widgetWithText(FilledButton, 'Send request'));
+      await tester.pumpAndSettle();
+
       expect(postedBody, isNotNull);
       expect(postedBody, contains('shift-1'));
       expect(postedBody, contains('Family emergency'));
