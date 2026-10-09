@@ -9,7 +9,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--color-surface);
+  /* Soft brand wash so the white card stands out (the app pages stay white) */
+  background:
+    radial-gradient(900px 520px at 12% 8%, var(--color-soft-panel-deep), transparent 65%),
+    radial-gradient(800px 520px at 92% 92%, var(--color-info-bg), transparent 65%),
+    var(--color-soft-panel);
   padding: 32px 20px;
   position: relative;
   box-sizing: border-box;
@@ -56,7 +60,8 @@
   min-height: 580px;
   background: var(--color-surface);
   border-radius: 28px;
-  box-shadow: 0 20px 50px -10px rgba(var(--rgb-primary-dark), 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border-card);
+  box-shadow: 0 24px 56px -12px rgba(var(--rgb-primary-dark), 0.22), 0 2px 6px rgba(var(--rgb-primary-dark), 0.06);
   display: grid;
   grid-template-columns: 0.85fr 1.15fr;
   overflow: hidden;
