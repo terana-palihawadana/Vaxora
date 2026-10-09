@@ -790,7 +790,7 @@ export default function StaffClinicalDashboard({
 
       <section className="hospital-metrics-grid hospital-metrics-grid--4 doctor-stats-grid">
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-blue">
+          <div className="hospital-stat-icon stat-icon-slate">
             <IconCalendar size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -807,7 +807,7 @@ export default function StaffClinicalDashboard({
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-amber">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconClock size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -829,7 +829,7 @@ export default function StaffClinicalDashboard({
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-purple">
+          <div className="hospital-stat-icon stat-icon-amber">
             <IconShield size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -1010,7 +1010,7 @@ export default function StaffClinicalDashboard({
           <div className="section-card-header queue-section-header">
             <div className="section-title-group">
               <h2>
-                <span className="section-title-icon icon-shade-purple">
+                <span className="section-title-icon icon-shade-blue">
                   <IconClipboard size={22} />
                 </span>
                 Today&apos;s Consultation Queue
@@ -1329,7 +1329,7 @@ export default function StaffClinicalDashboard({
                 className="doctor-obs-title"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >
-                <span className="icon-shade icon-shade-purple">
+                <span className="icon-shade icon-shade-amber">
                   <IconClock size={22} />
                 </span>
                 15-Min Observation Watch
@@ -1395,7 +1395,7 @@ export default function StaffClinicalDashboard({
           <div className="doctor-coldbox-card staff-today-slots">
             <div className="staff-today-slots-header">
               <div className="staff-today-slots-title">
-                <span className="icon-shade icon-shade-green">
+                <span className="icon-shade icon-shade-blue">
                   <IconClock size={22} />
                 </span>
                 <span>Today&apos;s Slots</span>
