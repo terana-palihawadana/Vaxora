@@ -1,6 +1,7 @@
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/api_constants.dart';
 import '../../../staff/data/models/shift_model.dart';
+import '../models/hospital_booth_model.dart';
 import '../models/hospital_staff_candidate_model.dart';
 import '../models/hospital_staff_member_model.dart';
 import '../models/shift_swap_request_model.dart';
@@ -171,6 +172,147 @@ class HospitalStaffRepository {
       rethrow;
     } catch (_) {
       return [];
+    }
+  }
+
+  static Future<List<HospitalBoothModel>> getBooths({
+    bool activeOnly = false,
+  }) async {
+    final response = await ApiClient.get(
+      ApiConstants.hospitalBooths,
+      queryParams: activeOnly ? {'activeOnly': 'true'} : null,
+    );
+    if (response is! List) return [];
+    return response
+        .map((e) => HospitalBoothModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<HospitalBoothModel> createBooth({
+    required String code,
+    required String name,
+    List<String> vaccineIds = const [],
+  }) async {
+    final response = await ApiClient.post(
+      ApiConstants.hospitalBooths,
+      body: {
+        'code': code.trim(),
+        'name': name.trim(),
+        'vaccineIds': vaccineIds,
+      },
+    );
+    if (response is Map<String, dynamic>) {
+      return HospitalBoothModel.fromJson(response);
+    }
+    throw ApiException('Failed to create booth.');
+  }
+
+  static Future<HospitalBoothModel> updateBooth({
+    required String boothId,
+    required String code,
+    required String name,
+    required bool isActive,
+    int? sortOrder,
+    List<String> vaccineIds = const [],
+  }) async {
+    final response = await ApiClient.put(
+      ApiConstants.hospitalBooth(boothId),
+      body: {
+        'code': code.trim(),
+        'name': name.trim(),
+        'isActive': isActive,
+        if (sortOrder != null) 'sortOrder': sortOrder,
+        'vaccineIds': vaccineIds,
+      },
+    );
+    if (response is Map<String, dynamic>) {
+      return HospitalBoothModel.fromJson(response);
+    }
+    throw ApiException('Failed to update booth.');
+  }
+
+  static Future<void> deactivateBooth(String boothId) async {
+    await ApiClient.delete(ApiConstants.hospitalBooth(boothId));
+  }
+
+  static Future<ShiftModel> createShift({
+    required String affiliationId,
+    required String shiftDate,
+    required String startTime,
+    required String endTime,
+    String? boothId,
+    String? boothOrStation,
+    String? notes,
+  }) async {
+    String norm(String t) {
+      final s = t.trim();
+      if (s.length == 5) return '$s:00';
+      return s;
+    }
+
+    final date = shiftDate.length >= 10 ? shiftDate.substring(0, 10) : shiftDate;
+    final response = await ApiClient.post(
+      ApiConstants.hospitalCreateShift,
+      body: {
+        'affiliationId': affiliationId,
+        'shiftDate': date,
+        'startTime': norm(startTime),
+        'endTime': norm(endTime),
+        if (boothId != null && boothId.isNotEmpty) 'boothId': boothId,
+        if (boothOrStation != null && boothOrStation.trim().isNotEmpty)
+          'boothOrStation': boothOrStation.trim(),
+        if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      },
+    );
+    if (response is Map<String, dynamic>) {
+      return ShiftModel.fromJson(response);
+    }
+    throw ApiException('Failed to create shift.');
+  }
+
+  /// Rules-based fallback when the AI agent is offline.
+  static Future<Map<String, dynamic>> suggestWeek({
+    required String from,
+    required String to,
+  }) async {
+    final response = await ApiClient.post(
+      ApiConstants.hospitalSuggestWeek,
+      body: {'from': from, 'to': to},
+    );
+    if (response is Map<String, dynamic>) return response;
+    throw ApiException('Failed to suggest week coverage.');
+  }
+
+  /// Chat with StaffSchedulingAgent. Returns content + proposals + workflowId.
+  static Future<Map<String, dynamic>> chatSchedulingAgent({
+    required List<Map<String, String>> messages,
+  }) async {
+    final response = await ApiClient.post(
+      ApiConstants.agentChat,
+      body: {
+        'targetAgent': 'StaffSchedulingAgent',
+        'messages': messages,
+      },
+    );
+    if (response is Map<String, dynamic>) return response;
+    throw ApiException('Scheduling agent returned an unexpected response.');
+  }
+
+  static Future<void> recordAgentDecision({
+    required String workflowId,
+    required bool approved,
+    String? note,
+  }) async {
+    try {
+      await ApiClient.post(
+        ApiConstants.agentWorkflowDecision(workflowId),
+        body: {
+          'approved': approved,
+          if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
+        },
+      );
+    } catch (_) {
+      // Shift writes already succeeded; workflow note is optional.
     }
   }
 }
