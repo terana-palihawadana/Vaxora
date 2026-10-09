@@ -134,7 +134,7 @@ export default function ReviewsSection() {
                         {item.category && (
                           <div
                             style={{
-                              marginTop: 8,
+                              padding: "0 20px 14px",
                               fontSize: "0.72rem",
                               color: "var(--color-text-muted)",
                             }}

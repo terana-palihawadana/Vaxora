@@ -5,8 +5,13 @@ import {
   HeroSection,
   AboutSection,
   StatsSection,
+  FeaturesSection,
+  RolesSection,
+  StepsSection,
   ContactSection,
   ReviewsSection,
+  FaqSection,
+  CtaSection,
   Footer,
 } from '../components';
 
@@ -39,7 +44,7 @@ export default function LandingPage() {
 
       <main>
         {/* 2. Hero Section */}
-        <HeroSection onBookClick={focusContactForm} />
+        <HeroSection />
 
         {/* 3. About the Portal */}
         <AboutSection />
@@ -47,15 +52,30 @@ export default function LandingPage() {
         {/* 4. Portal Statistics & Impact Badges */}
         <StatsSection />
 
-        {/* 5. Contact Us & Booking Form */}
+        {/* 5. Feature Highlights */}
+        <FeaturesSection />
+
+        {/* 6. Built for Every Role */}
+        <RolesSection />
+
+        {/* 7. How It Works */}
+        <StepsSection />
+
+        {/* 8. User Reviews Carousel */}
+        <ReviewsSection />
+
+        {/* 9. FAQ */}
+        <FaqSection />
+
+        {/* 10. Contact Us & Booking Form */}
         <ContactSection onArrowClick={focusContactForm} />
 
-        {/* 6. User Reviews Carousel */}
-        <ReviewsSection />
+        {/* 11. Final Call to Action */}
+        <CtaSection />
       </main>
 
-      {/* 7. Footer */}
-      <Footer />
+      {/* 12. Footer */}
+      <Footer onNavClick={scrollToSection} />
     </div>
   );
 }

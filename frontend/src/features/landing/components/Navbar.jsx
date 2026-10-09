@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../../../assets/images/logo.png';
 
+const navItems = [
+  { id: 'home', label: 'Home' },
+  { id: 'features', label: 'Features' },
+  { id: 'about', label: 'About' },
+  { id: 'faq', label: 'FAQ' },
+  { id: 'contact', label: 'Contact us' },
+];
+
 export default function Navbar({ activeNav, onNavClick }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -19,34 +27,16 @@ export default function Navbar({ activeNav, onNavClick }) {
 
         {/* Desktop Navigation Pill */}
         <nav className="nav-pill desktop-nav-pill" aria-label="Main Navigation">
-          <button
-            type="button"
-            className={`nav-link ${activeNav === 'home' ? 'active' : ''}`}
-            onClick={() => handleNavClick('home')}
-          >
-            Home
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${activeNav === 'about' ? 'active' : ''}`}
-            onClick={() => handleNavClick('about')}
-          >
-            About
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${activeNav === 'contact' ? 'active' : ''}`}
-            onClick={() => handleNavClick('contact')}
-          >
-            Contact us
-          </button>
-          <button
-            type="button"
-            className={`nav-link ${activeNav === 'reviews' ? 'active' : ''}`}
-            onClick={() => handleNavClick('reviews')}
-          >
-            Reviews
-          </button>
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`nav-link ${activeNav === item.id ? 'active' : ''}`}
+              onClick={() => handleNavClick(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
         </nav>
 
         {/* Desktop Header Actions */}
@@ -74,34 +64,16 @@ export default function Navbar({ activeNav, onNavClick }) {
       {mobileMenuOpen && (
         <div className="mobile-nav-drawer">
           <nav className="mobile-nav-links">
-            <button
-              type="button"
-              className={`mobile-nav-link ${activeNav === 'home' ? 'active' : ''}`}
-              onClick={() => handleNavClick('home')}
-            >
-              Home
-            </button>
-            <button
-              type="button"
-              className={`mobile-nav-link ${activeNav === 'about' ? 'active' : ''}`}
-              onClick={() => handleNavClick('about')}
-            >
-              About
-            </button>
-            <button
-              type="button"
-              className={`mobile-nav-link ${activeNav === 'contact' ? 'active' : ''}`}
-              onClick={() => handleNavClick('contact')}
-            >
-              Contact us
-            </button>
-            <button
-              type="button"
-              className={`mobile-nav-link ${activeNav === 'reviews' ? 'active' : ''}`}
-              onClick={() => handleNavClick('reviews')}
-            >
-              Reviews
-            </button>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`mobile-nav-link ${activeNav === item.id ? 'active' : ''}`}
+                onClick={() => handleNavClick(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
 
           <div className="mobile-drawer-actions">
