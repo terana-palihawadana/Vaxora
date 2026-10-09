@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../data/models/staff_appointment_model.dart';
+import 'clinical_context_panel.dart';
 import 'staff_common_widgets.dart';
 
 Future<String?> showStaffPrescribeSheet({
@@ -64,42 +65,55 @@ class _StaffPrescribeSheetState extends State<_StaffPrescribeSheet> {
         20,
         20 + MediaQuery.of(context).viewInsets.bottom,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Prescribe dose',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${widget.patient.patientName} · ${widget.patient.vaccineName}',
-            style: const TextStyle(color: StaffSurfaces.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _ctrl,
-            maxLength: 100,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: 'Dose (e.g. 0.5 ml)',
-              errorText: _error,
-              border: const OutlineInputBorder(),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Prescribe dose',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: StaffSurfaces.textPrimary,
+              ),
             ),
-            onChanged: (_) {
-              if (_error != null) setState(() => _error = null);
-            },
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _submit,
-              child: const Text('Save prescription'),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.patient.patientName} · ${widget.patient.vaccineName}',
+              style: const TextStyle(color: StaffSurfaces.textSecondary),
             ),
-          ),
-        ],
+            const SizedBox(height: 14),
+            ClinicalContextPanel(
+              patientProfileId: widget.patient.patientProfileId,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ctrl,
+              maxLength: 100,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Dose (e.g. 0.5 ml)',
+                errorText: _error,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (_) {
+                if (_error != null) setState(() => _error = null);
+              },
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: _submit,
+                style: FilledButton.styleFrom(
+                  backgroundColor: StaffSurfaces.cta,
+                ),
+                child: const Text('Save prescription'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

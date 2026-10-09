@@ -203,7 +203,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   title: 'Hospital invitations',
                   detail:
                       '$_pendingInvitations invitation${_pendingInvitations == 1 ? '' : 's'} waiting for your response.',
-                  onTap: () => widget.onNavigateTab(3),
+                  onTap: () => widget.onNavigateTab(4),
                 ),
               if (_pendingCovers > 0)
                 _HomeNotice(
@@ -254,12 +254,20 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
               onTap: () => widget.onNavigateTab(2),
             ),
             _HomeShortcut(
+              icon: Icons.folder_shared_outlined,
+              accent: const Color(0xFF315F8A),
+              tint: const Color(0xFFE4EEF8),
+              title: 'Patient history',
+              detail: 'Search records, allergies, and AEFI.',
+              onTap: () => widget.onNavigateTab(3),
+            ),
+            _HomeShortcut(
               icon: Icons.local_hospital_outlined,
               accent: const Color(0xFF7658B7),
               tint: const Color(0xFFEEE8FA),
               title: 'Hospitals',
               detail: 'Manage affiliations and invitations.',
-              onTap: () => widget.onNavigateTab(3),
+              onTap: () => widget.onNavigateTab(4),
             ),
             _HomeShortcut(
               icon: Icons.swap_horiz,

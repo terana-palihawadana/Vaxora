@@ -1,6 +1,7 @@
 class StaffAppointmentModel {
   final String id;
   final String patientUserId;
+  final String? patientProfileId;
   final String patientName;
   final String? patientNic;
   final String? patientPhone;
@@ -28,6 +29,7 @@ class StaffAppointmentModel {
   const StaffAppointmentModel({
     required this.id,
     required this.patientUserId,
+    this.patientProfileId,
     required this.patientName,
     this.patientNic,
     this.patientPhone,
@@ -68,6 +70,7 @@ class StaffAppointmentModel {
 
   String get statusLabel {
     if (uiStatus == 'waiting' && !isCheckedIn) return 'Not arrived';
+    if (uiStatus == 'waiting' && !isPaymentSettled) return 'Awaiting payment';
     switch (uiStatus) {
       case 'completed':
         return 'Completed';
@@ -106,6 +109,7 @@ class StaffAppointmentModel {
     return StaffAppointmentModel(
       id: json['id']?.toString() ?? '',
       patientUserId: json['patientUserId']?.toString() ?? '',
+      patientProfileId: json['patientProfileId']?.toString(),
       patientName: json['patientName']?.toString() ?? 'Patient',
       patientNic: json['patientNic']?.toString(),
       patientPhone: json['patientPhone']?.toString(),

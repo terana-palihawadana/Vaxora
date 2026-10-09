@@ -13,6 +13,7 @@ import '../../data/models/staff_appointment_model.dart';
 import '../../data/repositories/staff_repository.dart';
 import '../utils/staff_date_utils.dart';
 import '../widgets/network_avatar.dart';
+import '../widgets/clinical_context_panel.dart';
 import '../widgets/staff_administer_sheet.dart';
 import '../widgets/staff_aefi_sheet.dart';
 import '../widgets/staff_prescribe_sheet.dart';
@@ -47,6 +48,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
   String _selectedHospitalId = '';
   late String _filterDate;
   String _filterStatus = 'all';
+  final TextEditingController _searchCtrl = TextEditingController();
   bool _loadingHospitals = true;
   bool _loadingAppointments = false;
   bool _updating = false;
@@ -76,8 +78,11 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _searchCtrl.dispose();
     super.dispose();
   }
+
+  String get _searchQuery => _searchCtrl.text;
 
   Future<void> _bootstrap() async {
     final user = await StorageService.getUser();
@@ -289,16 +294,33 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
   }
 
   List<StaffAppointmentModel> get _filteredAppointments {
+    final q = _searchQuery.trim().toLowerCase();
     return _scopedAppointments.where((a) {
+      final matchesSearch = q.isEmpty ||
+          a.patientName.toLowerCase().contains(q) ||
+          a.token.toLowerCase().contains(q) ||
+          a.vaccineName.toLowerCase().contains(q);
+      if (!matchesSearch) return false;
+
       if (_filterStatus == 'all') return true;
+      if (_filterStatus == 'waiting') {
+        return a.uiStatus == 'waiting' && a.isPaymentSettled;
+      }
+      if (_filterStatus == 'awaiting_payment') {
+        return a.uiStatus == 'waiting' && !a.isPaymentSettled;
+      }
       return a.uiStatus == _filterStatus;
     }).toList();
   }
 
   int get _completedCount =>
       _scopedAppointments.where((a) => a.uiStatus == 'completed').length;
-  int get _waitingCount =>
-      _scopedAppointments.where((a) => a.uiStatus == 'waiting').length;
+  int get _waitingCount => _scopedAppointments
+      .where((a) => a.uiStatus == 'waiting' && a.isPaymentSettled)
+      .length;
+  int get _awaitingPaymentCount => _scopedAppointments
+      .where((a) => a.uiStatus == 'waiting' && !a.isPaymentSettled)
+      .length;
   int get _observationCount =>
       _scopedAppointments.where((a) => a.uiStatus == 'observation').length;
 
@@ -734,7 +756,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
               runSpacing: 8,
               children: [
                 _FilterChip(
-                  label: 'All',
+                  label: 'All (${_scopedAppointments.length})',
                   selected: _filterStatus == 'all',
                   onTap: () => setState(() => _filterStatus = 'all'),
                 ),
@@ -743,6 +765,13 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                   selected: _filterStatus == 'waiting',
                   onTap: () => setState(() => _filterStatus = 'waiting'),
                 ),
+                if (_awaitingPaymentCount > 0)
+                  _FilterChip(
+                    label: 'Awaiting payment ($_awaitingPaymentCount)',
+                    selected: _filterStatus == 'awaiting_payment',
+                    onTap: () =>
+                        setState(() => _filterStatus = 'awaiting_payment'),
+                  ),
                 _FilterChip(
                   label: 'Observation ($_observationCount)',
                   selected: _filterStatus == 'observation',
@@ -754,6 +783,52 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                   onTap: () => setState(() => _filterStatus = 'completed'),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _searchCtrl,
+              onChanged: (_) => setState(() {}),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search patient, token, vaccine…',
+                hintStyle: const TextStyle(
+                  color: StaffSurfaces.textMutedSoft,
+                  fontSize: 13.5,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: StaffSurfaces.brandSoft,
+                  size: 22,
+                ),
+                suffixIcon: _searchQuery.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear',
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() {});
+                        },
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                      ),
+                filled: true,
+                fillColor: StaffSurfaces.softPanel,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: StaffSurfaces.cardBorder),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: StaffSurfaces.cardBorder),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: StaffSurfaces.cta, width: 1.4),
+                ),
+              ),
             ),
             const SizedBox(height: 14),
             if (_loadingHospitals || _loadingAppointments)
@@ -770,8 +845,10 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                 icon: Icons.local_hospital_outlined,
               )
             else if (_filteredAppointments.isEmpty)
-              const StaffEmptyCard(
-                message: 'No appointments in this filter for the selected date.',
+              StaffEmptyCard(
+                message: _searchQuery.trim().isNotEmpty
+                    ? 'No patients matching your search criteria.'
+                    : 'No appointments in this filter for the selected date.',
                 icon: Icons.event_busy_outlined,
               )
             else ...[
@@ -973,14 +1050,11 @@ class _ActivePatientCard extends StatelessWidget {
               color: StaffSurfaces.brandSoft,
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'NIC: ${patient.patientNic ?? '—'} · Payment: ${patient.paymentStatus}'
-            '${patient.boothLabel != null && patient.boothLabel!.isNotEmpty ? ' · Booth ${patient.boothLabel}' : ''}',
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: StaffSurfaces.textSecondary,
-            ),
+          const SizedBox(height: 6),
+          StaffContactReveal(
+            appointmentId: patient.id,
+            paymentStatus: patient.paymentStatus,
+            boothLabel: patient.boothLabel,
           ),
           const SizedBox(height: 12),
           Row(

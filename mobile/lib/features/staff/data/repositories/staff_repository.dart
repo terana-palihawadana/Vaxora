@@ -168,6 +168,59 @@ class StaffRepository {
     );
   }
 
+  /// Privacy-gated NIC / phone for the active clinical patient.
+  static Future<Map<String, String?>> getPatientContact(String appointmentId) async {
+    final response = await ApiClient.get(
+      ApiConstants.appointmentStaffContact(appointmentId),
+    );
+    if (response is Map<String, dynamic>) {
+      return {
+        'nic': response['nic']?.toString() ?? response['patientNic']?.toString(),
+        'phone':
+            response['phone']?.toString() ?? response['patientPhone']?.toString(),
+        'email':
+            response['email']?.toString() ?? response['patientEmail']?.toString(),
+      };
+    }
+    throw ApiException('Failed to load patient contact.');
+  }
+
+  /// Medical history timeline for a patient profile (staff clinical use).
+  static Future<List<Map<String, dynamic>>> getMedicalTimeline(
+    String patientProfileId,
+  ) async {
+    try {
+      final response = await ApiClient.get(
+        ApiConstants.patientMedicalTimeline(patientProfileId),
+      );
+      if (response is Map<String, dynamic> && response['records'] is List) {
+        return (response['records'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  /// Vaccination timeline (includes AEFI flags) for a patient profile.
+  static Future<List<Map<String, dynamic>>> getVaccinationTimeline(
+    String patientProfileId,
+  ) async {
+    try {
+      final response = await ApiClient.get(
+        ApiConstants.patientVaccinationTimeline(patientProfileId),
+      );
+      if (response is Map<String, dynamic> && response['records'] is List) {
+        return (response['records'] as List)
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    } catch (_) {}
+    return [];
+  }
+
   /// Clinical AEFI report: care, dose documentation, and follow-up visit.
   static Future<Map<String, dynamic>> reportAefi({
     required String appointmentId,
