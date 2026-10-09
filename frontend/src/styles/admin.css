@@ -702,16 +702,18 @@
   border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
+/* Role colours match the shared colour language: patient teal, doctor blue,
+   nurse green, hospital amber, ministry admin purple (dark-theme variants). */
 .admin-role-badge.hospital {
-  background: rgba(2, 132, 199, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(2, 132, 199, 0.35);
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.32);
 }
 
 .admin-role-badge.patient {
-  background: rgba(148, 163, 184, 0.12);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(20, 184, 166, 0.15);
+  color: #2dd4bf;
+  border: 1px solid rgba(20, 184, 166, 0.3);
 }
 
 .admin-role-badge.admin {
