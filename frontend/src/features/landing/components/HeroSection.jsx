@@ -188,8 +188,7 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Upcoming slides as a card deck (desktop). Pausing on hover keeps a
-          card still while someone is about to click it. */}
+      {/* Card deck temporarily commented out
       <div
         className="lp-hero-deck"
         onMouseEnter={() => setHoverPaused(true)}
@@ -220,8 +219,9 @@ export default function HeroSection() {
           );
         })}
       </div>
+      */}
 
-      {/* Prev / pause / next */}
+      {/* Prev / pause / next — sits where the old 01—04 loader was */}
       <div className="lp-hero-nav">
         <button type="button" className="lp-hero-round" onClick={() => go(index - 1)} aria-label="Previous slide">
           <IconChevronLeft size={20} />
@@ -241,12 +241,8 @@ export default function HeroSection() {
         <button type="button" className="lp-hero-round" onClick={() => go(index + 1)} aria-label="Next slide">
           <IconChevronRight size={20} />
         </button>
-      </div>
-
-      {/* Counter with the autoplay timer between the numbers */}
-      <div className="lp-hero-counter" aria-hidden="true">
-        <span>{pad(index + 1)}</span>
-        <span className="lp-hero-timer">
+        {/* Hidden timer keeps autoplay without showing the loader */}
+        <span className="lp-hero-timer lp-hero-timer-hidden" aria-hidden="true">
           <span
             key={index}
             className="lp-hero-timer-fill"
@@ -254,7 +250,6 @@ export default function HeroSection() {
             onAnimationEnd={() => go(index + 1)}
           />
         </span>
-        <span>{pad(count)}</span>
       </div>
     </section>
   );
