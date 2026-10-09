@@ -96,6 +96,15 @@ class _ShiftSwapSheetState extends State<ShiftSwapSheet> {
   Future<void> _submit() async {
     if (!_canSend) return;
     if (_sending || _sent) return;
+    final ok = await confirmAction(
+      context,
+      title: 'Request cover?',
+      message:
+          'Ask the hospital to find cover for your '
+          '${widget.shift.timeRangeLabel} shift on ${widget.shift.shiftDate}?',
+      confirmLabel: 'Send request',
+    );
+    if (!ok || !mounted) return;
     setState(() {
       _sending = true;
       _error = null;

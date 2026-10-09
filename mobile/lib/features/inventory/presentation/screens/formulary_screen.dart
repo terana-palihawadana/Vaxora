@@ -54,24 +54,14 @@ class _FormularyScreenState extends State<FormularyScreen> {
   }
 
   Future<void> _remove(String id, String name) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Remove product?'),
-        content: Text('Remove "$name" from the hospital formulary?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Remove', style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+    final confirm = await confirmAction(
+      context,
+      title: 'Remove product?',
+      message: 'Remove "$name" from the hospital formulary?',
+      confirmLabel: 'Remove',
+      destructive: true,
     );
-    if (confirm != true || !mounted) return;
+    if (!confirm || !mounted) return;
 
     final provider = context.read<InventoryProvider>();
     final ok = await provider.removeVaccine(id);

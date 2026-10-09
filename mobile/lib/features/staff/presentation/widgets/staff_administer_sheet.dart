@@ -3,6 +3,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../inventory/data/models/batch_model.dart';
 import '../../../inventory/presentation/screens/qr_scanner_screen.dart';
 import '../../data/models/staff_appointment_model.dart';
+import 'clinical_context_panel.dart';
 import 'staff_common_widgets.dart';
 
 class StaffAdministrationResult {
@@ -112,7 +113,7 @@ class _StaffAdministerSheetState extends State<_StaffAdministerSheet> {
     if (scanned != null && mounted) setState(() => _batchId = scanned.id);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_dose || !_consent || !_vitals) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -133,6 +134,16 @@ class _StaffAdministerSheetState extends State<_StaffAdministerSheet> {
       );
       return;
     }
+    final ok = await confirmAction(
+      context,
+      title: 'Record administration?',
+      message:
+          'Certify ${widget.patient.patientName} received '
+          '${widget.patient.vaccineName} from lot ${selected.lotNumber}? '
+          'This writes to the clinical record.',
+      confirmLabel: 'Record dose',
+    );
+    if (!ok || !mounted) return;
     Navigator.of(context).pop(
       StaffAdministrationResult(
         batchId: selected.id,
@@ -196,7 +207,11 @@ class _StaffAdministerSheetState extends State<_StaffAdministerSheet> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
+            ClinicalContextPanel(
+              patientProfileId: widget.patient.patientProfileId,
+            ),
+            const SizedBox(height: 14),
             const Text(
               'Vaccine lot',
               style: TextStyle(

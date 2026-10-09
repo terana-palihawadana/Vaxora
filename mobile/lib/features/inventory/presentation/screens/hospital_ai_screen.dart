@@ -86,6 +86,16 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
       return;
     }
 
+    final ok = await confirmAction(
+      context,
+      title: 'Approve AI purchase draft?',
+      message:
+          'Execute this draft with ${lineItems.length} line item'
+          '${lineItems.length == 1 ? '' : 's'}? Stock changes will be applied.',
+      confirmLabel: 'Approve',
+    );
+    if (!ok || !mounted) return;
+
     final poNumber = 'AI-PO-${DateTime.now().millisecondsSinceEpoch}';
 
     final payload = {
@@ -121,7 +131,15 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
     }
   }
 
-  void _reject() {
+  Future<void> _reject() async {
+    final ok = await confirmAction(
+      context,
+      title: 'Discard AI draft?',
+      message: 'Clear this proposal without executing it?',
+      confirmLabel: 'Discard',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
     setState(() {
       _run = null;
       _error = null;

@@ -164,54 +164,21 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     }
   }
 
-  void _handleLogout() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: StaffSurfaces.cardBg,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(StaffSurfaces.cardRadius),
-        ),
-        title: const Text(
-          'Log out?',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: StaffSurfaces.textPrimary,
-          ),
-        ),
-        content: const Text(
-          'You will need to sign in again to view your immunization account.',
-          style: TextStyle(fontSize: 13.5, color: StaffSurfaces.textSecondary),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text(
-              'Stay',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: StaffSurfaces.textSecondary,
-              ),
-            ),
-          ),
-          FilledButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await AuthRepository.logout();
-              if (!mounted) return;
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.error,
-              elevation: 0,
-            ),
-            child: const Text('Log out'),
-          ),
-        ],
-      ),
+  Future<void> _handleLogout() async {
+    final ok = await confirmAction(
+      context,
+      title: 'Log out?',
+      message: 'You will need to sign in again to view your immunization account.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    await AuthRepository.logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
     );
   }
 
