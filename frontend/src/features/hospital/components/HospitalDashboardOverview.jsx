@@ -648,7 +648,7 @@ export default function HospitalDashboardOverview() {
       {/* 2. Operations Metrics Cards Grid */}
       <div className="hospital-metrics-grid">
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-blue">
+          <div className="hospital-stat-icon stat-icon-green">
             <IconSyringe size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -659,7 +659,7 @@ export default function HospitalDashboardOverview() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-amber">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconClock size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -672,7 +672,13 @@ export default function HospitalDashboardOverview() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-teal">
+          <div
+            className={`hospital-stat-icon ${
+              coldChainSummary
+                ? (coldChainSummary.allOk ? 'stat-icon-green' : 'stat-icon-amber')
+                : 'stat-icon-slate'
+            }`}
+          >
             <IconSnowflake size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -693,7 +699,7 @@ export default function HospitalDashboardOverview() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-purple">
+          <div className="hospital-stat-icon stat-icon-slate">
             <IconPackage size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -708,7 +714,7 @@ export default function HospitalDashboardOverview() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-green">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconShield size={22} />
           </div>
           <div className="hospital-stat-info">

@@ -284,7 +284,7 @@ export default function HospitalInventoryTab() {
 
         <div className="hospital-metrics-grid hospital-metrics-grid--4">
           <div className="hospital-stat-card">
-            <div className="hospital-stat-icon stat-icon-blue">
+            <div className="hospital-stat-icon stat-icon-slate">
               <IconSyringe size={22} />
             </div>
             <div className="hospital-stat-info">
@@ -314,7 +314,7 @@ export default function HospitalInventoryTab() {
           </div>
 
           <div className="hospital-stat-card">
-            <div className="hospital-stat-icon stat-icon-purple">
+            <div className="hospital-stat-icon stat-icon-amber">
               <IconClock size={22} />
             </div>
             <div className="hospital-stat-info">

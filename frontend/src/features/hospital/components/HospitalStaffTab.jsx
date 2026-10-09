@@ -304,7 +304,7 @@ export default function HospitalStaffTab() {
 
       <div className="hospital-metrics-grid hospital-metrics-grid--4" style={{ marginBottom: '24px' }}>
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-blue">
+          <div className="hospital-stat-icon stat-icon-slate">
             <IconUsers size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -315,7 +315,7 @@ export default function HospitalStaffTab() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-purple">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconDoctor size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -326,7 +326,7 @@ export default function HospitalStaffTab() {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-teal">
+          <div className="hospital-stat-icon stat-icon-green">
             <IconNurse size={22} />
           </div>
           <div className="hospital-stat-info">
