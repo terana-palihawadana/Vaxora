@@ -265,3 +265,67 @@
 .hospital-dashboard-container :is(.btn-queue-walkin, .cold-vaults-live-tag) {
   color: var(--color-primary-hover);
 }
+
+/* --------------------------------------------------------------------------
+   7. Patient welcome banner: same dark photo blend as the other portals
+   -------------------------------------------------------------------------- */
+.patient-dashboard-container .patient-welcome-media::before {
+  background: linear-gradient(
+    90deg,
+    rgba(var(--rgb-primary-dark), 1) 0%,
+    rgba(var(--rgb-primary-dark), 0.92) 36%,
+    rgba(var(--rgb-primary-dark), 0.4) 64%,
+    rgba(var(--rgb-primary-dark), 0.1) 100%
+  );
+}
+
+.patient-dashboard-container .patient-welcome-media::after {
+  display: none;
+}
+
+.patient-dashboard-container .patient-welcome-tag--soft {
+  color: var(--color-text-inverse);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Empty observation message sits on a tinted fill: use body text (AA) */
+.doctor-dashboard-container .doctor-obs-empty {
+  color: var(--color-text-body);
+}
+
+/* --------------------------------------------------------------------------
+   8. Sub-page headers (staff-subpage-hero, also used by patient sub-pages):
+   same dark surface. Selectors are deliberately stronger than doctor.css's
+   !important title rule so the result never depends on load order.
+   -------------------------------------------------------------------------- */
+:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
+  section.hospital-hero-banner.staff-subpage-hero {
+  color: var(--color-text-inverse);
+  background: var(--portal-hero-bg);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 18px 40px -22px rgba(var(--rgb-primary-dark), 0.65);
+}
+
+:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
+  section.hospital-hero-banner.staff-subpage-hero .hospital-hero-content h1,
+:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
+  section.hospital-hero-banner .hospital-hero-content h1 {
+  color: var(--color-text-inverse) !important;
+}
+
+:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
+  section.hospital-hero-banner.staff-subpage-hero .hospital-hero-sub {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+/* The affiliations banner image is a near-empty blue wash: let the brand
+   surface show instead. */
+.doctor-dashboard-container .staff-affil-hero .hospital-hero-media {
+  display: none;
+}
+
+:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
+  :is(.staff-affil-hero-pill, .hospital-tag-item, .patient-welcome-tag) strong {
+  color: var(--color-text-inverse);
+}
