@@ -5239,7 +5239,7 @@ select.schedule-input-field {
 }
 
 .shift-week-card {
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-card);
   border-left-width: 4px;
   border-radius: 8px;
   padding: 8px 10px 8px 8px;
@@ -5680,7 +5680,7 @@ select.schedule-input-field {
 
 .suggest-week-card {
   position: relative;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-card);
   border-left: 3px solid var(--color-ai);
   border-radius: 8px;
   padding: 8px 8px 8px 28px;

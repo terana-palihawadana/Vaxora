@@ -7,7 +7,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg);
+  background-color: var(--color-surface);
   color: var(--color-text-body);
   font-family: var(--font-body);
 }
@@ -719,7 +719,7 @@
   background-color: var(--color-surface);
   border-radius: 16px;
   padding: 22px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-card);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   display: flex;
   align-items: flex-start;
@@ -1133,7 +1133,7 @@
 .doctor-card {
   background-color: var(--color-surface);
   border-radius: 18px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-card);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 24px;
 }
@@ -1446,7 +1446,7 @@
 .doctor-obs-card {
   background-color: var(--color-surface);
   border-radius: 18px;
-  border: 1px solid var(--color-border-light);
+  border: 1px solid var(--color-border-card);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 22px;
 }

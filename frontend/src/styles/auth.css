@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--color-bg);
+  background: var(--color-surface);
   padding: 32px 20px;
   position: relative;
   box-sizing: border-box;
