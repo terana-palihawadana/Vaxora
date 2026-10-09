@@ -2,11 +2,10 @@ import StaffClinicalDashboard from '../../staff/components/StaffClinicalDashboar
 import NurseClinicalAdministerModal from './NurseClinicalAdministerModal';
 import NurseAefiReportModal from './NurseAefiReportModal';
 import nurseHomeHero from '../../../assets/images/nurse-home-hero.jpg';
+import { withStaffTitle } from '../../../shared/utils/staffName';
 
 function formatNurseName(user) {
-  const raw = (user?.name || '').trim().replace(/^(?:(?:dr\.|dr\s|doctor\s|nurse\s)\s*)+/i, '').trim();
-  if (!raw) return 'Nurse';
-  return `Nurse ${raw}`;
+  return withStaffTitle(user?.name, 'Nurse');
 }
 
 export default function NurseDashboardOverview() {

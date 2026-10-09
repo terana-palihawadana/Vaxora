@@ -5,6 +5,7 @@ import logo from '../../../assets/images/logo.png';
 import { authService, getUser, subscribeAuthUser } from '../../auth';
 import DeleteAccountModal from '../../auth/components/DeleteAccountModal';
 import { IconClose, IconDoctor, IconLogout, IconMenu, IconStethoscope, IconTrash } from '../../../shared/icons/AppIcons';
+import { withStaffTitle } from '../../../shared/utils/staffName';
 
 export default function DoctorNavbar() {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export default function DoctorNavbar() {
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             >
               <span className="navbar-user-meta">
-                <span className="navbar-user-name">{user?.name || 'Doctor'}</span>
+                <span className="navbar-user-name">{withStaffTitle(user?.name, 'Dr.', 'Doctor')}</span>
                 <span className="navbar-user-sub">
                   {user?.registrationNumber
                     || user?.profileDetails?.specialization
@@ -132,7 +133,7 @@ export default function DoctorNavbar() {
             {showProfileMenu && (
               <div className="doctor-profile-dropdown">
                 <div className="doctor-dropdown-header">
-                  <div className="doctor-dropdown-name">{user?.name || 'Dr. Medical Practitioner'}</div>
+                  <div className="doctor-dropdown-name">{withStaffTitle(user?.name, 'Dr.', 'Dr. Medical Practitioner')}</div>
                   <div className="doctor-dropdown-meta">{user?.profileDetails?.specialization || 'Consultant Specialist'}</div>
                   {user?.registrationNumber && (
                     <div className="doctor-dropdown-meta" style={{ color: '#2563eb', fontWeight: 600 }}>
@@ -249,7 +250,7 @@ export default function DoctorNavbar() {
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        userName={user?.name || 'Dr. Medical Practitioner'}
+        userName={withStaffTitle(user?.name, 'Dr.', 'Dr. Medical Practitioner')}
         roleName="Doctor"
       />
     </header>

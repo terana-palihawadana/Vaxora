@@ -5,6 +5,7 @@ import logo from '../../../assets/images/logo.png';
 import { authService, getUser, subscribeAuthUser } from '../../auth';
 import DeleteAccountModal from '../../auth/components/DeleteAccountModal';
 import { IconClose, IconLogout, IconMenu, IconNurse, IconTrash } from '../../../shared/icons/AppIcons';
+import { withStaffTitle } from '../../../shared/utils/staffName';
 
 export default function NurseNavbar() {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export default function NurseNavbar() {
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             >
               <span className="navbar-user-meta">
-                <span className="navbar-user-name">{user?.name || 'Nurse'}</span>
+                <span className="navbar-user-name">{withStaffTitle(user?.name, 'Nurse')}</span>
                 <span className="navbar-user-sub">
                   {user?.registrationNumber || 'Nurse'}
                 </span>
@@ -131,7 +132,7 @@ export default function NurseNavbar() {
             {showProfileMenu && (
               <div className="doctor-profile-dropdown">
                 <div className="doctor-dropdown-header">
-                  <div className="doctor-dropdown-name">{user?.name || 'Nurse Profile'}</div>
+                  <div className="doctor-dropdown-name">{withStaffTitle(user?.name, 'Nurse', 'Nurse Profile')}</div>
                   <div className="doctor-dropdown-meta">Senior Immunization Nurse</div>
                   {user?.registrationNumber && (
                     <div className="doctor-dropdown-meta" style={{ color: '#0369a1', fontWeight: 600 }}>
@@ -248,7 +249,7 @@ export default function NurseNavbar() {
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
-        userName={user?.name || 'Nurse Profile'}
+        userName={withStaffTitle(user?.name, 'Nurse', 'Nurse Profile')}
         roleName="Nurse"
       />
     </header>
