@@ -2,6 +2,7 @@
 import { Outlet } from 'react-router-dom';
 import { HospitalNavbar } from '../components';
 import '../../../styles/hospital.css';
+import '../../../styles/portal-polish.css';
 
 export default function HospitalLayout() {
   return (

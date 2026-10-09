@@ -2,6 +2,7 @@
 import { Outlet } from 'react-router-dom';
 import { DoctorNavbar } from '../components';
 import '../../../styles/doctor.css';
+import '../../../styles/portal-polish.css';
 
 export default function DoctorLayout() {
   return (

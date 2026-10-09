@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { NurseNavbar } from '../components';
 import '../../../styles/doctor.css';
 import '../../../styles/nurse.css';
+import '../../../styles/portal-polish.css';
 
 export default function NurseLayout() {
   return (

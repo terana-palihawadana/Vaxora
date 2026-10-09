@@ -1029,7 +1029,7 @@ export default function HospitalDashboardOverview() {
             )}
           </div>
 
-          <div className="inventory-items-list">
+          <div className="inventory-items-list" tabIndex={0} role="region" aria-label="Vaccine stock batches">
             {inventoryLoading ? (
               <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px' }}>
                 Loading live inventory batches...

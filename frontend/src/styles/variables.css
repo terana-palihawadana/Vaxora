@@ -10,18 +10,18 @@
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Primary & Brand Colors */
-  --color-primary: #087f78;
+  --color-primary: #06736c;
   --color-primary-hover: #066d68;
   --color-primary-dark: #12384b;
   --color-primary-deep: #0b2c3d;
   --color-brand-blue: #123e5d;
-  --color-accent: #168b91;
-  --color-accent-teal: #087f78;
-  --color-primary-soft: rgba(8, 127, 120, 0.1);
+  --color-accent: #117a80;
+  --color-accent-teal: #06736c;
+  --color-primary-soft: rgba(6, 115, 108, 0.1);
   /* RGB triplets for translucent shades: rgba(var(--rgb-primary), 0.3) */
-  --rgb-primary: 8, 127, 120;
+  --rgb-primary: 6, 115, 108;
   --rgb-primary-dark: 18, 56, 75;
-  --rgb-success: 35, 130, 82;
+  --rgb-success: 31, 122, 76;
   --rgb-error: 181, 71, 67;
   --rgb-info: 39, 109, 130;
   --rgb-info-bg: 237, 246, 248;
@@ -42,31 +42,39 @@
   --color-border-light: #e1e9e6;
   --color-border-card: #d5e1dd;
   --color-border-pill: #d5e1dd;
-  --color-border-focus: #087f78;
+  --color-border-focus: #06736c;
   --color-border-auth-card: #d5e4df;
   --color-border-auth-input: #d5e1dd;
 
   /* Typography Colors */
   --color-text-title: #12384b;
-  --color-text-subtitle: #087f78;
+  --color-text-subtitle: #06736c;
   --color-text-body: #354e59;
-  --color-text-muted: #667b83;
+  --color-text-muted: #5a6e76;
   --color-text-placeholder: #7b8e94;
   --color-text-inverse: #ffffff;
 
   /* Status Colors (text/icon, background, border) */
-  --color-success: #238252;
+  --color-success: #1f7a4c;
   --color-success-bg: #edf7f0;
   --color-success-border: #c3e3cf;
   --color-error: #b54743;
   --color-error-bg: #fff1ef;
   --color-error-border: #fecaca;
-  --color-warning: #b2660a;
+  --color-warning: #a35d08;
   --color-warning-bg: #fff4e5;
   --color-warning-border: #f5b168;
   --color-info: #276d82;
   --color-info-bg: #edf6f8;
   --color-info-border: #c7e0e7;
+
+  /* True blue accent for the "schedules / appointments" tone (tones.css).
+     --color-info stays for info alerts; it reads too close to teal to be
+     a distinct accent. */
+  --color-blue: #2a63c9;
+  --color-blue-bg: #eaf1fd;
+  --color-blue-border: #c6d8f7;
+  --rgb-blue: 42, 99, 201;
 
   /* AI Assistant Accents */
   --color-ai: #6d5bae;
@@ -89,7 +97,7 @@
   --btn-font: var(--font-heading);
   --btn-weight: 600;
   --btn-primary-bg: var(--gradient-primary);
-  --btn-primary-bg-hover: linear-gradient(180deg, #087f78 0%, #055a56 100%);
+  --btn-primary-bg-hover: linear-gradient(180deg, #06736c 0%, #055a56 100%);
   --btn-pad-sm: 7px 16px;
   --btn-pad-md: 10px 22px;
   --btn-pad-lg: 12px 30px;
@@ -110,7 +118,7 @@
   --pill-text-hover: var(--color-primary);
   --pill-active-bg: var(--color-primary);
   --pill-active-text: var(--color-text-inverse);
-  --pill-active-shadow: 0 2px 8px rgba(8, 127, 120, 0.25);
+  --pill-active-shadow: 0 2px 8px rgba(6, 115, 108, 0.25);
   --pill-pad: 6px 14px;
   --pill-size: 0.84rem;
 
@@ -122,15 +130,15 @@
   --empty-pad: 28px 20px;
 
   /* Focus */
-  --focus-ring: 0 0 0 3px rgba(8, 127, 120, 0.25);
+  --focus-ring: 0 0 0 3px rgba(6, 115, 108, 0.25);
 
   /* Elevation Shadows */
   --shadow-sm: 0 1px 3px rgba(18, 56, 75, 0.06);
   --shadow-card: 0 4px 16px -2px rgba(18, 56, 75, 0.08), 0 2px 6px -1px rgba(18, 56, 75, 0.04);
   --shadow-card-hover: 0 12px 24px -4px rgba(18, 56, 75, 0.12), 0 4px 8px -2px rgba(18, 56, 75, 0.06);
   --shadow-modal: 0 24px 48px -12px rgba(11, 44, 61, 0.28);
-  --shadow-btn: 0 4px 14px rgba(8, 127, 120, 0.3);
-  --shadow-btn-hover: 0 6px 20px rgba(8, 127, 120, 0.4);
+  --shadow-btn: 0 4px 14px rgba(6, 115, 108, 0.3);
+  --shadow-btn-hover: 0 6px 20px rgba(6, 115, 108, 0.4);
 
   /* Spacing (4px grid) */
   --space-1: 4px;

@@ -18,9 +18,9 @@
 .icon-shade-blue,
 .stat-icon-blue,
 .section-title-icon {
-  --tone: var(--color-info);
-  --tone-bg: var(--color-info-bg);
-  --tone-border: var(--color-info-border);
+  --tone: var(--color-blue);
+  --tone-bg: var(--color-blue-bg);
+  --tone-border: var(--color-blue-border);
 }
 
 .tone-teal,
