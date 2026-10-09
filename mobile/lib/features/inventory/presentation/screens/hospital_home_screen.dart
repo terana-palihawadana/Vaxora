@@ -6,6 +6,8 @@ import '../../../hospital_staff/data/models/hospital_staff_member_model.dart';
 import '../../../hospital_staff/data/models/shift_swap_request_model.dart';
 import '../../../hospital_staff/data/repositories/hospital_staff_repository.dart';
 import '../../../hospital_staff/presentation/screens/hospital_shifts_screen.dart';
+import '../../../hospital_staff/presentation/screens/staff_scheduling_agent_screen.dart';
+import '../../../staff/presentation/utils/staff_date_utils.dart';
 import '../../../staff/presentation/widgets/network_avatar.dart';
 import '../../../staff/presentation/widgets/staff_common_widgets.dart';
 import '../providers/inventory_provider.dart';
@@ -107,6 +109,19 @@ class _HospitalHomeScreenState extends State<HospitalHomeScreen> {
   Future<void> _openShifts() async {
     await Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const HospitalShiftsScreen()),
+    );
+  }
+
+  Future<void> _openSchedulingAgent() async {
+    final range = weekRangeFromToday(days: 7);
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => StaffSchedulingAgentScreen(
+          weekStart: range.from,
+          weekEnd: range.to,
+          autoSuggest: true,
+        ),
+      ),
     );
   }
 
@@ -228,17 +243,40 @@ class _HospitalHomeScreenState extends State<HospitalHomeScreen> {
                   subtitle:
                       '$_pendingCover pending. Review them in Staff.',
                   tone: StaffChipTone.warning,
-                  onTap: () => widget.onNavigateTab(1),
+                  onTap: () => widget.onNavigateTab(2),
                 ),
             ],
             const SizedBox(height: 18),
             const StaffSectionHeader(title: 'Shortcuts'),
             _ShortcutTile(
+              icon: Icons.event_note_outlined,
+              title: 'Desk & schedules',
+              subtitle: 'Walk-ins, check-in, mark paid, post sessions',
+              accent: AppColors.accentTeal,
+              well: const Color(0xFFE6F7F5),
+              onTap: () => widget.onNavigateTab(1),
+            ),
+            _ShortcutTile(
+              icon: Icons.groups_outlined,
+              title: 'Staff roster',
+              subtitle: '${_staff.length} active · $_onDuty on duty',
+              accent: AppColors.accentTeal,
+              well: const Color(0xFFE6F7F5),
+              onTap: () => widget.onNavigateTab(2),
+            ),
+            _ShortcutTile(
+              icon: Icons.meeting_room_outlined,
+              title: 'Booths',
+              subtitle: 'Stations and vaccines they offer',
+              accent: StaffSurfaces.brandSoft,
+              onTap: () => widget.onNavigateTab(3),
+            ),
+            _ShortcutTile(
               icon: Icons.inventory_2_outlined,
               title: 'Inventory',
               subtitle: 'Batches, scan QR, issue and wastage',
               accent: StaffSurfaces.brandSoft,
-              onTap: () => widget.onNavigateTab(2),
+              onTap: () => widget.onNavigateTab(4),
             ),
             _ShortcutTile(
               icon: Icons.notifications_outlined,
@@ -257,19 +295,26 @@ class _HospitalHomeScreenState extends State<HospitalHomeScreen> {
               onTap: _openAi,
             ),
             _ShortcutTile(
-              icon: Icons.groups_outlined,
-              title: 'Staff roster',
-              subtitle: '${_staff.length} active · $_onDuty on duty',
-              accent: AppColors.accentTeal,
-              well: const Color(0xFFE6F7F5),
-              onTap: () => widget.onNavigateTab(1),
-            ),
-            _ShortcutTile(
-              icon: Icons.event_note_outlined,
+              icon: Icons.calendar_month_outlined,
               title: 'Weekly shifts',
-              subtitle: 'This week’s assigned sessions',
+              subtitle: 'Roster view + AI suggest week',
               accent: StaffSurfaces.brandSoft,
               onTap: _openShifts,
+            ),
+            _ShortcutTile(
+              icon: Icons.auto_awesome,
+              title: 'Scheduling agent',
+              subtitle: 'Chat and approve AI shift proposals',
+              accent: const Color(0xFF6D5BAE),
+              well: const Color(0xFFEDE9F8),
+              onTap: _openSchedulingAgent,
+            ),
+            _ShortcutTile(
+              icon: Icons.person_outline,
+              title: 'Profile',
+              subtitle: 'Hospital account and settings',
+              accent: StaffSurfaces.brandSoft,
+              onTap: () => widget.onNavigateTab(5),
             ),
           ],
         ),
