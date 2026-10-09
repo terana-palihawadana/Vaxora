@@ -117,7 +117,7 @@ class _CarePlanHistorySheetState extends State<_CarePlanHistorySheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.borderCard,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -165,12 +165,12 @@ class _CarePlanHistorySheetState extends State<_CarePlanHistorySheet> {
                     tooltip: 'Clear all',
                     icon: const Icon(
                       Icons.delete_sweep_outlined,
-                      color: Colors.grey,
+                      color: AppColors.textMuted,
                     ),
                     onPressed: _clearAll,
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.grey),
+                  icon: const Icon(Icons.close, color: AppColors.textMuted),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],
@@ -277,7 +277,7 @@ class _CarePlanHistorySheetState extends State<_CarePlanHistorySheet> {
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFEE2E2),
+                              color: AppColors.errorBg,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Text(
@@ -285,7 +285,7 @@ class _CarePlanHistorySheetState extends State<_CarePlanHistorySheet> {
                               style: TextStyle(
                                 fontSize: 9,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF991B1B),
+                                color: AppColors.error,
                               ),
                             ),
                           ),
@@ -306,7 +306,7 @@ class _CarePlanHistorySheetState extends State<_CarePlanHistorySheet> {
                         const SizedBox(width: 6),
                         _chip(
                           '$warningCount warnings',
-                          const Color(0xFF92400E),
+                          AppColors.warning,
                         ),
                         const Spacer(),
                         const Icon(

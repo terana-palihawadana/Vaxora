@@ -1,3 +1,4 @@
+import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUser } from '../../auth/services/authService';
 import inventoryService from '../../hospital/services/inventoryService';
@@ -377,8 +378,8 @@ export default function StaffClinicalDashboard({
       return undefined;
     }
     if (contactCache[activePatient.id]) return undefined;
-    revealPatientContact(activePatient.id);
-    return undefined;
+    const patientId = activePatient.id;
+    return deferEffectCallback(() => revealPatientContact(patientId));
   }, [activePatient?.id, activePatient?.status, contactCache, revealPatientContact]);
 
   const persistStatus = async (appointmentId, dbStatus) => {
@@ -790,7 +791,7 @@ export default function StaffClinicalDashboard({
 
       <section className="hospital-metrics-grid hospital-metrics-grid--4 doctor-stats-grid">
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-blue">
+          <div className="hospital-stat-icon stat-icon-slate">
             <IconCalendar size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -807,7 +808,7 @@ export default function StaffClinicalDashboard({
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-amber">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconClock size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -829,7 +830,7 @@ export default function StaffClinicalDashboard({
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-purple">
+          <div className="hospital-stat-icon stat-icon-amber">
             <IconShield size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -857,11 +858,11 @@ export default function StaffClinicalDashboard({
             </div>
 
             <div style={{ textAlign: 'right' }}>
-              <span style={{ fontSize: '0.82rem', color: '#64748b' }}>Scheduled Slot</span>
-              <div style={{ fontWeight: 700, color: '#1e1b4b', fontSize: '1rem' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>Scheduled Slot</span>
+              <div style={{ fontWeight: 700, color: 'var(--color-text-title)', fontSize: '1rem' }}>
                 {activePatient.time}
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: 4 }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', marginTop: 4 }}>
                 {activePatient.appointmentStatus || '—'}
               </div>
             </div>
@@ -994,11 +995,11 @@ export default function StaffClinicalDashboard({
             </button>
           </div>
           {activePatient.status !== 'consulting' ? (
-            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
+            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: 'var(--color-text-muted)', fontSize: '0.85rem', fontWeight: 600 }}>
               Spotlight actions apply only while this patient is in active consultation.
             </p>
           ) : !activePaymentSettled ? (
-            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: '#b45309', fontSize: '0.85rem', fontWeight: 600 }}>
+            <p className="doctor-off-duty-hint" style={{ marginTop: '10px', color: 'var(--color-warning)', fontSize: '0.85rem', fontWeight: 600 }}>
               Payment not settled — hospital desk must Mark paid at the counter before administration.
             </p>
           ) : null}
@@ -1010,7 +1011,7 @@ export default function StaffClinicalDashboard({
           <div className="section-card-header queue-section-header">
             <div className="section-title-group">
               <h2>
-                <span className="section-title-icon icon-shade-purple">
+                <span className="section-title-icon icon-shade-blue">
                   <IconClipboard size={22} />
                 </span>
                 Today&apos;s Consultation Queue
@@ -1130,7 +1131,7 @@ export default function StaffClinicalDashboard({
               <tbody>
                 {filteredPatients.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                    <td colSpan={6} className="empty-table-cell">
                       {statsLoading
                         ? "Loading today's appointments..."
                         : patients.length === 0
@@ -1329,7 +1330,7 @@ export default function StaffClinicalDashboard({
                 className="doctor-obs-title"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
               >
-                <span className="icon-shade icon-shade-purple">
+                <span className="icon-shade icon-shade-amber">
                   <IconClock size={22} />
                 </span>
                 15-Min Observation Watch
@@ -1395,7 +1396,7 @@ export default function StaffClinicalDashboard({
           <div className="doctor-coldbox-card staff-today-slots">
             <div className="staff-today-slots-header">
               <div className="staff-today-slots-title">
-                <span className="icon-shade icon-shade-green">
+                <span className="icon-shade icon-shade-blue">
                   <IconClock size={22} />
                 </span>
                 <span>Today&apos;s Slots</span>

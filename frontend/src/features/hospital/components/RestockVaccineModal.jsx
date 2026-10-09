@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useState } from 'react';
 
 const DEFAULT_LIST = [
   'Pfizer-BioNTech Bivalent (mRNA)',
@@ -40,22 +40,15 @@ export default function RestockVaccineModal({
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Reset before paint when opening, and again when closing — avoids flashing custom-mode UI.
-  useLayoutEffect(() => {
-    if (isOpen) {
-      setIsCustomMode(false);
-      setSubmitting(false);
-      setFormData(emptyForm());
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setIsCustomMode(false);
-      setSubmitting(false);
-      setFormData(emptyForm());
-    }
-  }, [isOpen]);
+  // Reset whenever the modal opens or closes. Adjusting state during render
+  // (instead of in an effect) applies before paint, so custom mode never flashes.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    setIsCustomMode(false);
+    setSubmitting(false);
+    setFormData(emptyForm());
+  }
 
   if (!isOpen) return null;
 
@@ -122,7 +115,7 @@ export default function RestockVaccineModal({
             <h3 style={{ margin: 0 }}>
               {isCustomMode ? 'Add new vaccine product' : 'Log Vaccine Restock Shipment'}
             </h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.84rem', color: 'var(--color-text-muted)' }}>
               {isCustomMode
                 ? 'Enter the product details, then continue with lot and vault info below.'
                 : 'Select from hospital-registered vaccine formulations or enter a new product name.'}
@@ -234,7 +227,7 @@ export default function RestockVaccineModal({
                     </select>
                   </div>
                 </div>
-                <p style={{ margin: '-4px 0 12px', fontSize: '0.76rem', color: '#64748b' }}>
+                <p style={{ margin: '-4px 0 12px', fontSize: '0.76rem', color: 'var(--color-text-muted)' }}>
                   New products are saved to your formulary when the shipment is committed.
                 </p>
               </>

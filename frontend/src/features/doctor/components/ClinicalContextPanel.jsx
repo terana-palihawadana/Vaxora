@@ -33,10 +33,10 @@ export default function ClinicalContextPanel({ patientProfileId }) {
   }, [patientProfileId]);
 
   if (!patientProfileId) {
-    return <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Patient history is unavailable for this booking.</p>;
+    return <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Patient history is unavailable for this booking.</p>;
   }
-  if (state.loading) return <p style={{ fontSize: '0.8rem', color: '#64748b' }}>Loading patient history…</p>;
-  if (state.error) return <p style={{ fontSize: '0.8rem', color: '#b91c1c' }}>{state.error}</p>;
+  if (state.loading) return <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>Loading patient history…</p>;
+  if (state.error) return <p style={{ fontSize: '0.8rem', color: 'var(--color-error)' }}>{state.error}</p>;
 
   const allergies = state.history.filter((r) => r.recordType === 'Allergy' && isActiveRecord(r));
   const conditions = state.history.filter((r) => r.recordType !== 'Allergy' && isActiveRecord(r));
@@ -44,33 +44,33 @@ export default function ClinicalContextPanel({ patientProfileId }) {
 
   const section = (title, items, render, empty) => (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.04em', color: '#475569', textTransform: 'uppercase' }}>
+      <div style={{ fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.04em', color: 'var(--color-text-body)', textTransform: 'uppercase' }}>
         {title}
       </div>
       {items.length === 0
-        ? <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{empty}</div>
+        ? <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{empty}</div>
         : items.map(render)}
     </div>
   );
 
   return (
-    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+    <div style={{ background: 'var(--color-warning-bg)', border: '1px solid var(--color-warning-border)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
       {section('Allergies', allergies, (r, i) => (
-        <div key={i} style={{ fontSize: '0.82rem', fontWeight: 700, color: '#b91c1c' }}>
+        <div key={i} style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--color-error)' }}>
           {r.title}{r.severity ? ` (${r.severity})` : ''}
         </div>
       ), 'No allergies on record')}
       {section('Active conditions', conditions, (r, i) => (
-        <div key={i} style={{ fontSize: '0.82rem', color: isAlert(r) ? '#b91c1c' : '#1e293b', fontWeight: isAlert(r) ? 700 : 500 }}>
+        <div key={i} style={{ fontSize: '0.82rem', color: isAlert(r) ? 'var(--color-error)' : 'var(--color-text-title)', fontWeight: isAlert(r) ? 700 : 500 }}>
           {r.title} · {r.recordType}{r.severity ? ` · ${r.severity}` : ''}
         </div>
       ), 'No active conditions on record')}
       {section('Adverse events (AEFI)', aefi, (v) => (
-        <div key={v.id} style={{ fontSize: '0.82rem', color: '#b91c1c', fontWeight: 600 }}>
+        <div key={v.id} style={{ fontSize: '0.82rem', color: 'var(--color-error)', fontWeight: 600 }}>
           {v.vaccineName} dose {v.doseNumber}: {v.adverseEventNotes || 'Adverse event reported'}
         </div>
       ), 'No prior adverse events')}
-      <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+      <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
         {state.vaccinations.length} prior vaccination record(s)
       </div>
     </div>

@@ -30,17 +30,17 @@ const statusLabel = (status) => {
 
 const statusColor = (status) => {
   const s = String(status || "").toLowerCase();
-  if (s === "resolved") return "#10b981";
-  if (s === "inreview") return "#b45309";
-  if (s === "escalated") return "#dc2626";
-  return "#0369a1";
+  if (s === "resolved") return "var(--color-success)";
+  if (s === "inreview") return "var(--color-warning)";
+  if (s === "escalated") return "var(--color-error)";
+  return "var(--color-accent)";
 };
 
 const renderStars = (rating) => {
   return (
-    <span style={{ color: "#fbbf24", fontSize: "0.9rem", letterSpacing: 1 }}>
+    <span style={{ color: "var(--color-rating)", fontSize: "0.9rem", letterSpacing: 1 }}>
       {"★".repeat(rating)}
-      <span style={{ color: "#cbd5e1" }}>{"★".repeat(5 - rating)}</span>
+      <span style={{ color: "var(--color-border-card)" }}>{"★".repeat(5 - rating)}</span>
     </span>
   );
 };
@@ -261,9 +261,9 @@ export default function FeedbackTab() {
                   <div
                     role="alert"
                     style={{
-                      background: "rgba(239, 68, 68, 0.12)",
-                      color: "#b91c1c",
-                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      background: "rgba(var(--rgb-error), 0.12)",
+                      color: "var(--color-error)",
+                      border: "1px solid rgba(var(--rgb-error), 0.3)",
                       borderRadius: 8,
                       padding: "10px 14px",
                       marginBottom: 12,
@@ -282,7 +282,7 @@ export default function FeedbackTab() {
                     gap: 10,
                     fontSize: "0.85rem",
                     fontWeight: 600,
-                    color: "#1e1b4b",
+                    color: "var(--color-text-title)",
                     cursor: "pointer",
                     marginBottom: 12,
                   }}
@@ -298,7 +298,7 @@ export default function FeedbackTab() {
                     style={{
                       fontSize: "0.75rem",
                       fontWeight: 400,
-                      color: "#64748b",
+                      color: "var(--color-text-muted)",
                     }}
                   >
                     (name, email, and phone will not be recorded)
@@ -397,18 +397,11 @@ export default function FeedbackTab() {
         </h2>
 
         {loadingFeedbacks ? (
-          <p style={{ textAlign: "center", color: "#64748b", padding: 24 }}>
+          <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: 24 }}>
             Loading your feedback history…
           </p>
         ) : myFeedbacks.length === 0 ? (
-          <p
-            style={{
-              textAlign: "center",
-              color: "#64748b",
-              fontStyle: "italic",
-              padding: 24,
-            }}
-          >
+          <p className="empty-state">
             You haven't submitted any feedback yet.
           </p>
         ) : (
@@ -436,7 +429,7 @@ export default function FeedbackTab() {
                   <tr key={fb.id}>
                     <td className="td-date">{formatDate(fb.createdAt)}</td>
                     <td className="td-vaccine">
-                      <div style={{ fontWeight: 600, color: "#1e1b4b" }}>
+                      <div style={{ fontWeight: 600, color: "var(--color-text-title)" }}>
                         {fb.message.length > 120
                           ? fb.message.substring(0, 120) + "…"
                           : fb.message}
@@ -446,11 +439,11 @@ export default function FeedbackTab() {
                           style={{
                             marginTop: 6,
                             padding: "6px 10px",
-                            background: "rgba(16, 185, 129, 0.08)",
-                            borderLeft: "3px solid #10b981",
+                            background: "rgba(var(--rgb-success), 0.08)",
+                            borderLeft: "3px solid var(--color-success-border)",
                             borderRadius: 4,
                             fontSize: "0.78rem",
-                            color: "#065f46",
+                            color: "var(--color-success)",
                           }}
                         >
                           ↩ Admin: {fb.adminResponse}
@@ -471,7 +464,7 @@ export default function FeedbackTab() {
                     </td>
                     <td style={{ textAlign: "right", borderRight: "none" }}>
                       {fb.status?.toLowerCase() === "resolved" ? (
-                        <span style={{ fontSize: "0.78rem", color: "#94a3b8" }}>
+                        <span style={{ fontSize: "0.78rem", color: "var(--color-text-placeholder)" }}>
                           Locked
                         </span>
                       ) : (
@@ -511,7 +504,7 @@ export default function FeedbackTab() {
                 style={{
                   fontSize: "1.15rem",
                   fontWeight: 800,
-                  color: "#1e1b4b",
+                  color: "var(--color-text-title)",
                   margin: 0,
                 }}
               >
@@ -564,7 +557,7 @@ export default function FeedbackTab() {
               {error && (
                 <div
                   style={{
-                    color: "#b91c1c",
+                    color: "var(--color-error)",
                     fontSize: "0.85rem",
                     marginBottom: 10,
                   }}

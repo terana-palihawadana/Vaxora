@@ -183,7 +183,7 @@ class _HospitalStaffScreenState extends State<HospitalStaffScreen> {
                   value: '${_pending.length}',
                   icon: Icons.mark_email_unread_outlined,
                   accent: _pending.isNotEmpty
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
               ],
@@ -326,7 +326,7 @@ class _StaffMemberCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: StaffSurfaces.card(
         borderColor: member.isPending
-            ? const Color(0xFFF5B168)
+            ? AppColors.warningBorder
             : (member.isOnDutyNow
                   ? AppColors.success.withValues(alpha: 0.28)
                   : StaffSurfaces.cardBorder),

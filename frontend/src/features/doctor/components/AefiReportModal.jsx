@@ -77,7 +77,7 @@ export default function AefiReportModal({ isOpen, onClose, onSubmitReport, patie
   return (
     <div className="doctor-modal-overlay" onClick={submitting ? undefined : onClose}>
       <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' }}>
+        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, var(--color-error) 0%, var(--color-error) 100%)' }}>
           <div>
             <h3 className="doctor-modal-title">Report Adverse Event (AEFI)</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.9)' }}>
@@ -196,7 +196,7 @@ export default function AefiReportModal({ isOpen, onClose, onSubmitReport, patie
             </div>
 
             {error ? (
-              <p style={{ margin: '12px 0 0', color: '#b91c1c', fontSize: '0.85rem' }}>{error}</p>
+              <p style={{ margin: '12px 0 0', color: 'var(--color-error)', fontSize: '0.85rem' }}>{error}</p>
             ) : null}
           </div>
 

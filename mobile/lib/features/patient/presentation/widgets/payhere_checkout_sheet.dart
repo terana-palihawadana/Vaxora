@@ -206,7 +206,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.borderCard,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -243,16 +243,16 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
+                        color: AppColors.warningBg,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: const Color(0xFFFDE68A)),
+                        border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: const Text(
                         '⚡ Sandbox Mode',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFFB45309),
+                          color: AppColors.warning,
                         ),
                       ),
                     ),
@@ -315,7 +315,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
                   child: Column(
                     children: [
-                      const Icon(Icons.hourglass_top_rounded, color: Color(0xFFB45309), size: 48),
+                      const Icon(Icons.hourglass_top_rounded, color: AppColors.warning, size: 48),
                       const SizedBox(height: 12),
                       const Text(
                         'Awaiting PayHere Confirmation',
@@ -357,11 +357,11 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                         width: 72,
                         height: 72,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFDCFCE7),
+                          color: AppColors.successBg,
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF86EFAC), width: 2),
+                          border: Border.all(color: AppColors.successBorder, width: 2),
                         ),
-                        child: const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A), size: 48),
+                        child: const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 48),
                       ),
                       const SizedBox(height: 16),
                       const Text(
@@ -380,7 +380,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF5F8F7),
+                          color: AppColors.background,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: AppColors.borderLight),
                         ),
@@ -396,12 +396,12 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                             const Divider(height: 20),
                             const Row(
                               children: [
-                                Icon(Icons.mark_email_read_outlined, size: 16, color: Color(0xFF16A34A)),
+                                Icon(Icons.mark_email_read_outlined, size: 16, color: AppColors.success),
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     'Confirmation email & transaction receipt sent to your email.',
-                                    style: TextStyle(fontSize: 12, color: Color(0xFF16A34A), fontWeight: FontWeight.w600),
+                                    style: TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               ],
@@ -646,7 +646,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF1F6F4),
+                            color: AppColors.surfaceSubtle,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Column(
@@ -669,7 +669,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF5F8F7),
+                            color: AppColors.background,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.borderLight),
                           ),
@@ -751,7 +751,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFEFF6FF) : const Color(0xFFF5F8F7),
+            color: isSelected ? const Color(0xFFEFF6FF) : AppColors.background,
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isSelected ? const Color(0xFF003366) : AppColors.borderLight,
@@ -782,7 +782,7 @@ class _PayHereCheckoutSheetState extends State<PayHereCheckoutSheet> {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F8F7),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.borderLight),
       ),

@@ -176,9 +176,9 @@ export default function DoctorProfileTab() {
           style={{
             maxWidth: '960px',
             width: '100%',
-            backgroundColor: notificationType === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-            borderColor: notificationType === 'error' ? '#ef4444' : '#10b981',
-            color: notificationType === 'error' ? '#f87171' : '#34d399',
+            backgroundColor: notificationType === 'error' ? 'rgba(var(--rgb-error), 0.15)' : 'rgba(var(--rgb-success), 0.15)',
+            borderColor: notificationType === 'error' ? 'var(--color-error)' : 'var(--color-success-border)',
+            color: notificationType === 'error' ? 'var(--color-error)' : 'var(--color-success)',
           }}
         >
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -199,7 +199,7 @@ export default function DoctorProfileTab() {
                 src={personalInfo.profilePhotoUrl}
                 alt={personalInfo.name || 'Doctor'}
                 className="doctor-profile-uploaded-img"
-                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0369a1' }}
+                style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-accent)' }}
               />
             ) : (
               <svg
@@ -208,11 +208,11 @@ export default function DoctorProfileTab() {
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <circle cx="100" cy="100" r="100" fill="#d9dde3" />
-                <circle cx="100" cy="80" r="38" fill="#525862" />
+                <circle cx="100" cy="100" r="100" style={{ fill: "var(--color-soft-panel-deep)" }} />
+                <circle cx="100" cy="80" r="38" style={{ fill: "var(--color-text-muted)" }} />
                 <path
                   d="M40 174C40 140.863 66.863 118 100 118C133.137 118 160 140.863 160 174"
-                  fill="#525862"
+                  style={{ fill: "var(--color-text-muted)" }}
                 />
               </svg>
             )}
@@ -238,7 +238,7 @@ export default function DoctorProfileTab() {
                 height="18"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#1d1854"
+                style={{ stroke: "var(--color-text-title)" }}
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -261,7 +261,7 @@ export default function DoctorProfileTab() {
                   style={{
                     fontSize: '0.8rem',
                     fontWeight: 700,
-                    color: personalInfo.verificationStatus === 'Approved' || personalInfo.verificationStatus === '1' ? '#10b981' : '#f59e0b',
+                    color: personalInfo.verificationStatus === 'Approved' || personalInfo.verificationStatus === '1' ? 'var(--color-success)' : 'var(--color-warning)',
                   }}
                 >
                   ● Verification: {personalInfo.verificationStatus === 'Approved' || personalInfo.verificationStatus === '1' ? 'Verified / Approved' : 'Pending Administrative Review'}
@@ -288,7 +288,7 @@ export default function DoctorProfileTab() {
                     height="18"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#ffffff"
+                    style={{ stroke: "var(--color-text-inverse)" }}
                     strokeWidth="2.4"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -306,7 +306,7 @@ export default function DoctorProfileTab() {
               <div className="doctor-profile-field-row">
                 <span className="doctor-profile-field-label">VAXORA ID</span>
                 <span className="doctor-profile-field-colon">:</span>
-                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: '#0369a1' }}>
+                <span className="doctor-profile-field-value" style={{ fontWeight: 700, color: 'var(--color-accent)' }}>
                   {personalInfo.id || (loading ? 'Loading...' : 'N/A')}
                 </span>
               </div>
@@ -473,7 +473,7 @@ export default function DoctorProfileTab() {
             <>
               <div className="doctor-prof-row">
                 <strong>SLMC Medical Board Reg: </strong>
-                <span style={{ color: '#0369a1', fontWeight: 700 }}>{personalInfo.slmcNumber}</span>
+                <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{personalInfo.slmcNumber}</span>
               </div>
 
               <div className="doctor-prof-row">
@@ -501,7 +501,7 @@ export default function DoctorProfileTab() {
                 <span>{professionalDetails.consultationHours}</span>
               </div>
 
-              <div className="doctor-prof-row" style={{ borderTop: '1px solid #e2e8f0', paddingTop: '12px', marginTop: '12px' }}>
+              <div className="doctor-prof-row" style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '12px', marginTop: '12px' }}>
                 <strong>Submitted Verification Documents: </strong>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '6px', flexWrap: 'wrap' }}>
                   {personalInfo.slmcCardDocKey ? (
@@ -515,7 +515,7 @@ export default function DoctorProfileTab() {
                       <IconFile size={14} /> View SLMC Certificate
                     </a>
                   ) : (
-                    <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>SLMC Document Uploaded on File</span>
+                    <span style={{ color: 'var(--color-text-placeholder)', fontSize: '0.85rem' }}>SLMC Document Uploaded on File</span>
                   )}
 
                   {personalInfo.supportingDocKey && (
@@ -537,49 +537,21 @@ export default function DoctorProfileTab() {
 
         {/* Danger Zone Card */}
         <div
-          className="doctor-profile-card"
-          style={{
-            borderColor: 'rgba(239, 68, 68, 0.35)',
-            background: 'linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%)',
-            borderRadius: '16px',
-            padding: '24px',
-            marginTop: '8px',
-          }}
+          className="danger-zone-card doctor-profile-card"
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
+          <div className="danger-zone-row"
           >
             <div>
-              <h4 style={{ margin: '0 0 6px', color: '#ef4444', fontSize: '1.05rem', fontWeight: 700 }}>
+              <h4 className="danger-zone-title">
                 Danger Zone
               </h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8', maxWidth: '600px' }}>
+              <p className="danger-zone-text">
                 Permanently delete your Vaxora doctor profile, credentials, and verification records. This action cannot be undone.
               </p>
             </div>
-            <button
+            <button className="btn-danger"
               type="button"
               onClick={() => setIsDeleteModalOpen(true)}
-              style={{
-                background: '#dc2626',
-                color: '#ffffff',
-                border: '1px solid #ef4444',
-                borderRadius: '8px',
-                padding: '10px 18px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
-              }}
             >
               <IconTrash size={16} /> Delete Account
             </button>

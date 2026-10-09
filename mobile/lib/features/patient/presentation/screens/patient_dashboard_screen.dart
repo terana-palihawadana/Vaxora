@@ -291,13 +291,13 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   label: 'Upcoming',
                   value: _appointmentsError == null ? '$scheduledCount' : '—',
                   icon: Icons.event_note_outlined,
-                  accent: scheduledCount > 0 ? const Color(0xFFB2660A) : StaffSurfaces.brandSoft,
+                  accent: scheduledCount > 0 ? AppColors.warning : StaffSurfaces.brandSoft,
                 ),
                 StaffIntroStat(
                   label: 'Vaccines',
                   value: '${_timeline?.distinctVaccines ?? 0}',
                   icon: Icons.health_and_safety_outlined,
-                  accent: const Color(0xFF6D5BAE),
+                  accent: AppColors.ai,
                 ),
               ],
             ),
@@ -336,7 +336,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                     icon: const Icon(Icons.auto_awesome, size: 18),
                     label: const Text('AI care plan'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF168B91),
+                      backgroundColor: AppColors.accent,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -401,7 +401,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   borderColor: switch (_chipTone(nextAppointment.status)) {
                     StaffChipTone.success => AppColors.success.withValues(alpha: 0.28),
                     StaffChipTone.danger => AppColors.error.withValues(alpha: 0.28),
-                    StaffChipTone.warning => const Color(0xFFF5B168),
+                    StaffChipTone.warning => AppColors.warningBorder,
                     _ => StaffSurfaces.cardBorder,
                   },
                 ),

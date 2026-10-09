@@ -369,7 +369,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
       {/* ---------- 2. Stat Metric Cards (match hospital home pattern) ---------- */}
       <div className="hospital-metrics-grid hospital-metrics-grid--4">
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-purple">
+          <div className="hospital-stat-icon stat-icon-blue">
             <IconCalendar size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -392,7 +392,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-blue">
+          <div className="hospital-stat-icon stat-icon-green">
             <IconSyringe size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -426,7 +426,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
         </div>
 
         <div className="hospital-stat-card">
-          <div className="hospital-stat-icon stat-icon-amber">
+          <div className="hospital-stat-icon stat-icon-slate">
             <IconClock size={22} />
           </div>
           <div className="hospital-stat-info">
@@ -454,7 +454,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
             <div className="section-card-header">
               <div className="section-title-group">
                 <h2>
-                  <span className="section-title-icon icon-shade-purple">
+                  <span className="section-title-icon icon-shade-blue">
                     <IconCalendar size={22} />
                   </span>
                   Next Confirmed Appointment
@@ -563,7 +563,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
 
           <div className="hospital-section-card patient-advisory-card">
             <div className="patient-advisory-row">
-              <div className="hospital-stat-icon stat-icon-teal">
+              <div className="hospital-stat-icon stat-icon-amber">
                 <IconRocket size={22} />
               </div>
               <div>

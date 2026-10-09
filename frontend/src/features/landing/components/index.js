@@ -5,3 +5,8 @@ export { default as StatsSection } from './StatsSection';
 export { default as ContactSection } from './ContactSection';
 export { default as ReviewsSection } from './ReviewsSection';
 export { default as Footer } from './Footer';
+export { default as FeaturesSection } from './FeaturesSection';
+export { default as RolesSection } from './RolesSection';
+export { default as StepsSection } from './StepsSection';
+export { default as FaqSection } from './FaqSection';
+export { default as CtaSection } from './CtaSection';

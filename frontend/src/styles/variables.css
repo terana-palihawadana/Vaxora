@@ -1,5 +1,7 @@
 /* ==========================================================================
    Vaxora Design Tokens & CSS Variables
+   Colours mirror mobile/lib/core/theme/app_colors.dart so web and mobile
+   share one palette. Change a colour in both places.
    ========================================================================== */
 
 :root {
@@ -8,46 +10,176 @@
   --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   /* Primary & Brand Colors */
-  --color-primary: #1e40af;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-dark: #1e1b4b;
-  --color-primary-deep: #160c40;
-  --color-brand-blue: #19469d;
-  --color-accent: #0369a1;
-  --color-accent-teal: #0d9488;
+  --color-primary: #06736c;
+  --color-primary-hover: #066d68;
+  --color-primary-dark: #12384b;
+  --color-primary-deep: #0b2c3d;
+  --color-brand-blue: #123e5d;
+  --color-accent: #117a80;
+  --color-accent-teal: #06736c;
+  --color-primary-soft: rgba(6, 115, 108, 0.1);
+  /* RGB triplets for translucent shades: rgba(var(--rgb-primary), 0.3) */
+  --rgb-primary: 6, 115, 108;
+  --rgb-primary-dark: 18, 56, 75;
+  --rgb-success: 31, 122, 76;
+  --rgb-error: 181, 71, 67;
+  --rgb-info: 39, 109, 130;
+  --rgb-info-bg: 237, 246, 248;
+  --rgb-soft-panel: 234, 245, 242;
+  --gradient-primary: linear-gradient(180deg, #0b8279 0%, #066d68 100%);
 
   /* Neutral & Surface Colors */
-  --color-bg: #ffffff;
+  --color-bg: #f5f8f7;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f8fafc;
-  --color-input-bg: #f1f3f8;
-  --color-input-auth-bg: #eee9f0;
-  --color-border-light: #e2e8f0;
-  --color-border-card: #cbd5e1;
-  --color-border-pill: #cbd5e1;
-  --color-border-focus: #2563eb;
-  --color-border-auth-card: #281966;
+  --color-surface-subtle: #f1f6f4;
+  --color-soft-panel: #eaf5f2;
+  --color-soft-panel-deep: #d9ece7;
+  --color-input-bg: #f8faf9;
+  --color-input-auth-bg: #f6f9f7;
+  --color-overlay: rgba(11, 44, 61, 0.45);
+
+  /* Borders */
+  --color-border-light: #e1e9e6;
+  --color-border-card: #d5e1dd;
+  --color-border-pill: #d5e1dd;
+  --color-border-focus: #06736c;
+  --color-border-auth-card: #d5e4df;
+  --color-border-auth-input: #d5e1dd;
 
   /* Typography Colors */
-  --color-text-title: #1e1b4b;
-  --color-text-subtitle: #2563eb;
-  --color-text-body: #334155;
-  --color-text-muted: #64748b;
+  --color-text-title: #12384b;
+  --color-text-subtitle: #06736c;
+  --color-text-body: #354e59;
+  --color-text-muted: #5a6e76;
+  --color-text-placeholder: #7b8e94;
   --color-text-inverse: #ffffff;
 
+  /* Status Colors (text/icon, background, border) */
+  --color-success: #1f7a4c;
+  --color-success-bg: #edf7f0;
+  --color-success-border: #c3e3cf;
+  --color-error: #b54743;
+  --color-error-bg: #fff1ef;
+  --color-error-border: #fecaca;
+  --color-warning: #a35d08;
+  --color-warning-bg: #fff4e5;
+  --color-warning-border: #f5b168;
+  --color-info: #276d82;
+  --color-info-bg: #edf6f8;
+  --color-info-border: #c7e0e7;
+
+  /* True blue accent for the "schedules / appointments" tone (tones.css).
+     --color-info stays for info alerts; it reads too close to teal to be
+     a distinct accent. */
+  --color-blue: #2a63c9;
+  --color-blue-bg: #eaf1fd;
+  --color-blue-border: #c6d8f7;
+  --rgb-blue: 42, 99, 201;
+
+  /* AI Assistant Accents */
+  --color-ai: #6d5bae;
+  --color-ai-bg: #ede9f8;
+  --color-ai-border: #dcd4f0;
+
+  /* Star Ratings */
+  --color-rating: #f59e0b;
+
+  /* Tables */
+  --table-head-bg: var(--color-soft-panel);
+  --table-head-text: var(--color-primary-dark);
+  --table-head-border: var(--color-border-card);
+  --table-head-size: 0.75rem;
+  --table-head-weight: 600;
+  --table-head-tracking: 0.05em;
+
+  /* Buttons */
+  --btn-radius: 10px;
+  --btn-font: var(--font-heading);
+  --btn-weight: 600;
+  --btn-primary-bg: var(--gradient-primary);
+  --btn-primary-bg-hover: linear-gradient(180deg, #06736c 0%, #055a56 100%);
+  --btn-pad-sm: 7px 16px;
+  --btn-pad-md: 10px 22px;
+  --btn-pad-lg: 12px 30px;
+  --btn-size-sm: 0.85rem;
+  --btn-size-md: 0.92rem;
+  --btn-size-lg: 1rem;
+  --btn-secondary-bg: var(--color-surface);
+  --btn-secondary-bg-hover: var(--color-soft-panel);
+  --btn-secondary-text: var(--color-primary);
+  --btn-secondary-border: var(--color-border-card);
+  --btn-soft-bg: var(--color-soft-panel);
+  --btn-soft-bg-hover: var(--color-soft-panel-deep);
+
+  /* Filter pills and segmented controls */
+  --pill-track-bg: var(--color-surface-subtle);
+  --pill-track-border: var(--color-border-light);
+  --pill-text: var(--color-text-muted);
+  --pill-text-hover: var(--color-primary);
+  --pill-active-bg: var(--color-primary);
+  --pill-active-text: var(--color-text-inverse);
+  --pill-active-shadow: 0 2px 8px rgba(6, 115, 108, 0.25);
+  --pill-pad: 6px 14px;
+  --pill-size: 0.84rem;
+
+  /* Empty states */
+  --empty-text: var(--color-text-muted);
+  --empty-size: 0.92rem;
+  --empty-bg: var(--color-surface-subtle);
+  --empty-border: var(--color-border-card);
+  --empty-pad: 28px 20px;
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px rgba(6, 115, 108, 0.25);
+
   /* Elevation Shadows */
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-  --shadow-card: 0 4px 16px -2px rgba(30, 27, 75, 0.08), 0 2px 6px -1px rgba(30, 27, 75, 0.04);
-  --shadow-card-hover: 0 12px 24px -4px rgba(30, 27, 75, 0.12), 0 4px 8px -2px rgba(30, 27, 75, 0.06);
-  --shadow-btn: 0 4px 14px rgba(30, 64, 175, 0.35);
-  --shadow-btn-hover: 0 6px 20px rgba(30, 64, 175, 0.45);
+  --shadow-sm: 0 1px 3px rgba(18, 56, 75, 0.06);
+  --shadow-card: 0 4px 16px -2px rgba(18, 56, 75, 0.08), 0 2px 6px -1px rgba(18, 56, 75, 0.04);
+  --shadow-card-hover: 0 12px 24px -4px rgba(18, 56, 75, 0.12), 0 4px 8px -2px rgba(18, 56, 75, 0.06);
+  --shadow-modal: 0 24px 48px -12px rgba(11, 44, 61, 0.28);
+  --shadow-btn: 0 4px 14px rgba(6, 115, 108, 0.3);
+  --shadow-btn-hover: 0 6px 20px rgba(6, 115, 108, 0.4);
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
 
   /* Border Radii */
   --radius-sm: 8px;
   --radius-md: 12px;
+  --radius-card: 14px;
   --radius-lg: 20px;
   --radius-xl: 26px;
   --radius-pill: 9999px;
+
+  /* Layering */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 1000;
+  --z-toast: 1100;
 
   /* Animation Timings */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);

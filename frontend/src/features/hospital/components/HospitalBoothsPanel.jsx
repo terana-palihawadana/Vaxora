@@ -170,7 +170,7 @@ export default function HospitalBoothsPanel() {
         <div
           className="appointment-alert-pill"
           role="alert"
-          style={{ marginBottom: '16px', background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}
+          style={{ marginBottom: '16px', background: 'var(--color-error-bg)', color: 'var(--color-error)', borderColor: 'var(--color-error-border)' }}
         >
           {error}
         </div>
@@ -217,7 +217,7 @@ export default function HospitalBoothsPanel() {
           <div className="modal-form-group" style={{ margin: 0 }}>
             <label className="modal-label">Vaccines this booth gives</label>
             {vaccines.length === 0 ? (
-              <p style={{ margin: '6px 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+              <p style={{ margin: '6px 0 0', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                 Register vaccines under Inventory before assigning them here.
               </p>
             ) : (
@@ -233,10 +233,10 @@ export default function HospitalBoothsPanel() {
                         gap: '6px',
                         padding: '6px 10px',
                         borderRadius: '999px',
-                        border: `1px solid ${checked ? '#7dd3fc' : '#e2e8f0'}`,
-                        background: checked ? '#f0f9ff' : '#ffffff',
+                        border: `1px solid ${checked ? 'var(--color-info-border)' : 'var(--color-border-light)'}`,
+                        background: checked ? 'var(--color-info-bg)' : 'var(--color-surface)',
                         fontSize: '0.82rem',
-                        color: '#0f172a',
+                        color: 'var(--color-text-title)',
                         cursor: 'pointer',
                       }}
                     >
@@ -268,9 +268,9 @@ export default function HospitalBoothsPanel() {
                 padding: '8px 16px',
                 fontSize: '0.88rem',
                 fontWeight: 700,
-                color: '#ffffff',
-                background: '#19469d',
-                border: '1px solid #19469d',
+                color: 'var(--color-text-inverse)',
+                background: 'var(--color-primary)',
+                border: '1px solid var(--color-primary)',
                 borderRadius: '8px',
                 cursor: 'pointer',
               }}
@@ -286,9 +286,9 @@ export default function HospitalBoothsPanel() {
                   padding: '8px 16px',
                   fontSize: '0.88rem',
                   fontWeight: 600,
-                  color: '#334155',
-                  background: '#ffffff',
-                  border: '1px solid #cbd5e1',
+                  color: 'var(--color-text-body)',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border-card)',
                   borderRadius: '8px',
                   cursor: 'pointer',
                 }}
@@ -304,9 +304,9 @@ export default function HospitalBoothsPanel() {
                 padding: '8px 16px',
                 fontSize: '0.88rem',
                 fontWeight: 600,
-                color: '#334155',
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
+                color: 'var(--color-text-body)',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border-card)',
                 borderRadius: '8px',
                 cursor: 'pointer',
               }}
@@ -319,11 +319,11 @@ export default function HospitalBoothsPanel() {
 
       {loading ? (
         <div className="hospital-section-card" style={{ maxWidth: '420px' }}>
-          <p style={{ color: '#64748b', margin: 0 }}>Loading booths...</p>
+          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>Loading booths...</p>
         </div>
       ) : booths.length === 0 ? (
         <div className="hospital-section-card" style={{ maxWidth: '420px' }}>
-          <p style={{ color: '#64748b', margin: 0 }}>
+          <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
             No booths yet. Use the form above to add one.
           </p>
         </div>
@@ -356,7 +356,7 @@ export default function HospitalBoothsPanel() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#94a3b8',
+                    color: 'var(--color-text-placeholder)',
                     background: 'transparent',
                     border: 'none',
                     borderRadius: '6px',
@@ -383,21 +383,21 @@ export default function HospitalBoothsPanel() {
                     <span key={name} className="booth-vaccine-chip">{name}</span>
                   ))
                 ) : (
-                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>No vaccines assigned</span>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-placeholder)' }}>No vaccines assigned</span>
                 )}
               </div>
 
               <div className="booth-card-footer">
                 <span
                   className="booth-status-indicator"
-                  style={{ color: booth.isActive ? '#15803d' : '#64748b' }}
+                  style={{ color: booth.isActive ? 'var(--color-success)' : 'var(--color-text-muted)' }}
                 >
                   <span
                     style={{
                       width: '6px',
                       height: '6px',
                       borderRadius: '50%',
-                      background: booth.isActive ? '#22c55e' : '#94a3b8',
+                      background: booth.isActive ? 'var(--color-success)' : 'var(--color-text-placeholder)',
                       display: 'inline-block',
                     }}
                   />
@@ -414,7 +414,7 @@ export default function HospitalBoothsPanel() {
                     fontSize: '0.78rem',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    color: booth.isActive ? '#b91c1c' : '#047857',
+                    color: booth.isActive ? 'var(--color-error)' : 'var(--color-success)',
                   }}
                 >
                   {actionId === booth.boothId

@@ -179,7 +179,7 @@ class _PatientFeedbackScreenState extends State<PatientFeedbackScreen> {
                           v <= editedRating
                               ? Icons.star_rounded
                               : Icons.star_outline_rounded,
-                          color: const Color(0xFFF59E0B),
+                          color: AppColors.rating,
                           size: 28,
                         ),
                       );
@@ -337,7 +337,7 @@ class _PatientFeedbackScreenState extends State<PatientFeedbackScreen> {
         return Icon(
           i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
           size: size,
-          color: const Color(0xFFF59E0B),
+          color: AppColors.rating,
         );
       }),
     );
@@ -514,7 +514,7 @@ class _PatientFeedbackScreenState extends State<PatientFeedbackScreen> {
                     starValue <= _rating
                         ? Icons.star_rounded
                         : Icons.star_outline_rounded,
-                    color: const Color(0xFFF59E0B),
+                    color: AppColors.rating,
                     size: 30,
                   ),
                 );
@@ -763,7 +763,7 @@ class _PatientFeedbackScreenState extends State<PatientFeedbackScreen> {
                     fb.adminResponse!,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF065F46),
+                      color: AppColors.success,
                       height: 1.35,
                     ),
                   ),

@@ -113,10 +113,10 @@ export default function HospitalAppointmentsTab() {
   };
 
   const toastStyles = {
-    success: { background: '#ecfdf5', color: '#065f46', border: '1.5px solid #a7f3d0' },
-    error: { background: '#fef2f2', color: '#b91c1c', border: '1.5px solid #fecaca' },
-    warning: { background: '#fffbeb', color: '#92400e', border: '1.5px solid #fde68a' },
-    info: { background: '#eff6ff', color: '#1e40af', border: '1.5px solid #bfdbfe' },
+    success: { background: 'var(--color-success-bg)', color: 'var(--color-success)', border: '1.5px solid var(--color-success-border)' },
+    error: { background: 'var(--color-error-bg)', color: 'var(--color-error)', border: '1.5px solid var(--color-error-border)' },
+    warning: { background: 'var(--color-warning-bg)', color: 'var(--color-warning)', border: '1.5px solid var(--color-warning-border)' },
+    info: { background: 'var(--color-info-bg)', color: 'var(--color-primary)', border: '1.5px solid var(--color-info-border)' },
   };
 
   // Fetch formulary vaccines and active booths
@@ -252,7 +252,7 @@ export default function HospitalAppointmentsTab() {
   }), [scheduleForm.vaccineType, scheduleForm.boothId, matchingBooths]);
 
   // Soft stock horizon preview (does not deduct vials)
-  useEffect(() => {
+  useEffect(() => deferEffectCallback(() => {
     if (!scheduleForm.vaccineType || !scheduleForm.startTime || !scheduleForm.endTime) {
       setStockHorizon(null);
       return undefined;
@@ -305,7 +305,7 @@ export default function HospitalAppointmentsTab() {
     }, 400);
 
     return () => clearTimeout(timer);
-  }, [
+  }), [
     scheduleForm.vaccineType,
     scheduleForm.scheduleType,
     scheduleForm.specificDate,
@@ -593,10 +593,10 @@ export default function HospitalAppointmentsTab() {
             {/* Recurrence Selector Bar */}
             <div className="schedule-recurrence-bar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#1d1854' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--color-text-title)' }}>
                   Recurrence Frequency:
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#475569' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--color-text-body)' }}>
                   (Choose single day or weekly repeating days)
                 </span>
               </div>
@@ -721,7 +721,7 @@ export default function HospitalAppointmentsTab() {
                   })}
                 </select>
                 {scheduleForm.vaccineType && !loadingOptions && matchingBooths.length === 0 ? (
-                  <p className="schedule-field-hint" style={{ margin: '6px 0 0', color: '#b45309', fontSize: '0.82rem' }}>
+                  <p className="schedule-field-hint" style={{ margin: '6px 0 0', color: 'var(--color-warning)', fontSize: '0.82rem' }}>
                     Add this vaccine to a booth under Staff → Booths, then come back to post the schedule.
                   </p>
                 ) : null}
@@ -816,7 +816,7 @@ export default function HospitalAppointmentsTab() {
               <div className="schedule-input-group">
                 <label className="schedule-input-label">
                   Fee / person
-                  <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 'normal', marginLeft: '6px' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--color-text-body)', fontWeight: 'normal', marginLeft: '6px' }}>
                     (from formulary)
                   </span>
                 </label>
@@ -868,17 +868,17 @@ export default function HospitalAppointmentsTab() {
                     background: 'rgba(255,255,255,0.72)',
                     borderRadius: '10px',
                     padding: '10px 12px',
-                    border: '1px solid rgba(15, 23, 42, 0.06)',
+                    border: '1px solid rgba(var(--rgb-primary-dark), 0.06)',
                   }}
                 >
-                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: '#475569', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--color-text-body)', letterSpacing: '0.02em', textTransform: 'uppercase' }}>
                     {label}
                   </div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 750, color: '#0f172a', marginTop: '2px' }}>
+                  <div style={{ fontSize: '1.15rem', fontWeight: 750, color: 'var(--color-text-title)', marginTop: '2px' }}>
                     {value}
                   </div>
                   {hint ? (
-                    <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '2px', fontWeight: 500 }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--color-text-body)', marginTop: '2px', fontWeight: 500 }}>
                       {hint}
                     </div>
                   ) : null}
@@ -995,17 +995,17 @@ export default function HospitalAppointmentsTab() {
                       <td style={{ fontSize: '0.92rem' }}>
                         {item.scheduleType === 'Weekly' ? (
                           <div>
-                            <span style={{ fontWeight: 700, color: '#1e40af' }}>Weekly: </span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>Weekly: </span>
                             <span>{item.daysOfWeek?.join(', ') || 'Weekly'}</span>
                             {item.startDate && item.endDate && (
-                              <div style={{ fontSize: '0.78rem', color: '#475569', marginTop: '2px' }}>
+                              <div style={{ fontSize: '0.78rem', color: 'var(--color-text-body)', marginTop: '2px' }}>
                                 ({item.startDate} to {item.endDate})
                               </div>
                             )}
                           </div>
                         ) : (
                           <div>
-                            <span style={{ fontWeight: 700, color: '#0f766e' }}>One-Time: </span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-primary)' }}>One-Time: </span>
                             <span>{item.specificDate || item.date}</span>
                           </div>
                         )}
@@ -1013,11 +1013,11 @@ export default function HospitalAppointmentsTab() {
                       <td>{item.formattedTime || `${item.startTime} - ${item.endTime}`}</td>
                       <td>
                         {item.price && Number(item.price) > 0 ? (
-                          <span style={{ fontWeight: 700, color: '#075985' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--color-info)' }}>
                             LKR {Number(item.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </span>
                         ) : (
-                          <span style={{ fontWeight: 700, color: '#16a34a' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--color-success)' }}>
                             Free (0 LKR)
                           </span>
                         )}
@@ -1102,7 +1102,7 @@ export default function HospitalAppointmentsTab() {
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#19469d',
+                            color: 'var(--color-primary)',
                             fontWeight: 700,
                             cursor: 'pointer',
                             textDecoration: 'underline',
@@ -1118,16 +1118,16 @@ export default function HospitalAppointmentsTab() {
                   filteredAppointments.map((item) => (
                     <tr key={item.id || item.Id}>
                       <td>
-                        <div style={{ fontWeight: 600, color: '#1d1854' }}>{item.patientName || item.pName || 'Patient'}</div>
+                        <div style={{ fontWeight: 600, color: 'var(--color-text-title)' }}>{item.patientName || item.pName || 'Patient'}</div>
                         {item.patientPhone && (
-                          <div style={{ fontSize: '0.8rem', color: '#475569', marginTop: '2px' }}>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--color-text-body)', marginTop: '2px' }}>
                             Tel: {item.patientPhone}
                           </div>
                         )}
                       </td>
                       <td>{item.appointmentDate || item.date}</td>
                       <td>
-                        <span style={{ fontWeight: 600, color: '#1e40af' }}>
+                        <span style={{ fontWeight: 600, color: 'var(--color-primary)' }}>
                           {item.timeSlot || item.time}
                         </span>
                       </td>

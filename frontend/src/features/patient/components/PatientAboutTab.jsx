@@ -11,8 +11,8 @@ export default function PatientAboutTab() {
         <p
           style={{
             textAlign: 'center',
-            color: '#475569',
-            fontFamily: "'Lora', Georgia, serif",
+            color: 'var(--color-text-body)',
+            fontFamily: "var(--font-body)",
             fontSize: '1.05rem',
             maxWidth: '680px',
             margin: '0 auto 36px',
@@ -27,51 +27,51 @@ export default function PatientAboutTab() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '36px' }}>
           <div
             style={{
-              background: '#dfe8f5',
+              background: 'var(--color-surface-subtle)',
               padding: '24px',
               borderRadius: '16px',
-              border: '1px solid #cbdbee',
+              border: '1px solid var(--color-border-card)',
             }}
           >
-            <div style={{ marginBottom: '10px', color: '#1d1854' }}><IconShield size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: '#1d1854', marginBottom: '8px' }}>
+            <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconShield size={28} /></div>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Cryptographically Verified
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
               Every dose recorded is digitally signed by certified medical practitioners and verifiable internationally.
             </p>
           </div>
 
           <div
             style={{
-              background: '#dfe8f5',
+              background: 'var(--color-surface-subtle)',
               padding: '24px',
               borderRadius: '16px',
-              border: '1px solid #cbdbee',
+              border: '1px solid var(--color-border-card)',
             }}
           >
-            <div style={{ marginBottom: '10px', color: '#1d1854' }}><IconRocket size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: '#1d1854', marginBottom: '8px' }}>
+            <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconRocket size={28} /></div>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Instant Scheduling
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
               Directly book vaccination slots at national, private, and regional healthcare centers with zero waiting queues.
             </p>
           </div>
 
           <div
             style={{
-              background: '#dfe8f5',
+              background: 'var(--color-surface-subtle)',
               padding: '24px',
               borderRadius: '16px',
-              border: '1px solid #cbdbee',
+              border: '1px solid var(--color-border-card)',
             }}
           >
-            <div style={{ marginBottom: '10px', color: '#1d1854' }}><IconShield size={28} /></div>
-            <h3 style={{ fontFamily: "'Lora', Georgia, serif", fontSize: '1.15rem', color: '#1d1854', marginBottom: '8px' }}>
+            <div style={{ marginBottom: '10px', color: 'var(--color-text-title)' }}><IconShield size={28} /></div>
+            <h3 style={{ fontFamily: "var(--font-heading)", fontSize: '1.15rem', color: 'var(--color-text-title)', marginBottom: '8px' }}>
               Patient Privacy First
             </h3>
-            <p style={{ fontSize: '0.9rem', color: '#475569', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--color-text-body)', lineHeight: 1.5 }}>
               Your health data is protected under national medical privacy frameworks with optional anonymous feedback.
             </p>
           </div>
@@ -80,8 +80,8 @@ export default function PatientAboutTab() {
         {/* Support & Contact */}
         <div
           style={{
-            background: '#ffffff',
-            border: '1.5px solid #d8e2ee',
+            background: 'var(--color-surface)',
+            border: '1.5px solid var(--color-border-card)',
             borderRadius: '16px',
             padding: '20px 24px',
             display: 'flex',
@@ -92,10 +92,10 @@ export default function PatientAboutTab() {
           }}
         >
           <div>
-            <div style={{ fontFamily: "'Lora', Georgia, serif", fontWeight: 700, color: '#1d1854', fontSize: '1.05rem' }}>
+            <div style={{ fontFamily: "var(--font-heading)", fontWeight: 700, color: 'var(--color-text-title)', fontSize: '1.05rem' }}>
               Need Help or Medical Inquiries?
             </div>
-            <div style={{ fontSize: '0.88rem', color: '#64748b' }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)' }}>
               National Immunization Hotline: <strong>1990</strong> • Support: <strong>support@vaxora.lk</strong>
             </div>
           </div>

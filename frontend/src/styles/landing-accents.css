@@ -1,0 +1,72 @@
+/* ==========================================================================
+   Landing page accent colours
+   Teal stays the brand and the colour of everything clickable. The tone-*
+   classes come from the shared colour language in tones.css.
+   ========================================================================== */
+
+/* Icon tiles, bullets and hover borders follow the card's tone */
+.landing-container .feature-card .feature-icon,
+.landing-container .role-card .role-icon {
+  color: var(--tone, var(--color-primary));
+  background: var(--tone-bg, var(--color-primary-soft));
+}
+
+/* Same outline strength for every card, each in its own colour */
+.landing-container .feature-card:hover,
+.landing-container .role-card:hover {
+  border-color: color-mix(in srgb, var(--tone, var(--color-primary)) 55%, transparent);
+}
+
+.landing-container .role-card .role-tasks li::before {
+  background: var(--tone, var(--color-primary));
+}
+
+/* How it works: numbered steps in a blue, teal, green progression */
+.landing-container .step-card .step-number {
+  background: var(--tone, var(--color-primary));
+}
+
+/* "New" tag on a feature */
+.feature-badge {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: var(--weight-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-pill);
+}
+
+/* Tinted sections: full-width soft bands so the page isn't one long white
+   sheet. Roles get pale blue; reviews get the pale "positive" green. The
+   rest of the page stays white. */
+.landing-container #roles,
+.landing-container .reviews-section {
+  box-shadow: 0 0 0 100vmax var(--section-tint);
+  clip-path: inset(0 -100vmax);
+  background: var(--section-tint);
+}
+
+.landing-container #roles {
+  --section-tint: var(--color-info-bg);
+}
+
+.landing-container .reviews-section {
+  --section-tint: var(--color-success-bg);
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 56px;
+  padding-bottom: 56px;
+}
+
+@media (max-width: 768px) {
+  .landing-container .reviews-section {
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+}

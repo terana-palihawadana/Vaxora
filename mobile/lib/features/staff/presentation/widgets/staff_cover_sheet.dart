@@ -498,7 +498,7 @@ class _IncomingTile extends StatelessWidget {
               url: request.requesterPhotoUrl,
               size: 42,
               fallback: Container(
-                color: const Color(0xFFD1FAE5),
+                color: AppColors.successBg,
                 alignment: Alignment.center,
                 child: Text(
                   _initials(request.requesterName),
@@ -574,14 +574,14 @@ class _OutgoingTile extends StatelessWidget {
               : 'Request closed — the shift was removed')
         : 'Hospital declined — this shift stays yours';
     final accentColor = waiting
-        ? const Color(0xFFB2660A)
+        ? AppColors.warning
         : approved
         ? AppColors.success
         : cancelled
         ? StaffSurfaces.textSecondary
         : AppColors.error;
     final borderColor = waiting
-        ? const Color(0xFFF5B168)
+        ? AppColors.warningBorder
         : accentColor.withValues(alpha: 0.28);
     return Container(
       padding: const EdgeInsets.all(14),

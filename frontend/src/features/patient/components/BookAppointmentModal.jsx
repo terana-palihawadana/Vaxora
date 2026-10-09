@@ -35,7 +35,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
         <div className="modal-header-row">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="icon-shade icon-shade-blue"><IconSyringe size={20} /></span>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e1b4b', margin: 0 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-title)', margin: 0 }}>
               Schedule Vaccination
             </h3>
           </div>
@@ -47,10 +47,10 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
         {isSubmitted ? (
           <div style={{ textAlign: 'center', padding: '30px 10px' }}>
             <div style={{ fontSize: '3rem', marginBottom: '12px' }}>✅</div>
-            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1e1b4b', marginBottom: '6px' }}>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: 'var(--color-text-title)', marginBottom: '6px' }}>
               Appointment Reserved!
             </h3>
-            <p style={{ color: '#64748b', fontSize: '0.92rem' }}>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.92rem' }}>
               Your vaccination slot for <strong>{formData.vaccine}</strong> at{' '}
               <strong>{formData.hospital}</strong> on <strong>{formData.date}</strong> has been confirmed.
             </p>
@@ -58,7 +58,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
         ) : (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="auth-input-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '4px', display: 'block' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px', display: 'block' }}>
                 Vaccine Type *
               </label>
               <select
@@ -79,7 +79,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
             </div>
 
             <div className="auth-input-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '4px', display: 'block' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px', display: 'block' }}>
                 Vaccination Center / Hospital *
               </label>
               <select
@@ -100,7 +100,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div className="auth-input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '4px', display: 'block' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px', display: 'block' }}>
                   Preferred Date *
                 </label>
                 <input
@@ -115,7 +115,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
               </div>
 
               <div className="auth-input-group">
-                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '4px', display: 'block' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px', display: 'block' }}>
                   Time Slot *
                 </label>
                 <select
@@ -134,7 +134,7 @@ export default function BookAppointmentModal({ isOpen, onClose, onBookSuccess })
             </div>
 
             <div className="auth-input-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e1b4b', marginBottom: '4px', display: 'block' }}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px', display: 'block' }}>
                 Allergies or Medical Notes (Optional)
               </label>
               <input

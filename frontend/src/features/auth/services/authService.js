@@ -107,10 +107,11 @@ function parseErrorMessage(data) {
 async function fetchJson(endpoint, options = {}) {
   const {
     skipAuth = false,
-    skipAuthRefresh = false,
     headers: optionHeaders,
     ...fetchOptions
   } = options;
+  // apiRequest handles refresh; keep its flag out of the fetch() options.
+  delete fetchOptions.skipAuthRefresh;
 
   const headers = {
     ...(optionHeaders || {}),

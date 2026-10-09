@@ -102,16 +102,16 @@ function MedicalHistoryRow({ record }) {
     <tr key={record.id}>
       <td>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <strong style={{ color: "#1e1b4b", fontSize: "0.9rem" }}>
+          <strong style={{ color: "var(--color-text-title)", fontSize: "0.9rem" }}>
             {record.title}
           </strong>
           {hasDesc && (
-            <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+            <span style={{ fontSize: "0.78rem", color: "var(--color-text-muted)" }}>
               {hasDesc}
             </span>
           )}
           {hasIcd && (
-            <span style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-text-placeholder)" }}>
               ICD-10: {hasIcd}
             </span>
           )}
@@ -128,7 +128,7 @@ function MedicalHistoryRow({ record }) {
           {record.status || "—"}
         </span>
       </td>
-      <td style={{ fontSize: "0.82rem", color: "#64748b" }}>
+      <td style={{ fontSize: "0.82rem", color: "var(--color-text-muted)" }}>
         {record.recordedByName || "—"}
       </td>
     </tr>
@@ -399,9 +399,9 @@ export default function DoctorPatientsTab() {
             className="appointment-alert-pill"
             role="alert"
             style={{
-              background: "#fef2f2",
-              color: "#b91c1c",
-              borderColor: "#fecaca",
+              background: "var(--color-error-bg)",
+              color: "var(--color-error)",
+              borderColor: "var(--color-error-border)",
             }}
           >
             {error}
@@ -486,7 +486,7 @@ export default function DoctorPatientsTab() {
               <div
                 style={{
                   fontSize: "0.88rem",
-                  color: "#64748b",
+                  color: "var(--color-text-muted)",
                   fontWeight: 600,
                 }}
               >
@@ -634,7 +634,7 @@ export default function DoctorPatientsTab() {
                     <div
                       style={{
                         fontSize: "0.88rem",
-                        color: "#64748b",
+                        color: "var(--color-text-muted)",
                         fontWeight: 600,
                       }}
                     >
@@ -934,7 +934,7 @@ export default function DoctorPatientsTab() {
                     <div
                       style={{
                         fontSize: "0.88rem",
-                        color: "#64748b",
+                        color: "var(--color-text-muted)",
                         fontWeight: 600,
                       }}
                     >
@@ -950,9 +950,9 @@ export default function DoctorPatientsTab() {
                     <div
                       role="alert"
                       style={{
-                        background: "#fef2f2",
-                        color: "#b91c1c",
-                        border: "1px solid #fecaca",
+                        background: "var(--color-error-bg)",
+                        color: "var(--color-error)",
+                        border: "1px solid var(--color-error-border)",
                         borderRadius: "10px",
                         padding: "10px 14px",
                         marginBottom: "14px",
@@ -971,15 +971,7 @@ export default function DoctorPatientsTab() {
                       Loading medical history…
                     </p>
                   ) : !hasMedicalHistory ? (
-                    <div
-                      style={{
-                        padding: 24,
-                        textAlign: "center",
-                        fontSize: "0.9rem",
-                        color: "#64748b",
-                        fontStyle: "italic",
-                      }}
-                    >
+                    <div className="empty-state">
                       No medical history on file. Use the &quot;+ Add Medical
                       History&quot; button above to record a diagnosis, allergy,
                       medication, or surgery.
@@ -1010,7 +1002,7 @@ export default function DoctorPatientsTab() {
                                     colSpan={5}
                                     style={{
                                       fontWeight: 700,
-                                      color: "#1e1b4b",
+                                      color: "var(--color-text-title)",
                                       fontSize: "0.8rem",
                                       letterSpacing: 0.4,
                                     }}

@@ -195,7 +195,7 @@ class _InventoryHomeScreenState extends State<InventoryHomeScreen> {
                         value: '${provider.expiringCount}',
                         icon: Icons.hourglass_bottom,
                         accent: provider.expiringCount > 0
-                            ? const Color(0xFFB2660A)
+                            ? AppColors.warning
                             : AppColors.success,
                       ),
                     ],
@@ -257,7 +257,7 @@ class _InventoryHomeScreenState extends State<InventoryHomeScreen> {
                         _InvFilter(
                           label: 'Expiring',
                           selected: provider.statusFilter == 'expiring',
-                          accent: const Color(0xFFB2660A),
+                          accent: AppColors.warning,
                           onTap: () => provider.setStatusFilter('expiring'),
                         ),
                         _InvFilter(

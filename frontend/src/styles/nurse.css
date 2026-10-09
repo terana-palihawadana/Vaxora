@@ -6,20 +6,20 @@
 
 /* Nurse Role Badge & Station Headers */
 .nurse-role-pill {
-  background: #e0f2fe;
-  color: #0369a1;
+  background: var(--color-info-bg);
+  color: var(--color-accent);
   font-size: 0.72rem;
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 6px;
-  border: 1px solid #bae6fd;
+  border: 1px solid var(--color-info-border);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .nurse-avatar-btn svg circle:last-of-type,
 .nurse-avatar-btn svg path {
-  fill: #0369a1;
+  fill: var(--color-accent);
 }
 
 /* Nurse Dosage Readonly Display (Strictly non-editable) */
@@ -27,8 +27,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info-border);
   padding: 4px 10px;
   border-radius: 8px;
   font-family: inherit;
@@ -36,15 +36,15 @@
 
 .nurse-dosage-badge {
   font-weight: 700;
-  color: #0369a1;
+  color: var(--color-accent);
   font-size: 0.92rem;
 }
 
 .nurse-prescribed-tag {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #0369a1;
-  background: #e0f2fe;
+  color: var(--color-accent);
+  background: var(--color-info-bg);
   padding: 2px 6px;
   border-radius: 4px;
   display: inline-flex;
@@ -55,19 +55,19 @@
 
 .nurse-readonly-notice {
   font-size: 0.8rem;
-  color: #0369a1;
-  background: #e0f2fe;
+  color: var(--color-accent);
+  background: var(--color-info-bg);
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #bae6fd;
+  border: 1px solid var(--color-info-border);
   font-weight: 600;
 }
 
 .readonly-dosage-input {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
+  background-color: var(--color-surface-subtle) !important;
+  color: var(--color-text-body) !important;
   cursor: not-allowed !important;
-  border-color: #cbd5e1 !important;
+  border-color: var(--color-border-card) !important;
   font-weight: 600 !important;
 }
 

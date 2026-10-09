@@ -577,7 +577,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                   value: '$_waitingCount',
                   icon: Icons.pending_outlined,
                   accent: _waitingCount > 0
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
                 StaffIntroStat(
@@ -1223,13 +1223,13 @@ class _AppointmentCard extends StatelessWidget {
     final tone = _toneFor(a.uiStatus);
     final barColor = switch (tone) {
       StaffChipTone.success => AppColors.success,
-      StaffChipTone.warning => const Color(0xFFB2660A),
+      StaffChipTone.warning => AppColors.warning,
       StaffChipTone.danger => AppColors.error,
       _ => StaffSurfaces.accentBar,
     };
     final borderColor = switch (tone) {
       StaffChipTone.success => AppColors.success.withValues(alpha: 0.28),
-      StaffChipTone.warning => const Color(0xFFF5B168),
+      StaffChipTone.warning => AppColors.warningBorder,
       StaffChipTone.danger => AppColors.error.withValues(alpha: 0.28),
       _ => StaffSurfaces.cardBorder,
     };

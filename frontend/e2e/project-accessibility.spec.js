@@ -63,6 +63,17 @@ test.describe('Vaxora web app accessibility (axe-core, WCAG 2.1 AA)', () => {
       await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL(new RegExp(path.replace(/\//g, '\\/') + '$'));
 
+      // Scroll once through the page so scroll-reveal content has finished
+      // fading in before axe checks contrast.
+      await page.evaluate(async () => {
+        for (let y = 0; y < document.body.scrollHeight; y += 400) {
+          window.scrollTo(0, y);
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        window.scrollTo(0, 0);
+      });
+      await page.waitForTimeout(1500);
+
       const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
       await testInfo.attach(`axe-${label}.json`, {
         body: JSON.stringify(results.violations, null, 2),

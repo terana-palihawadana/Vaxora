@@ -277,14 +277,14 @@ export default function HospitalInventoryTab() {
         )}
 
         {errorMsg && (
-          <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
+          <div style={{ background: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', color: 'var(--color-error)', padding: '12px', borderRadius: '8px', marginBottom: '16px' }}>
             ⚠️ {errorMsg}
           </div>
         )}
 
         <div className="hospital-metrics-grid hospital-metrics-grid--4">
           <div className="hospital-stat-card">
-            <div className="hospital-stat-icon stat-icon-blue">
+            <div className="hospital-stat-icon stat-icon-slate">
               <IconSyringe size={22} />
             </div>
             <div className="hospital-stat-info">
@@ -314,7 +314,7 @@ export default function HospitalInventoryTab() {
           </div>
 
           <div className="hospital-stat-card">
-            <div className="hospital-stat-icon stat-icon-purple">
+            <div className="hospital-stat-icon stat-icon-amber">
               <IconClock size={22} />
             </div>
             <div className="hospital-stat-info">

@@ -196,6 +196,30 @@ export function IconClose(props) {
   );
 }
 
+export function IconChevronLeft(props) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M14.5 6l-6 6 6 6" {...stroke} />
+    </SvgIcon>
+  );
+}
+
+export function IconChevronRight(props) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M9.5 6l6 6-6 6" {...stroke} />
+    </SvgIcon>
+  );
+}
+
+export function IconArrowRight(props) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" {...stroke} />
+    </SvgIcon>
+  );
+}
+
 export function IconCheck(props) {
   return (
     <SvgIcon {...props}>

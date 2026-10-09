@@ -231,11 +231,11 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEDE9F8),
+                    color: AppColors.aiBg,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   alignment: Alignment.center,
-                  child: const Icon(Icons.auto_awesome, color: Color(0xFF6D5BAE)),
+                  child: const Icon(Icons.auto_awesome, color: AppColors.ai),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -258,7 +258,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
                             decoration: BoxDecoration(
                               color: _isOnline
                                   ? AppColors.success
-                                  : const Color(0xFFF59E0B),
+                                  : AppColors.warning,
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -550,7 +550,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
                   decoration: BoxDecoration(
                     color: isUser
                         ? Colors.white70
-                        : (isError ? Colors.red.shade700 : AppColors.primary),
+                        : (isError ? AppColors.error : AppColors.primary),
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -588,7 +588,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
                       fontWeight: FontWeight.w700,
                       color: isUser
                           ? Colors.white
-                          : (isError ? Colors.red.shade900 : AppColors.primary),
+                          : (isError ? AppColors.error : AppColors.primary),
                     ),
                   ),
                 ),
@@ -662,10 +662,10 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
     final List<InlineSpan> spans = [];
     final baseColor = isUser
         ? Colors.white
-        : (isError ? Colors.red.shade900 : AppColors.textTitle);
+        : (isError ? AppColors.error : AppColors.textTitle);
     final boldColor = isUser
         ? Colors.white
-        : (isError ? Colors.red.shade900 : const Color(0xFF0F172A));
+        : (isError ? AppColors.error : AppColors.textTitle);
     final baseStyle = TextStyle(
       fontSize: fontSize,
       height: 1.45,
@@ -704,7 +704,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
               decoration: BoxDecoration(
-                color: isUser ? Colors.white24 : const Color(0xFFE1E9E6),
+                color: isUser ? Colors.white24 : AppColors.borderLight,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -712,7 +712,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
                 style: TextStyle(
                   fontFamily: 'monospace',
                   fontSize: fontSize * 0.9,
-                  color: isUser ? Colors.white : const Color(0xFF0F172A),
+                  color: isUser ? Colors.white : AppColors.textTitle,
                 ),
               ),
             ),
@@ -802,7 +802,7 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
               'Fee LKR ${p.fee.toStringAsFixed(2)}',
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFFB2660A),
+                color: AppColors.warning,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -856,24 +856,24 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
+              const Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
                   'Cancellation Approval Required',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF991B1B)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.error),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEE2E2),
+                  color: AppColors.errorBg,
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFF87171), width: 0.8),
+                  border: Border.all(color: AppColors.errorBorder, width: 0.8),
                 ),
                 child: const Text(
                   'Action Needed',
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFFB91C1C)),
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.error),
                 ),
               ),
             ],

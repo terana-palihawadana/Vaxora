@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import previousIcon from "../../../assets/icons/previous.svg";
-import nextIcon from "../../../assets/icons/next.svg";
+import { IconChevronLeft, IconChevronRight } from "../../../shared/icons/AppIcons";
 import { feedbackService } from "../../../shared/services/feedbackService";
 import { deferEffectCallback } from "../../../shared/utils/deferEffectCallback.js";
 
@@ -27,9 +26,9 @@ const PLACEHOLDER_REVIEWS = [
 ];
 
 const renderStars = (rating) => (
-  <span style={{ color: "#fbbf24", fontSize: "0.9rem", letterSpacing: 1 }}>
+  <span style={{ color: "var(--color-rating)", fontSize: "0.9rem", letterSpacing: 1 }}>
     {"★".repeat(rating)}
-    <span style={{ color: "#cbd5e1" }}>{"★".repeat(5 - rating)}</span>
+    <span style={{ color: "var(--color-border-card)" }}>{"★".repeat(5 - rating)}</span>
   </span>
 );
 
@@ -84,7 +83,7 @@ export default function ReviewsSection() {
       <h2 className="reviews-title">Watch our user reviews</h2>
 
       {loading ? (
-        <p style={{ textAlign: "center", color: "#64748b", padding: 40 }}>
+        <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: 40 }}>
           Loading reviews…
         </p>
       ) : (
@@ -100,11 +99,7 @@ export default function ReviewsSection() {
               onClick={handlePrevReview}
               aria-label="Previous reviews"
             >
-              <img
-                src={previousIcon}
-                alt="Previous"
-                className="carousel-arrow"
-              />
+              <IconChevronLeft className="carousel-arrow" />
             </button>
 
             <div className="carousel-viewport">
@@ -139,9 +134,9 @@ export default function ReviewsSection() {
                         {item.category && (
                           <div
                             style={{
-                              marginTop: 8,
+                              padding: "0 20px 14px",
                               fontSize: "0.72rem",
-                              color: "#64748b",
+                              color: "var(--color-text-body)",
                             }}
                           >
                             {item.category}
@@ -160,7 +155,7 @@ export default function ReviewsSection() {
               onClick={handleNextReview}
               aria-label="Next reviews"
             >
-              <img src={nextIcon} alt="Next" className="carousel-arrow" />
+              <IconChevronRight className="carousel-arrow" />
             </button>
           </div>
 

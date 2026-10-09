@@ -195,9 +195,9 @@ export default function HospitalProfileTab() {
           style={{
             maxWidth: '960px',
             width: '100%',
-            backgroundColor: notificationType === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-            borderColor: notificationType === 'error' ? '#ef4444' : '#10b981',
-            color: notificationType === 'error' ? '#f87171' : '#34d399',
+            backgroundColor: notificationType === 'error' ? 'rgba(var(--rgb-error), 0.15)' : 'rgba(var(--rgb-success), 0.15)',
+            borderColor: notificationType === 'error' ? 'var(--color-error)' : 'var(--color-success-border)',
+            color: notificationType === 'error' ? 'var(--color-error)' : 'var(--color-success)',
           }}
         >
           {notificationType === 'error' ? '⚠️' : '✓'} {notification}
@@ -216,7 +216,7 @@ export default function HospitalProfileTab() {
                 <img
                   src={hospitalInfo.logoUrl}
                   alt={hospitalInfo.name || 'Hospital'}
-                  style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #0369a1' }}
+                  style={{ width: '150px', height: '150px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--color-accent)' }}
                 />
               ) : (
                 <svg
@@ -225,11 +225,11 @@ export default function HospitalProfileTab() {
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <circle cx="100" cy="100" r="100" fill="#d9dde3" />
-                  <circle cx="100" cy="80" r="38" fill="#525862" />
+                  <circle cx="100" cy="100" r="100" style={{ fill: "var(--color-soft-panel-deep)" }} />
+                  <circle cx="100" cy="80" r="38" style={{ fill: "var(--color-text-muted)" }} />
                   <path
                     d="M40 174C40 140.863 66.863 118 100 118C133.137 118 160 140.863 160 174"
-                    fill="#525862"
+                    style={{ fill: "var(--color-text-muted)" }}
                   />
                 </svg>
               )}
@@ -255,7 +255,7 @@ export default function HospitalProfileTab() {
                   height="18"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#1d1854"
+                  style={{ stroke: "var(--color-text-title)" }}
                   strokeWidth="2.2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -280,7 +280,7 @@ export default function HospitalProfileTab() {
                     style={{
                       fontSize: '0.8rem',
                       fontWeight: 700,
-                      color: hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? '#047857' : '#b45309',
+                      color: hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? 'var(--color-success)' : 'var(--color-warning)',
                     }}
                   >
                     ● Status: {hospitalInfo.verificationStatus === 'Approved' || hospitalInfo.verificationStatus === '1' ? 'Accredited / Verified' : 'Under Review'}
@@ -307,7 +307,7 @@ export default function HospitalProfileTab() {
                       height="18"
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#ffffff"
+                      style={{ stroke: "var(--color-text-inverse)" }}
                       strokeWidth="2.4"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -325,7 +325,7 @@ export default function HospitalProfileTab() {
                 <div className="profile-field-row">
                   <span className="profile-field-label">VAXORA CODE</span>
                   <span className="profile-field-colon">:</span>
-                  <span className="profile-field-value" style={{ fontWeight: 700, color: '#0369a1' }}>
+                  <span className="profile-field-value" style={{ fontWeight: 700, color: 'var(--color-accent)' }}>
                     {hospitalInfo.id || (loading ? 'Loading...' : 'N/A')}
                   </span>
                 </div>
@@ -440,7 +440,7 @@ export default function HospitalProfileTab() {
                         </span>
                       </a>
                     ) : (
-                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Registration Document on File</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Registration Document on File</span>
                     )}
 
                     {hospitalInfo.mohDocKey && (
@@ -479,7 +479,7 @@ export default function HospitalProfileTab() {
                   {doc.photoUrl ? (
                     <img src={doc.photoUrl} alt={doc.name} className="hospital-staff-silhouette" style={{ objectFit: 'cover' }} />
                   ) : (
-                    <IconDoctor size={40} style={{ color: '#525862' }} />
+                    <IconDoctor size={40} style={{ color: "var(--color-text-muted)" }} />
                   )}
                 </div>
                 <span className="hospital-staff-name">{doc.name}</span>
@@ -510,7 +510,7 @@ export default function HospitalProfileTab() {
                   {nurse.photoUrl ? (
                     <img src={nurse.photoUrl} alt={nurse.name} className="hospital-staff-silhouette" style={{ objectFit: 'cover' }} />
                   ) : (
-                    <IconNurse size={40} style={{ color: '#0369a1' }} />
+                    <IconNurse size={40} style={{ color: 'var(--color-accent)' }} />
                   )}
                 </div>
                 <span className="hospital-staff-name">{nurse.name}</span>
@@ -533,50 +533,21 @@ export default function HospitalProfileTab() {
 
         {/* Danger Zone Card */}
         <div
-          className="hospital-staff-section"
-          style={{
-            borderColor: 'rgba(239, 68, 68, 0.35)',
-            background: 'linear-gradient(180deg, rgba(239, 68, 68, 0.05) 0%, rgba(15, 23, 42, 0.4) 100%)',
-            borderRadius: '16px',
-            padding: '24px',
-            marginTop: '20px',
-            border: '1px solid rgba(239, 68, 68, 0.35)',
-          }}
+          className="danger-zone-card hospital-staff-section"
         >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '16px',
-            }}
+          <div className="danger-zone-row"
           >
             <div>
-              <h4 style={{ margin: '0 0 6px', color: '#ef4444', fontSize: '1.05rem', fontWeight: 700 }}>
+              <h4 className="danger-zone-title">
                 Danger Zone
               </h4>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b', maxWidth: '600px' }}>
+              <p className="danger-zone-text">
                 Permanently delete your hospital facility account, staff rosters, vaults, and inventory registrations. This action cannot be undone.
               </p>
             </div>
-            <button
+            <button className="btn-danger"
               type="button"
               onClick={() => setIsDeleteModalOpen(true)}
-              style={{
-                background: '#dc2626',
-                color: '#ffffff',
-                border: '1px solid #ef4444',
-                borderRadius: '8px',
-                padding: '10px 18px',
-                fontSize: '0.88rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: '0 2px 8px rgba(220, 38, 38, 0.3)',
-              }}
             >
               <IconTrash size={16} /> Delete Account
             </button>

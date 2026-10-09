@@ -108,8 +108,8 @@ const emptyForm = {
 
 const weekNavButtonStyle = {
   border: 'none',
-  background: '#ffffff',
-  color: '#19469d',
+  background: 'var(--color-surface)',
+  color: 'var(--color-primary)',
   fontSize: '1.1rem',
   fontWeight: 700,
   lineHeight: 1,
@@ -118,8 +118,8 @@ const weekNavButtonStyle = {
 };
 
 const roleCalendarStyle = {
-  DOCTOR: { accent: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', label: 'Doctor' },
-  NURSE: { accent: '#059669', bg: '#ecfdf5', border: '#a7f3d0', label: 'Nurse' },
+  DOCTOR: { accent: 'var(--color-ai)', bg: 'var(--color-ai-bg)', border: 'var(--color-ai-border)', label: 'Doctor' },
+  NURSE: { accent: 'var(--color-success)', bg: 'var(--color-success-bg)', border: 'var(--color-success-border)', label: 'Nurse' },
 };
 
 function normalizeProposalTime(value) {
@@ -634,7 +634,7 @@ export default function HospitalShiftsPanel() {
         <div
           className="appointment-alert-pill"
           role="alert"
-          style={{ marginBottom: '16px', background: '#fef2f2', color: '#b91c1c', borderColor: '#fecaca' }}
+          style={{ marginBottom: '16px', background: 'var(--color-error-bg)', color: 'var(--color-error)', borderColor: 'var(--color-error-border)' }}
         >
           {error}
         </div>
@@ -671,14 +671,14 @@ export default function HospitalShiftsPanel() {
               alignItems: 'center',
               gap: '8px',
               padding: '9px 18px',
-              background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)',
-              color: '#ffffff',
+              background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)',
+              color: 'var(--color-text-inverse)',
               border: 'none',
               borderRadius: '10px',
               fontSize: '14px',
               fontWeight: 700,
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)',
+              boxShadow: '0 4px 12px rgba(var(--rgb-info), 0.35)',
               transition: 'all 0.2s ease',
               flexShrink: 0,
             }}
@@ -714,7 +714,7 @@ export default function HospitalShiftsPanel() {
             flexWrap: 'wrap',
             marginBottom: '16px',
             paddingBottom: '16px',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--color-border-light)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -722,10 +722,10 @@ export default function HospitalShiftsPanel() {
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
-                border: '1px solid #cbd5e1',
+                border: '1px solid var(--color-border-card)',
                 borderRadius: '8px',
                 overflow: 'hidden',
-                background: '#ffffff',
+                background: 'var(--color-surface)',
               }}
             >
               <button
@@ -743,11 +743,11 @@ export default function HospitalShiftsPanel() {
                 onChange={(e) => setWeekStart(startOfWeek(e.target.value || hospitalToday()))}
                 style={{
                   border: 'none',
-                  borderLeft: '1px solid #e2e8f0',
-                  borderRight: '1px solid #e2e8f0',
+                  borderLeft: '1px solid var(--color-border-light)',
+                  borderRight: '1px solid var(--color-border-light)',
                   padding: '8px 10px',
                   fontSize: '0.88rem',
-                  color: '#0f172a',
+                  color: 'var(--color-text-title)',
                   outline: 'none',
                   fontFamily: 'inherit',
                 }}
@@ -780,11 +780,11 @@ export default function HospitalShiftsPanel() {
             style={{
               padding: '9px 18px',
               borderRadius: '8px',
-              border: '1px solid #19469d',
+              border: '1px solid var(--color-primary)',
               background:
-                loading || suggestingWeek || staffOptions.length === 0 ? '#e2e8f0' : '#19469d',
+                loading || suggestingWeek || staffOptions.length === 0 ? 'var(--color-border-light)' : 'var(--color-primary)',
               color:
-                loading || suggestingWeek || staffOptions.length === 0 ? '#94a3b8' : '#ffffff',
+                loading || suggestingWeek || staffOptions.length === 0 ? 'var(--color-text-placeholder)' : 'var(--color-surface)',
               fontSize: '0.88rem',
               fontWeight: 700,
               cursor:
@@ -812,7 +812,7 @@ export default function HospitalShiftsPanel() {
           <div className="hospital-stat-card">
             <div className="hospital-stat-info">
               <span className="hospital-stat-label">Low Coverage Days</span>
-              <span className="hospital-stat-value" style={{ color: '#b91c1c' }}>
+              <span className="hospital-stat-value" style={{ color: 'var(--color-error)' }}>
                 {coverage?.daysWithLowCoverage ?? 0}
               </span>
             </div>
@@ -864,14 +864,14 @@ export default function HospitalShiftsPanel() {
                     marginTop: 4,
                     maxHeight: 220,
                     overflowY: 'auto',
-                    background: '#ffffff',
-                    border: '1px solid #cbd5e1',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-card)',
                     borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(15, 23, 42, 0.08)',
+                    boxShadow: '0 8px 20px rgba(var(--rgb-primary-dark), 0.08)',
                   }}
                 >
                   {filteredStaff.length === 0 ? (
-                    <div style={{ padding: '10px 12px', color: '#64748b', fontSize: '0.85rem' }}>
+                    <div style={{ padding: '10px 12px', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                       No matching staff
                     </div>
                   ) : (
@@ -892,9 +892,9 @@ export default function HospitalShiftsPanel() {
                           textAlign: 'left',
                           padding: '8px 12px',
                           border: 'none',
-                          borderBottom: '1px solid #f1f5f9',
-                          background: form.affiliationId === opt.value ? '#eff6ff' : '#ffffff',
-                          color: '#0f172a',
+                          borderBottom: '1px solid var(--color-border-light)',
+                          background: form.affiliationId === opt.value ? 'var(--color-info-bg)' : 'var(--color-surface)',
+                          color: 'var(--color-text-title)',
                           fontSize: '0.85rem',
                           cursor: 'pointer',
                         }}
@@ -964,7 +964,7 @@ export default function HospitalShiftsPanel() {
                 ))}
               </select>
               {booths.length === 0 && (
-                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#64748b' }}>
+                <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
                   Add booths under Booths to assign stations here.
                 </p>
               )}
@@ -995,13 +995,13 @@ export default function HospitalShiftsPanel() {
             )}
           </div>
           {error && (
-            <p role="alert" style={{ margin: 0, color: '#b91c1c', fontSize: '0.85rem' }}>
+            <p role="alert" style={{ margin: 0, color: 'var(--color-error)', fontSize: '0.85rem' }}>
               {error}
             </p>
           )}
 
           {staffOptions.length === 0 && !loading && (
-            <p style={{ color: '#64748b', margin: 0 }}>
+            <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
               No active staff yet. Invite and accept affiliations in the Directory tab first.
             </p>
           )}
@@ -1016,7 +1016,7 @@ export default function HospitalShiftsPanel() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backgroundColor: 'rgba(var(--rgb-primary-dark), 0.65)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
@@ -1076,11 +1076,11 @@ export default function HospitalShiftsPanel() {
       <h3 style={{ margin: '0 0 12px' }}>Week calendar</h3>
       {loading ? (
         <div className="hospital-section-card">
-          <p style={{ color: '#64748b' }}>Loading roster...</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>Loading roster...</p>
         </div>
       ) : staffCalendarRows.length === 0 ? (
         <div className="hospital-section-card">
-          <p style={{ color: '#64748b' }}>No active staff to show on the calendar yet.</p>
+          <p style={{ color: 'var(--color-text-muted)' }}>No active staff to show on the calendar yet.</p>
         </div>
       ) : (
         <div className="shift-week-calendar">
@@ -1218,14 +1218,14 @@ export default function HospitalShiftsPanel() {
             <span className="shift-week-calendar-legend-item">
               <span
                 className="shift-week-calendar-legend-swatch"
-                style={{ background: '#6366f1' }}
+                style={{ background: 'var(--color-ai)' }}
               />
               Doctor shift
             </span>
             <span className="shift-week-calendar-legend-item">
               <span
                 className="shift-week-calendar-legend-swatch"
-                style={{ background: '#059669' }}
+                style={{ background: 'var(--color-success)' }}
               />
               Nurse shift
             </span>

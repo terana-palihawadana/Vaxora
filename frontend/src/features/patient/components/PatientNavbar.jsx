@@ -208,7 +208,7 @@ export default function PatientNavbar() {
                 </button>
               );
             })}
-            <div style={{ height: '1px', background: '#e2e8f0', margin: '6px 0' }} />
+            <div style={{ height: '1px', background: 'var(--color-soft-panel-deep)', margin: '6px 0' }} />
             <button
               type="button"
               className="portal-mobile-nav-btn"

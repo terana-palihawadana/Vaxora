@@ -90,7 +90,7 @@ export default function NurseClinicalAdministerModal({
   return (
     <div className="doctor-modal-overlay" onClick={submitting ? undefined : onClose}>
       <div className="doctor-modal-card" onClick={(e) => e.stopPropagation()}>
-        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, #0369a1 0%, #0369a1 100%)' }}>
+        <div className="doctor-modal-header" style={{ background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)' }}>
           <div>
             <h3 className="doctor-modal-title">Clinical Administration &amp; Verification</h3>
             <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'rgba(255,255,255,0.9)' }}>
@@ -105,8 +105,8 @@ export default function NurseClinicalAdministerModal({
         <form onSubmit={handleSubmit}>
           <div className="doctor-modal-body">
             <div style={{
-              background: '#f0f9ff',
-              border: '1.5px solid #bae6fd',
+              background: 'var(--color-info-bg)',
+              border: '1.5px solid var(--color-info-border)',
               borderRadius: '12px',
               padding: '14px 18px',
               marginBottom: '18px',
@@ -116,18 +116,18 @@ export default function NurseClinicalAdministerModal({
             }}>
               <div>
                 <span className="doctor-token-pill">{patient.token}</span>
-                <span style={{ fontWeight: 800, color: '#0c4a6e', fontSize: '1.05rem', marginLeft: '10px' }}>
+                <span style={{ fontWeight: 800, color: 'var(--color-info)', fontSize: '1.05rem', marginLeft: '10px' }}>
                   {patient.name}
                 </span>
-                <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '3px' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '3px' }}>
                   NIC: {patient.nic}
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '3px 8px', borderRadius: '6px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--color-accent)', fontWeight: 700, background: 'var(--color-info-bg)', padding: '3px 8px', borderRadius: '6px' }}>
                   {patient.vaccine}
                 </span>
-                <div style={{ fontSize: '0.78rem', color: '#0369a1', marginTop: '4px', fontWeight: 600 }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--color-accent)', marginTop: '4px', fontWeight: 600 }}>
                   Prescribed: {patient.dose}
                 </div>
               </div>
@@ -151,7 +151,7 @@ export default function NurseClinicalAdministerModal({
                   ))}
                 </select>
                 {usableLots.length === 0 && (
-                  <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: '#b45309' }}>
+                  <p style={{ margin: '6px 0 0', fontSize: '0.78rem', color: 'var(--color-warning)' }}>
                     No usable stock for this vaccine. Restock inventory before certifying.
                   </p>
                 )}
@@ -201,8 +201,8 @@ export default function NurseClinicalAdministerModal({
               </div>
             </div>
 
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', margin: '14px 0' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#166534', cursor: 'pointer', marginBottom: '8px' }}>
+            <div style={{ background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '10px', padding: '12px 14px', margin: '14px 0' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer', marginBottom: '8px' }}>
                 <input
                   type="checkbox"
                   checked={formData.doseConfirmed}
@@ -211,7 +211,7 @@ export default function NurseClinicalAdministerModal({
                 />
                 Prescribed dose checked against the doctor&apos;s order ({patient?.dose || 'not set'})
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#166534', cursor: 'pointer', marginBottom: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer', marginBottom: '8px' }}>
                 <input
                   type="checkbox"
                   checked={formData.consentConfirmed}
@@ -220,7 +220,7 @@ export default function NurseClinicalAdministerModal({
                 />
                 Informed patient consent verified
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: '#166534', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-success)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={formData.vitalsConfirmed}
@@ -251,7 +251,7 @@ export default function NurseClinicalAdministerModal({
             <button
               type="submit"
               className="doctor-btn-submit"
-              style={{ background: '#0369a1' }}
+              style={{ background: 'var(--color-accent)' }}
               disabled={usableLots.length === 0 || submitting}
             >
               {submitting ? 'Confirming…' : 'Confirm Dose & Transfer to Observation'}

@@ -121,9 +121,9 @@ export default function StaffAppointmentsPanel({
             maxWidth: '1060px',
             width: '100%',
             marginBottom: '20px',
-            background: '#fef2f2',
-            color: '#b91c1c',
-            borderColor: '#fecaca',
+            background: 'var(--color-error-bg)',
+            color: 'var(--color-error)',
+            borderColor: 'var(--color-error-border)',
           }}
         >
           {error}
@@ -197,7 +197,7 @@ export default function StaffAppointmentsPanel({
               </button>
             </div>
 
-            <div style={{ fontSize: '0.88rem', color: '#64748b', fontWeight: 600 }}>
+            <div style={{ fontSize: '0.88rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
               {loadingAppointments
                 ? 'Loading...'
                 : `Showing ${appointments.length} appointment${appointments.length === 1 ? '' : 's'}`}
@@ -240,7 +240,7 @@ export default function StaffAppointmentsPanel({
                           style={{
                             background: 'none',
                             border: 'none',
-                            color: '#19469d',
+                            color: 'var(--color-primary)',
                             fontWeight: 700,
                             cursor: 'pointer',
                             textDecoration: 'underline',

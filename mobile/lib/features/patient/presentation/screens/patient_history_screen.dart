@@ -156,7 +156,7 @@ class _PatientHistoryScreenState extends State<PatientHistoryScreen> {
                   label: 'Vaccines',
                   value: '$distinctVaccines',
                   icon: Icons.health_and_safety_outlined,
-                  accent: const Color(0xFF6D5BAE),
+                  accent: AppColors.ai,
                 ),
                 StaffIntroStat(
                   label: 'Last dose',

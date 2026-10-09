@@ -15,27 +15,27 @@ export function getPatientAppointmentStatusDisplay(status) {
   switch (s) {
     case 'confirmed':
     case 'accepted':
-      return { label: 'Confirmed', backgroundColor: '#dcfce7', color: '#15803d' };
+      return { label: 'Confirmed', backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' };
     case 'pendingpayment':
-      return { label: 'Awaiting payment', backgroundColor: '#fef3c7', color: '#b45309' };
+      return { label: 'Awaiting payment', backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning)' };
     case 'pending':
-      return { label: 'Pending', backgroundColor: '#fef3c7', color: '#b45309' };
+      return { label: 'Pending', backgroundColor: 'var(--color-warning-bg)', color: 'var(--color-warning)' };
     case 'administering':
     case 'insession':
-      return { label: 'In session', backgroundColor: '#e0f2fe', color: '#0369a1' };
+      return { label: 'In session', backgroundColor: 'var(--color-info-bg)', color: 'var(--color-info)' };
     case 'observation':
-      return { label: 'Observation', backgroundColor: '#f5f3ff', color: '#6d28d9' };
+      return { label: 'Observation', backgroundColor: 'var(--color-ai-bg)', color: 'var(--color-ai)' };
     case 'completed':
-      return { label: 'Completed', backgroundColor: '#dcfce7', color: '#15803d' };
+      return { label: 'Completed', backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' };
     case 'cancelled':
-      return { label: 'Cancelled', backgroundColor: '#fee2e2', color: '#b91c1c' };
+      return { label: 'Cancelled', backgroundColor: 'var(--color-error-bg)', color: 'var(--color-error)' };
     case 'rejected':
-      return { label: 'Rejected', backgroundColor: '#fee2e2', color: '#b91c1c' };
+      return { label: 'Rejected', backgroundColor: 'var(--color-error-bg)', color: 'var(--color-error)' };
     default:
       return {
         label: status || 'Unknown',
-        backgroundColor: '#f1f5f9',
-        color: '#475569',
+        backgroundColor: 'var(--color-surface-subtle)',
+        color: 'var(--color-text-body)',
       };
   }
 }

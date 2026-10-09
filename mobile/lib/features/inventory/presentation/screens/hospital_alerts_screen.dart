@@ -108,7 +108,7 @@ class _AlertsBodyState extends State<_AlertsBody> {
                   value: '${expiring.length}',
                   icon: Icons.hourglass_bottom,
                   accent: expiring.isNotEmpty
-                      ? const Color(0xFFB2660A)
+                      ? AppColors.warning
                       : AppColors.success,
                 ),
                 StaffIntroStat(
@@ -199,7 +199,7 @@ class _AlertsBodyState extends State<_AlertsBody> {
             padding: const EdgeInsets.all(14),
             decoration: StaffSurfaces.card(
               borderColor: type == 'expiring'
-                  ? const Color(0xFFF5B168)
+                  ? AppColors.warningBorder
                   : AppColors.error.withValues(alpha: 0.3),
             ),
             child: Row(
@@ -209,7 +209,7 @@ class _AlertsBodyState extends State<_AlertsBody> {
                   height: 36,
                   decoration: BoxDecoration(
                     color: type == 'expiring'
-                        ? const Color(0xFFFFF4E5)
+                        ? AppColors.warningBg
                         : AppColors.errorBg,
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -221,7 +221,7 @@ class _AlertsBodyState extends State<_AlertsBody> {
                             : Icons.trending_down,
                     size: 18,
                     color: type == 'expiring'
-                        ? const Color(0xFFB2660A)
+                        ? AppColors.warning
                         : AppColors.error,
                   ),
                 ),

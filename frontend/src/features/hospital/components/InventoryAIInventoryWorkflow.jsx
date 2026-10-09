@@ -9,7 +9,7 @@ const PRESET_ACTIONS = [
     title: 'Scan Expiring Batches',
     description: 'Find batches nearing expiry and generate a rescue memo',
     objective: 'Which batches are about to expire?',
-    color: '#7c3aed',
+    color: 'var(--color-ai)',
   },
   {
     id: 'restock',
@@ -17,7 +17,7 @@ const PRESET_ACTIONS = [
     title: 'Suggest Restocks',
     description: 'Analyze stock levels and generate a draft purchase order',
     objective: 'Which vaccines do we need to restock?',
-    color: '#1e40af',
+    color: 'var(--color-primary)',
   },
 ];
 
@@ -117,7 +117,7 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
             <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>🤖</span> AI Inventory Agent
             </h3>
-            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
               Run an agent to draft a formal document for your review
             </p>
           </div>
@@ -132,14 +132,14 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
                   key={a.id}
                   type="button"
                   onClick={() => handleRun(a)}
-                  style={{ textAlign: 'left', padding: '20px', borderRadius: '12px', border: '2px solid #e2e8f0', background: '#ffffff', cursor: 'pointer', transition: 'all 0.15s' }}
+                  style={{ textAlign: 'left', padding: '20px', borderRadius: '12px', border: '2px solid var(--color-border-light)', background: 'var(--color-surface)', cursor: 'pointer', transition: 'all 0.15s' }}
                   onMouseEnter={(e) => { e.currentTarget.style.borderColor = a.color; e.currentTarget.style.transform = 'translateY(-2px)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.transform = 'translateY(0)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
                 >
                   <div style={{ fontSize: '2rem', marginBottom: '8px' }}>{a.icon}</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{a.title}</div>
-                  <div style={{ fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>{a.description}</div>
-                  <div style={{ marginTop: '14px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: a.color, color: '#fff', padding: '6px 14px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 700 }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-title)', marginBottom: '4px' }}>{a.title}</div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>{a.description}</div>
+                  <div style={{ marginTop: '14px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: a.color, color: 'var(--color-text-inverse)', padding: '6px 14px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: 700 }}>
                     ▶ Run Agent
                   </div>
                 </button>
@@ -150,13 +150,13 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
           {status === 'running' && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🤖</div>
-              <h3 style={{ margin: '0 0 8px', color: '#1e40af' }}>Agent is working…</h3>
-              <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--color-primary)' }}>Agent is working…</h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
                 {activeAction?.title || 'Running'} — planning, calling tools, validating
               </p>
               <div style={{ maxWidth: '300px', margin: '0 auto' }}>
-                <div style={{ height: '4px', background: '#e2e8f0', borderRadius: '2px', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: '40%', background: '#7c3aed', animation: 'pulse 1.2s ease-in-out infinite' }} />
+                <div style={{ height: '4px', background: 'var(--color-soft-panel-deep)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: '40%', background: 'var(--color-ai)', animation: 'pulse 1.2s ease-in-out infinite' }} />
                 </div>
               </div>
             </div>
@@ -167,13 +167,13 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
               {agentResponse.draft ? (
                 <InventoryDraftDocument draft={agentResponse.draft} onApprove={handleApprove} onReject={handleReject} disabled={false} />
               ) : (
-                <div style={{ padding: '40px 20px', textAlign: 'center', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px' }}>
+                <div style={{ padding: '40px 20px', textAlign: 'center', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '10px' }}>
                   <div style={{ fontSize: '2rem', marginBottom: '12px' }}>✅</div>
-                  <h3 style={{ margin: '0 0 8px', color: '#166534' }}>No Action Needed</h3>
-                  <p style={{ color: '#15803d', fontSize: '0.9rem', margin: 0 }}>
+                  <h3 style={{ margin: '0 0 8px', color: 'var(--color-success)' }}>No Action Needed</h3>
+                  <p style={{ color: 'var(--color-success)', fontSize: '0.9rem', margin: 0 }}>
                     {agentResponse.content || 'The agent found nothing that requires your attention.'}
                   </p>
-                  <button type="button" onClick={reset} style={{ marginTop: '16px', padding: '8px 16px', background: '#166534', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>
+                  <button type="button" onClick={reset} style={{ marginTop: '16px', padding: '8px 16px', background: 'var(--color-success)', color: 'var(--color-text-inverse)', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer' }}>
                     Run Another
                   </button>
                 </div>
@@ -184,42 +184,42 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
           {status === 'executing' && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
               <div style={{ fontSize: '2rem', marginBottom: '12px' }}>⏳</div>
-              <h3 style={{ margin: '0 0 8px', color: '#1e40af' }}>Executing draft…</h3>
-              <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Creating audit log and inventory records</p>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--color-primary)' }}>Executing draft…</h3>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Creating audit log and inventory records</p>
             </div>
           )}
 
           {status === 'executed' && (
-            <div style={{ padding: '40px 20px', textAlign: 'center', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '10px' }}>
               <div style={{ fontSize: '3rem', marginBottom: '12px' }}>✅</div>
-              <h3 style={{ margin: '0 0 8px', color: '#166534' }}>Executed Successfully</h3>
-              <p style={{ color: '#15803d', fontSize: '0.9rem', marginBottom: '20px' }}>{successMsg}</p>
-              <button type="button" onClick={reset} style={{ padding: '10px 22px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--color-success)' }}>Executed Successfully</h3>
+              <p style={{ color: 'var(--color-success)', fontSize: '0.9rem', marginBottom: '20px' }}>{successMsg}</p>
+              <button type="button" onClick={reset} style={{ padding: '10px 22px', background: 'var(--color-success)', color: 'var(--color-text-inverse)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
                 Run Another Agent
               </button>
             </div>
           )}
 
           {status === 'error' && (
-            <div style={{ padding: '40px 20px', textAlign: 'center', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '10px' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', background: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: '10px' }}>
               <div style={{ fontSize: '2rem', marginBottom: '12px' }}>⚠️</div>
-              <h3 style={{ margin: '0 0 8px', color: '#991b1b' }}>Agent Failed</h3>
-              <p style={{ color: '#b91c1c', fontSize: '0.9rem', marginBottom: '20px' }}>{errorMsg}</p>
-              <button type="button" onClick={reset} style={{ padding: '10px 22px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+              <h3 style={{ margin: '0 0 8px', color: 'var(--color-error)' }}>Agent Failed</h3>
+              <p style={{ color: 'var(--color-error)', fontSize: '0.9rem', marginBottom: '20px' }}>{errorMsg}</p>
+              <button type="button" onClick={reset} style={{ padding: '10px 22px', background: 'var(--color-error)', color: 'var(--color-text-inverse)', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
                 Try Again
               </button>
             </div>
           )}
 
           {errorMsg && status === 'completed' && (
-            <div style={{ marginTop: '16px', padding: '12px', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', color: '#991b1b', fontSize: '0.85rem' }}>
+            <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-error-bg)', border: '1px solid var(--color-error-border)', borderRadius: '8px', color: 'var(--color-error)', fontSize: '0.85rem' }}>
               ⚠️ {errorMsg}
             </div>
           )}
         </div>
 
         {status === 'idle' && (
-          <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', fontSize: '0.78rem', color: '#64748b' }}>
+          <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border-light)', background: 'var(--color-bg)', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
             Powered by AI Multi-Agent Intelligence • All drafts require your approval before any data is changed
           </div>
         )}

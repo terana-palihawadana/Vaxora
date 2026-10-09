@@ -36,7 +36,7 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
         left: 0,
         width: '100vw',
         height: '100vh',
-        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+        backgroundColor: 'rgba(var(--rgb-primary-dark), 0.8)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',
@@ -50,11 +50,11 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
     >
       <div
         style={{
-          background: '#0c1322',
-          color: '#ffffff',
+          background: 'var(--color-primary-deep)',
+          color: 'var(--color-text-inverse)',
           borderRadius: '16px',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(239, 68, 68, 0.25)',
+          border: '1px solid rgba(var(--rgb-error), 0.4)',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 35px rgba(var(--rgb-error), 0.25)',
           maxWidth: '480px',
           width: '100%',
           padding: '28px',
@@ -71,8 +71,8 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
               width: '48px',
               height: '48px',
               borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'rgba(var(--rgb-error), 0.15)',
+              border: '1px solid rgba(var(--rgb-error), 0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -88,13 +88,13 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
                 margin: 0,
                 fontSize: '1.25rem',
                 fontWeight: 800,
-                color: '#ffffff',
+                color: 'var(--color-text-inverse)',
                 fontFamily: 'var(--font-heading, "Outfit", sans-serif)',
               }}
             >
               Delete Account
             </h3>
-            <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#94a3b8' }}>
+            <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: 'var(--color-text-placeholder)' }}>
               Permanent action for {roleName || 'User'}
             </p>
           </div>
@@ -104,9 +104,9 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
         {error && (
           <div
             style={{
-              background: 'rgba(239, 68, 68, 0.15)',
-              border: '1px solid #ef4444',
-              color: '#fca5a5',
+              background: 'rgba(var(--rgb-error), 0.15)',
+              border: '1px solid var(--color-error)',
+              color: 'var(--color-error)',
               padding: '10px 12px',
               borderRadius: '8px',
               fontSize: '0.84rem',
@@ -122,7 +122,7 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
           style={{
             fontSize: '0.88rem',
             lineHeight: 1.5,
-            color: '#cbd5e1',
+            color: 'var(--color-border-card)',
             marginBottom: '20px',
             background: 'rgba(255, 255, 255, 0.03)',
             padding: '14px',
@@ -130,10 +130,10 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
             border: '1px solid rgba(255, 255, 255, 0.06)',
           }}
         >
-          <p style={{ margin: '0 0 8px', fontWeight: 600, color: '#f87171' }}>
+          <p style={{ margin: '0 0 8px', fontWeight: 600, color: 'var(--color-error)' }}>
             Are you sure you want to delete the account for "{userName || 'this profile'}"?
           </p>
-          <p style={{ margin: 0, fontSize: '0.82rem', color: '#94a3b8' }}>
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--color-text-placeholder)' }}>
             This will permanently remove your profile, registration details, documents, and credentials from the Vaxora database. This action cannot be undone.
           </p>
         </div>
@@ -145,9 +145,9 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
             onClick={onClose}
             disabled={loading}
             style={{
-              background: '#1e293b',
-              color: '#e2e8f0',
-              border: '1px solid #334155',
+              background: 'var(--color-primary-dark)',
+              color: 'var(--color-border-light)',
+              border: '1px solid var(--color-text-body)',
               borderRadius: '8px',
               padding: '9px 18px',
               fontSize: '0.88rem',
@@ -164,15 +164,15 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
             onClick={handleDelete}
             disabled={loading}
             style={{
-              background: '#dc2626',
-              color: '#ffffff',
-              border: '1px solid #ef4444',
+              background: 'var(--color-error)',
+              color: 'var(--color-text-inverse)',
+              border: '1px solid var(--color-error)',
               borderRadius: '8px',
               padding: '9px 20px',
               fontSize: '0.88rem',
               fontWeight: 700,
               cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 4px 14px rgba(220, 38, 38, 0.4)',
+              boxShadow: '0 4px 14px rgba(var(--rgb-error), 0.4)',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
