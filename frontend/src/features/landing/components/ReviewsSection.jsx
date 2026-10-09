@@ -136,7 +136,7 @@ export default function ReviewsSection() {
                             style={{
                               padding: "0 20px 14px",
                               fontSize: "0.72rem",
-                              color: "var(--color-text-muted)",
+                              color: "var(--color-text-body)",
                             }}
                           >
                             {item.category}
