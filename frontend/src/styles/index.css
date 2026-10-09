@@ -4,6 +4,7 @@
 
 /* 1. Design System Tokens & Custom Properties */
 @import './variables.css';
+@import './tones.css';
 
 /* 2. CSS Reset & Typography Base */
 @import './reset.css';
@@ -75,37 +76,18 @@
   border-radius: 10px;
 }
 
+/* Colour comes from the shared tone (icon-shade-* classes are tone aliases,
+   see tones.css). */
 .icon-shade-blue,
-.section-title-icon {
-  background: var(--color-info-bg);
-  color: var(--color-info);
-}
-
 .icon-shade-teal,
-.section-title-icon--teal,
+.icon-shade-amber,
+.icon-shade-purple,
+.icon-shade-green,
+.icon-shade-slate,
+.section-title-icon,
 .cold-chain-icon {
-  background: var(--color-soft-panel);
-  color: var(--color-primary);
-}
-
-.icon-shade-amber {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-}
-
-.icon-shade-purple {
-  background: var(--color-ai-bg);
-  color: var(--color-ai);
-}
-
-.icon-shade-green {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.icon-shade-slate {
-  background: var(--color-surface-subtle);
-  color: var(--color-text-body);
+  background: var(--tone-bg);
+  color: var(--tone);
 }
 
 .section-title-icon {

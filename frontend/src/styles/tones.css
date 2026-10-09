@@ -1,0 +1,86 @@
+/* ==========================================================================
+   Vaxora colour language (shared by every page)
+   Each tone has one meaning, so colour tells users something:
+     teal   brand, anything clickable
+     blue   appointments, schedules, rosters
+     green  done and healthy (doses given, stock OK)
+     amber  needs attention (pending, due, low stock)
+     purple anything AI
+     slate  admin and settings
+     red    errors and danger only
+   A tone class only sets variables (--tone, --tone-bg, --tone-border);
+   components decide how to use them. Older icon classes (icon-shade-*,
+   stat-icon-*) are aliases so the whole app speaks the same language.
+   Blue comes before teal so a "--teal" modifier wins on shared elements.
+   ========================================================================== */
+
+.tone-blue,
+.icon-shade-blue,
+.stat-icon-blue,
+.section-title-icon {
+  --tone: var(--color-info);
+  --tone-bg: var(--color-info-bg);
+  --tone-border: var(--color-info-border);
+}
+
+.tone-teal,
+.icon-shade-teal,
+.stat-icon-teal,
+.section-title-icon--teal,
+.cold-chain-icon {
+  --tone: var(--color-primary);
+  --tone-bg: var(--color-soft-panel);
+  --tone-border: var(--color-soft-panel-deep);
+}
+
+.tone-green,
+.icon-shade-green,
+.stat-icon-green {
+  --tone: var(--color-success);
+  --tone-bg: var(--color-success-bg);
+  --tone-border: var(--color-success-border);
+}
+
+.tone-amber,
+.icon-shade-amber,
+.stat-icon-amber {
+  --tone: var(--color-warning);
+  --tone-bg: var(--color-warning-bg);
+  --tone-border: var(--color-warning-border);
+}
+
+.tone-purple,
+.icon-shade-purple,
+.stat-icon-purple {
+  --tone: var(--color-ai);
+  --tone-bg: var(--color-ai-bg);
+  --tone-border: var(--color-ai-border);
+}
+
+.tone-slate,
+.icon-shade-slate,
+.stat-icon-slate {
+  --tone: var(--color-primary-dark);
+  --tone-bg: var(--color-surface-subtle);
+  --tone-border: var(--color-border-card);
+}
+
+.tone-red,
+.stat-icon-red {
+  --tone: var(--color-error);
+  --tone-bg: var(--color-error-bg);
+  --tone-border: var(--color-error-border);
+}
+
+/* Generic icon tile in a tone */
+.tone-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  color: var(--tone, var(--color-primary));
+  background: var(--tone-bg, var(--color-soft-panel));
+  border-radius: var(--radius-md);
+}

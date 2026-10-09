@@ -1,45 +1,8 @@
 /* ==========================================================================
    Landing page accent colours
-   Teal stays the brand and the colour of everything clickable. These tones
-   reuse the app's existing status/AI tokens (the same ones behind the
-   portals' icon-shade-* tiles) to tell sections and items apart.
+   Teal stays the brand and the colour of everything clickable. The tone-*
+   classes come from the shared colour language in tones.css.
    ========================================================================== */
-
-.landing-container .tone-teal {
-  --tone: var(--color-primary);
-  --tone-bg: var(--color-soft-panel);
-  --tone-border: var(--color-soft-panel-deep);
-}
-
-.landing-container .tone-blue {
-  --tone: var(--color-info);
-  --tone-bg: var(--color-info-bg);
-  --tone-border: var(--color-info-border);
-}
-
-.landing-container .tone-green {
-  --tone: var(--color-success);
-  --tone-bg: var(--color-success-bg);
-  --tone-border: var(--color-success-border);
-}
-
-.landing-container .tone-amber {
-  --tone: var(--color-warning);
-  --tone-bg: var(--color-warning-bg);
-  --tone-border: var(--color-warning-border);
-}
-
-.landing-container .tone-purple {
-  --tone: var(--color-ai);
-  --tone-bg: var(--color-ai-bg);
-  --tone-border: var(--color-ai-border);
-}
-
-.landing-container .tone-slate {
-  --tone: var(--color-primary-dark);
-  --tone-bg: var(--color-surface-subtle);
-  --tone-border: var(--color-border-card);
-}
 
 /* Icon tiles, bullets and hover borders follow the card's tone */
 .landing-container .feature-card .feature-icon,
