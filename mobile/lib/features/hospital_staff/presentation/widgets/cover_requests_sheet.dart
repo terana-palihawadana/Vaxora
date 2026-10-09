@@ -65,6 +65,18 @@ class _CoverRequestsSheetState extends State<CoverRequestsSheet> {
     String? replacementAffiliationId,
   }) async {
     if (_decidingId != null) return;
+    final ok = await confirmAction(
+      context,
+      title: approved ? 'Assign cover?' : 'Decline cover request?',
+      message: approved
+          ? 'Assign a replacement for ${request.requesterName}\'s shift on ${request.shiftDate}? '
+              'The original staff member will be covered.'
+          : 'Decline cover for ${request.requesterName} on ${request.shiftDate}? '
+              'They will stay assigned to this shift.',
+      confirmLabel: approved ? 'Assign cover' : 'Decline',
+      destructive: !approved,
+    );
+    if (!ok || !mounted) return;
     setState(() => _decidingId = request.id);
     try {
       final updated = await HospitalStaffRepository.decideShiftSwap(

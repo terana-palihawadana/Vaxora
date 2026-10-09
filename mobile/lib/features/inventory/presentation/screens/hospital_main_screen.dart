@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../hospital_staff/presentation/screens/hospital_booths_screen.dart';
 import '../../../hospital_staff/presentation/screens/hospital_staff_screen.dart';
 import '../../../staff/presentation/widgets/staff_common_widgets.dart';
 import '../providers/inventory_provider.dart';
+import 'hospital_desk_screen.dart';
 import 'hospital_home_screen.dart';
 import 'hospital_profile_screen.dart';
 import 'inventory_home_screen.dart';
@@ -29,7 +31,9 @@ class _HospitalMainScreenState extends State<HospitalMainScreen> {
             HospitalHomeScreen(
               onNavigateTab: (i) => setState(() => _index = i),
             ),
+            const HospitalDeskScreen(),
             const HospitalStaffScreen(),
+            const HospitalBoothsScreen(),
             const InventoryHomeScreen(),
             const HospitalProfileScreen(),
           ],
@@ -44,14 +48,24 @@ class _HospitalMainScreenState extends State<HospitalMainScreen> {
               label: 'Home',
             ),
             StaffNavDestination(
+              icon: Icons.event_note_outlined,
+              activeIcon: Icons.event_note,
+              label: 'Desk',
+            ),
+            StaffNavDestination(
               icon: Icons.groups_outlined,
               activeIcon: Icons.groups,
               label: 'Staff',
             ),
             StaffNavDestination(
+              icon: Icons.meeting_room_outlined,
+              activeIcon: Icons.meeting_room,
+              label: 'Booths',
+            ),
+            StaffNavDestination(
               icon: Icons.inventory_2_outlined,
               activeIcon: Icons.inventory_2,
-              label: 'Inventory',
+              label: 'Stock',
             ),
             StaffNavDestination(
               icon: Icons.person_outline,

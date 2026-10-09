@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_colors.dart';
+import '../../../staff/presentation/widgets/staff_common_widgets.dart';
 import '../../data/repositories/auth_repository.dart';
 import 'login_screen.dart';
 
@@ -16,6 +17,16 @@ class _UnsupportedRoleScreenState extends State<UnsupportedRoleScreen> {
   String? _errorMessage;
 
   Future<void> _signOut() async {
+    final ok = await confirmAction(
+      context,
+      title: 'Log out?',
+      message: 'You will need to sign in again with a supported account.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+
     setState(() {
       _isSigningOut = true;
       _errorMessage = null;

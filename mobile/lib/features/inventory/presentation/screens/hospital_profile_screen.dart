@@ -226,13 +226,21 @@ class _HospitalProfileScreenState extends State<HospitalProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final ok = await confirmAction(
+      context,
+      title: 'Log out?',
+      message: 'You will need to sign in again to manage this hospital.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
     await AuthRepository.logout();
-    if (mounted) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   void _deleteAccount() {

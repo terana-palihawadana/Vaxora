@@ -8,6 +8,7 @@ import '../../../staff/presentation/utils/staff_date_utils.dart';
 import '../../../staff/presentation/widgets/network_avatar.dart';
 import '../../../staff/presentation/widgets/staff_common_widgets.dart';
 import '../../data/repositories/hospital_staff_repository.dart';
+import 'staff_scheduling_agent_screen.dart';
 
 /// Hospital-side view: every staff shift at this hospital for the selected week.
 class HospitalShiftsScreen extends StatefulWidget {
@@ -134,11 +135,51 @@ class _HospitalShiftsScreenState extends State<HospitalShiftsScreen> {
         photoUrl: _hospitalLogoUrl,
         actions: [
           StaffHeaderAction(
+            icon: Icons.auto_awesome,
+            tooltip: 'Scheduling agent',
+            onPressed: _loading
+                ? null
+                : () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => StaffSchedulingAgentScreen(
+                          weekStart: _from,
+                          weekEnd: _to,
+                        ),
+                      ),
+                    );
+                    if (mounted) await _load();
+                  },
+          ),
+          StaffHeaderAction(
             icon: Icons.refresh,
             tooltip: 'Refresh',
             onPressed: _loading ? null : _load,
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _loading
+            ? null
+            : () async {
+                await Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => StaffSchedulingAgentScreen(
+                      weekStart: _from,
+                      weekEnd: _to,
+                      autoSuggest: true,
+                    ),
+                  ),
+                );
+                if (mounted) await _load();
+              },
+        backgroundColor: StaffSurfaces.cta,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.auto_awesome),
+        label: const Text(
+          'Suggest week',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _load,

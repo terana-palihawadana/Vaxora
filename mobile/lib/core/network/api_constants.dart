@@ -102,10 +102,16 @@ class ApiConstants {
   static const String hospitalStaffCandidates = '/staff/candidates';
   static const String hospitalStaffInvite = '/staff/invite';
   static const String hospitalStaffShifts = '/staff/shifts/hospital';
+  static const String hospitalCreateShift = '/staff/shifts';
+  static const String hospitalSuggestWeek = '/staff/shifts/suggest-week';
   static const String hospitalShiftSwaps = '/staff/shift-swaps/hospital';
   static const String staffShiftSwaps = '/staff/shift-swaps';
   static const String staffMyShiftSwaps = '/staff/shift-swaps/mine';
   static const String staffShiftSwapQuota = '/staff/shift-swaps/quota';
+
+  static String hospitalShift(String shiftId) => '/staff/shifts/$shiftId';
+  static String agentWorkflowDecision(String workflowId) =>
+      '/agent/workflows/$workflowId/decision';
 
   static String hospitalShiftSwapRank(String requestId) =>
       '/staff/shift-swaps/$requestId/rank';
@@ -117,9 +123,31 @@ class ApiConstants {
   static String hospitalAffiliation(String affiliationId) =>
       '/staff/affiliations/$affiliationId';
 
+  static const String hospitalBooths = '/staff/booths';
+  static String hospitalBooth(String boothId) => '/staff/booths/$boothId';
+
+  static const String hospitalSchedules = '/schedule/hospital';
+  static const String createSchedule = '/schedule';
+  static String cancelSchedule(String id) => '/schedule/$id';
+
+  static const String clinicalPatientsSearch = '/clinical/patients/search';
+  static String clinicalPatientByVaxoraId(String vaxoraId) =>
+      '/clinical/patients/${Uri.encodeComponent(vaxoraId)}';
+
   static String appointmentStatus(String id) => '/appointments/$id/status';
   static String appointmentCheckIn(String id) => '/appointments/$id/check-in';
   static String appointmentAefi(String id) => '/appointments/$id/aefi';
   static String appointmentDosage(String id) =>
       '/clinical/appointments/$id/dosage';
+  static String appointmentStaffContact(String id) =>
+      '/appointments/$id/staff-contact';
+
+  /// Hospital desk queue (owner account — not staff affiliations).
+  static const String hospitalAppointments = '/appointments/hospital';
+  static const String hospitalWalkIn = '/appointments/hospital/walk-in';
+
+  static String patientMedicalTimeline(String patientProfileId) =>
+      '/patient-medical-history/patients/$patientProfileId/timeline';
+  static String patientVaccinationTimeline(String patientProfileId) =>
+      '/patient-vaccinations/patients/$patientProfileId/timeline';
 }

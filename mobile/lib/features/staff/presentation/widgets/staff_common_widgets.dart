@@ -945,3 +945,61 @@ class _StaffNavItem extends StatelessWidget {
     );
   }
 }
+
+/// Confirm dialog matching patient Log out? styling.
+/// Returns `true` only when the user taps the confirm action.
+Future<bool> confirmAction(
+  BuildContext context, {
+  required String title,
+  required String message,
+  String cancelLabel = 'Cancel',
+  String confirmLabel = 'Confirm',
+  bool destructive = false,
+}) async {
+  final ok = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: StaffSurfaces.cardBg,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(StaffSurfaces.cardRadius),
+      ),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          color: destructive ? AppColors.error : StaffSurfaces.textPrimary,
+        ),
+      ),
+      content: Text(
+        message,
+        style: const TextStyle(
+          fontSize: 13.5,
+          height: 1.4,
+          color: StaffSurfaces.textSecondary,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx, false),
+          child: Text(
+            cancelLabel,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: StaffSurfaces.textSecondary,
+            ),
+          ),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(ctx, true),
+          style: FilledButton.styleFrom(
+            backgroundColor:
+                destructive ? AppColors.error : StaffSurfaces.cta,
+            elevation: 0,
+          ),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  return ok == true;
+}
