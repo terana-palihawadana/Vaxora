@@ -113,6 +113,51 @@ const COVER_STATUS_TONE = {
   'is-cancelled': 'is-grey',
 };
 
+const COVER_RANGES = [
+  { key: 'recent', label: '30 days', title: 'Past 30 days and upcoming' },
+  { key: 'upcoming', label: 'Upcoming', title: 'From today on' },
+  { key: 'all', label: 'All', title: 'Every cover request' },
+];
+
+const COVER_STATUSES = [
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'declined', label: 'Declined' },
+  { key: 'cancelled', label: 'Cancelled' },
+];
+
+const COVER_LANE_LIMIT = 4;
+
+function coverDay(request) {
+  return String(request?.shiftDate || '').slice(0, 10);
+}
+
+function coverStatusKey(status, fallback = 'pending') {
+  const s = String(status || fallback).toLowerCase();
+  if (s === 'covering') return 'approved';
+  if (s === 'requested') return 'pending';
+  return s;
+}
+
+/** Upcoming covers soonest first, then past covers most recent first. */
+function sortCovers(rows, today) {
+  const upcoming = rows.filter((r) => coverDay(r) >= today).sort((a, b) => coverDay(a).localeCompare(coverDay(b)));
+  const past = rows.filter((r) => coverDay(r) < today).sort((a, b) => coverDay(b).localeCompare(coverDay(a)));
+  return [...upcoming, ...past];
+}
+
+function coverDateParts(request) {
+  const day = coverDay(request);
+  if (!day) return null;
+  const date = new Date(`${day}T00:00:00`);
+  return {
+    weekday: date.toLocaleDateString(undefined, { weekday: 'short' }),
+    day: date.getDate(),
+    month: date.toLocaleDateString(undefined, { month: 'short' }),
+  };
+}
+
 function isShiftFinished(shift, today) {
   const day = String(shift?.shiftDate || '').slice(0, 10);
   if (!day) return true;
@@ -212,6 +257,10 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverSubmitting, setCoverSubmitting] = useState(false);
   const [coverError, setCoverError] = useState('');
+  const [coverRange, setCoverRange] = useState('recent');
+  const [coverStatusFilter, setCoverStatusFilter] = useState('all');
+  const [coverHospital, setCoverHospital] = useState('all');
+  const [expandedLanes, setExpandedLanes] = useState({});
   const toastTimerRef = useRef(null);
 
   const weekEnd = useMemo(() => addHospitalDays(weekStart, 6), [weekStart]);
@@ -255,6 +304,44 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
   const pendingOutgoing = outgoingCovers.filter(
     (r) => String(r.status || '').toLowerCase() === 'pending'
   ).length;
+
+  const coverHospitals = useMemo(
+    () => [...new Set(coverRequests.map((r) => r.hospitalName).filter(Boolean))].sort(),
+    [coverRequests]
+  );
+
+  // Range and hospital narrow the set; status counts are taken from what is left.
+  const coverInScope = useCallback(
+    (req) => {
+      const day = coverDay(req);
+      if (coverRange === 'upcoming' && !(day && day >= today)) return false;
+      if (coverRange === 'recent' && day && day < addHospitalDays(today, -30)) return false;
+      if (coverHospital !== 'all' && req.hospitalName !== coverHospital) return false;
+      return true;
+    },
+    [coverRange, coverHospital, today]
+  );
+
+  const coverStatusCounts = useMemo(() => {
+    const counts = { all: 0 };
+    coverRequests.filter(coverInScope).forEach((req) => {
+      const fallback = String(req.direction || '').toLowerCase() === 'incoming' ? 'approved' : 'pending';
+      const key = coverStatusKey(req.status, fallback);
+      counts.all += 1;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [coverRequests, coverInScope]);
+
+  const filterCoverLane = (rows, fallback) =>
+    sortCovers(
+      rows.filter(
+        (req) =>
+          coverInScope(req) &&
+          (coverStatusFilter === 'all' || coverStatusKey(req.status, fallback) === coverStatusFilter)
+      ),
+      today
+    );
 
   const showToast = (message) => {
     setToast(message);
@@ -564,6 +651,52 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
               </p>
             </div>
 
+            <div className="staff-cover-toolbar" aria-label="Filter cover requests">
+              <div className="staff-cover-seg" role="group" aria-label="Date range">
+                {COVER_RANGES.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.key}
+                    title={opt.title}
+                    className={`staff-cover-seg-btn${coverRange === opt.key ? ' is-active' : ''}`}
+                    aria-pressed={coverRange === opt.key}
+                    onClick={() => setCoverRange(opt.key)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="staff-cover-seg" role="group" aria-label="Status">
+                {COVER_STATUSES.map((opt) => (
+                  <button
+                    type="button"
+                    key={opt.key}
+                    className={`staff-cover-seg-btn${coverStatusFilter === opt.key ? ' is-active' : ''}`}
+                    aria-pressed={coverStatusFilter === opt.key}
+                    onClick={() => setCoverStatusFilter(opt.key)}
+                  >
+                    {opt.label}
+                    <span className="staff-cover-seg-count">{coverStatusCounts[opt.key] || 0}</span>
+                  </button>
+                ))}
+              </div>
+
+              {coverHospitals.length > 1 ? (
+                <select
+                  className="staff-cover-select"
+                  aria-label="Hospital"
+                  value={coverHospital}
+                  onChange={(e) => setCoverHospital(e.target.value)}
+                >
+                  <option value="all">All hospitals</option>
+                  {coverHospitals.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+
             {loading ? (
               <p className="staff-cover-quiet">Loading cover requests...</p>
             ) : (
@@ -572,6 +705,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
                   {
                     key: 'out',
                     title: 'You asked for cover',
+                    icon: <IconRepeat size={16} aria-hidden="true" />,
                     rows: outgoingCovers,
                     empty: 'You have not asked for cover yet.',
                     fallbackStatus: 'Pending',
@@ -585,44 +719,87 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
                   {
                     key: 'in',
                     title: "You're covering",
+                    icon: <IconHospital size={16} aria-hidden="true" />,
                     rows: incomingCovers,
                     empty: 'No shifts handed to you.',
                     fallbackStatus: 'Approved',
                     note: (req) => `For ${req.requesterName || 'a colleague'}`,
                   },
-                ].map((lane) => (
-                  <section key={lane.key} className="staff-cover-lane">
-                    <header className="staff-cover-lane-head">
-                      <h3 className="staff-cover-lane-title">{lane.title}</h3>
-                      <span className="staff-cover-lane-count">{lane.rows.length}</span>
-                    </header>
+                ].map((lane) => {
+                  const rows = filterCoverLane(lane.rows, lane.fallbackStatus);
+                  const expanded = Boolean(expandedLanes[lane.key]);
+                  const visible = expanded ? rows : rows.slice(0, COVER_LANE_LIMIT);
+                  const hidden = rows.length - visible.length;
+                  return (
+                    <section key={lane.key} className={`staff-cover-lane is-${lane.key}`}>
+                      <header className="staff-cover-lane-head">
+                        <h3 className="staff-cover-lane-title">
+                          <span className="staff-cover-lane-icon">{lane.icon}</span>
+                          {lane.title}
+                        </h3>
+                        <span className="staff-cover-lane-count" title={`${rows.length} of ${lane.rows.length} shown by filters`}>
+                          {rows.length}
+                        </span>
+                      </header>
 
-                    {lane.rows.length === 0 ? (
-                      <p className="staff-cover-quiet">{lane.empty}</p>
-                    ) : (
-                      <ul className="staff-cover-list">
-                        {lane.rows.map((req) => {
-                          const status = req.status || lane.fallbackStatus;
-                          const note = lane.note(req);
-                          return (
-                            <li key={req.id} className="staff-cover-item">
-                              <div className="staff-cover-item-main">
-                                <span className="staff-cover-item-when">{formatCoverWhen(req)}</span>
-                                <span className="staff-cover-item-where">
-                                  {[req.hospitalName || 'Hospital', req.boothOrStation].filter(Boolean).join(' · ')}
-                                </span>
-                                {note ? <span className="staff-cover-item-note">{note}</span> : null}
-                              </div>
-                              <span className={`staff-shift-chip ${COVER_STATUS_TONE[coverActivityTone(status)] || 'is-amber'}`}>
-                                {status}
-                              </span>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </section>
-                ))}
+                      {rows.length === 0 ? (
+                        <p className="staff-cover-quiet">
+                          {lane.rows.length === 0 ? lane.empty : 'Nothing matches these filters.'}
+                        </p>
+                      ) : (
+                        <ul className="staff-cover-list">
+                          {visible.map((req, index) => {
+                            const status = req.status || lane.fallbackStatus;
+                            const note = lane.note(req);
+                            const parts = coverDateParts(req);
+                            const isPast = coverDay(req) < today;
+                            const startsPast = isPast && index > 0 && coverDay(visible[index - 1]) >= today;
+                            return (
+                              <li key={req.id} className="staff-cover-row" aria-label={`${formatCoverWhen(req)}, ${status}`}>
+                                {startsPast ? <span className="staff-cover-divider">Earlier</span> : null}
+                                <div className={`staff-cover-item${isPast ? ' is-past' : ''}`}>
+                                  <div className="staff-cover-date" aria-hidden="true">
+                                    {parts ? (
+                                      <>
+                                        <span className="staff-cover-date-wd">{parts.weekday}</span>
+                                        <span className="staff-cover-date-day">{parts.day}</span>
+                                        <span className="staff-cover-date-mon">{parts.month}</span>
+                                      </>
+                                    ) : (
+                                      <span className="staff-cover-date-day">-</span>
+                                    )}
+                                  </div>
+                                  <div className="staff-cover-item-main">
+                                    <span className="staff-cover-item-when">
+                                      {req.shiftWindow || 'Time not set'}
+                                    </span>
+                                    <span className="staff-cover-item-where">
+                                      {[req.hospitalName || 'Hospital', req.boothOrStation].filter(Boolean).join(' · ')}
+                                    </span>
+                                    {note ? <span className="staff-cover-item-note">{note}</span> : null}
+                                  </div>
+                                  <span className={`staff-shift-chip ${COVER_STATUS_TONE[coverActivityTone(status)] || 'is-amber'}`}>
+                                    {status}
+                                  </span>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+
+                      {rows.length > COVER_LANE_LIMIT ? (
+                        <button
+                          type="button"
+                          className="staff-cover-more"
+                          onClick={() => setExpandedLanes((prev) => ({ ...prev, [lane.key]: !expanded }))}
+                        >
+                          {expanded ? 'Show less' : `Show ${hidden} more`}
+                        </button>
+                      ) : null}
+                    </section>
+                  );
+                })}
               </div>
             )}
           </div>
