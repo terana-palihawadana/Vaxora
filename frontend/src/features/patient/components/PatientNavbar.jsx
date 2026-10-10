@@ -61,7 +61,7 @@ export default function PatientNavbar() {
   const navItems = [
     { path: '/patient/dashboard', label: 'Home' },
     { path: '/patient/appointments', label: 'Appointments' },
-    { path: '/patient/vaccination-history', label: 'Patient history' },
+    { path: '/patient/vaccination-history', label: 'My vaccinations' },
     { path: '/patient/feedback', label: 'Feedback' },
   ];
 

@@ -83,7 +83,7 @@ export default function VaccinationHistoryTab() {
   return (
     <div className="patient-subpage-page">
       <PatientSubpageHeader
-        title="Vaccination History"
+        title="My vaccinations"
         subtitle="Review your immunization records and access your vaccination certificates."
       />
       <div className="doctor-patient-history-page">
@@ -189,7 +189,7 @@ export default function VaccinationHistoryTab() {
 
           {/* Vaccination History Table */}
           <div>
-            <h3 className="patient-section-heading">Vaccination History</h3>
+            <h3 className="patient-section-heading">Doses received</h3>
             <div className="patient-mockup-table-wrapper">
               <table className="patient-mockup-table">
                 <thead>

@@ -384,6 +384,16 @@
   box-sizing: border-box;
 }
 
+/* The page already spaces its children with a 20px flex gap; trim the banner's
+   own margin so banner-to-content matches the other portals (28px). */
+.patient-subpage-page > .portal-hero {
+  margin-bottom: 8px;
+}
+
+.patient-subpage-page > :not(.portal-hero) > :first-child {
+  margin-top: 0;
+}
+
 .patient-subpage-page .manage-appointments-wrapper {
   justify-content: flex-start;
   align-items: stretch;

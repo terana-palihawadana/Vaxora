@@ -281,7 +281,6 @@ export default function PatientProfileTab() {
             className="appointment-alert-pill"
             role="alert"
             style={{
-              maxWidth: "960px",
               width: "100%",
               backgroundColor:
                 notificationType === "error"
@@ -500,10 +499,7 @@ export default function PatientProfileTab() {
         {/* =========================================================================
             2. MEDICAL HISTORY CARD
            ========================================================================= */}
-        <div
-          className="manage-appointments-card"
-          style={{ maxWidth: "960px", width: "100%" }}
-        >
+        <div className="manage-appointments-card">
           <div className="profile-appointments-section">
             <h2
               className="appointments-section-heading"
