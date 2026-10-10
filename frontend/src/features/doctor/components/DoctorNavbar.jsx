@@ -64,6 +64,7 @@ export default function DoctorNavbar() {
 
   const navItems = [
     { path: '/doctor/dashboard', label: 'Home' },
+    { path: '/doctor/appointments', label: 'Appointments' },
     { path: '/doctor/patients', label: 'Patients' },
     { path: '/doctor/shifts', label: 'My shifts' },
     { path: '/doctor/hospitals', label: 'Hospitals', badge: pendingInvites },

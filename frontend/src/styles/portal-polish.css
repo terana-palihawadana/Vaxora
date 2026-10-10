@@ -272,7 +272,7 @@
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.empty-table-cell, .empty-appointments-cell, .patient-empty-state, .ph-appointments-search-empty,
-      .staff-today-slots-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty) {
+      .staff-appt-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty) {
   padding: 32px 20px;
   text-align: center;
   color: var(--color-text-body);
@@ -281,7 +281,7 @@
 }
 
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.patient-empty-state, .ph-appointments-search-empty, .staff-today-slots-empty, .doctor-obs-empty,
+  :is(.patient-empty-state, .ph-appointments-search-empty, .staff-appt-empty, .doctor-obs-empty,
       .hospital-cover-empty, .shift-week-calendar-empty) {
   border: 1px dashed var(--color-border-card);
 }
@@ -289,7 +289,7 @@
 /* Inbox-style icon above the message: neutral, since empty is not a status (stroke = --color-text-muted) */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.empty-table-cell, .empty-appointments-cell, .patient-empty-state, .ph-appointments-search-empty,
-      .staff-today-slots-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty)::before {
+      .staff-appt-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty)::before {
   content: "";
   display: block;
   width: 44px;

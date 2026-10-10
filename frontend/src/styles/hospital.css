@@ -1950,6 +1950,22 @@
   white-space: nowrap;
 }
 
+/* Colleague's live session: who has the patient (booth · staff) */
+.queue-session-owner {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--color-blue-bg);
+  color: var(--color-blue);
+  border: 1px solid var(--color-blue-border);
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .queue-action-empty {
   font-size: 0.8rem;
   color: var(--color-text-muted);

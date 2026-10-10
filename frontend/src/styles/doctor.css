@@ -885,6 +885,20 @@
   font-size: 1.8rem;
   border: 1px solid var(--color-border-light);
   flex-shrink: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+}
+
+.doctor-patient-avatar.has-photo {
+  padding: 0;
+  background: var(--color-surface-subtle);
+}
+
+.doctor-patient-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .doctor-patient-name {
@@ -1662,121 +1676,191 @@
   margin-left: 2px;
 }
 
-/* Today's Slots (staff clinical home) */
-.staff-today-slots-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.staff-today-slots-title {
+/* Appointments summary (staff clinical home): links to the Appointments page */
+.staff-appt-summary-title {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 14px;
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-text-title);
 }
 
-.staff-slots-day-switch {
-  margin-bottom: 14px;
-}
-
-.staff-today-slots-count {
-  flex-shrink: 0;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--color-success);
-  background: var(--color-success-bg);
-  border: 1px solid var(--color-success-border);
-  border-radius: 999px;
-  padding: 4px 10px;
-}
-
-.staff-today-slots-empty {
-  margin: 0;
-  padding: 14px 12px;
-  color: var(--empty-text);
-  font-size: var(--empty-size);
-  font-style: normal;
-  text-align: center;
-  background: var(--empty-bg);
-  border: 1px dashed var(--empty-border);
-  border-radius: var(--radius-md);
-}
-
-.staff-today-slots-list {
+.staff-appt-summary-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.staff-today-slot-item {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
-  padding: 12px 14px;
-  background: var(--color-success-bg);
-  border: 1px solid var(--color-success-border);
-  border-left: 4px solid var(--color-success-border);
-  border-radius: 12px;
 }
 
-.staff-today-slot-item.is-done {
-  background: var(--color-bg);
-  border-color: var(--color-border-light);
-  border-left-color: var(--color-border-card);
-}
-
-.staff-today-slot-time {
-  font-size: 0.92rem;
-  font-weight: 800;
-  color: var(--color-success);
-  letter-spacing: 0.01em;
-}
-
-.staff-today-slot-item.is-done .staff-today-slot-time {
-  color: var(--color-text-body);
-}
-
-.staff-today-slot-meta {
+.staff-appt-summary-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border-light);
+  border-left: 4px solid var(--color-blue);
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.staff-today-slot-name {
-  font-size: 0.88rem;
+.staff-appt-summary-row:hover,
+.staff-appt-summary-row:focus-visible {
+  border-color: var(--color-primary);
+  border-left-color: var(--color-blue);
+  background: var(--color-surface-subtle);
+}
+
+.staff-appt-summary-day {
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-success);
-  min-width: 0;
+  color: var(--color-text-title);
 }
 
-.staff-today-slot-item.is-done .staff-today-slot-name {
+.staff-appt-summary-value {
+  margin-left: auto;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--color-text-body);
+  white-space: nowrap;
+}
+
+/* Appointments page: one compact row per booking; stacks on phones */
+.staff-appt-card {
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.staff-appt-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.staff-appt-row {
+  display: grid;
+  grid-template-columns: 10rem minmax(0, 1fr) minmax(0, 13rem) 9rem;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border-light);
+  border-left: 4px solid var(--tone, transparent);
+}
+
+.staff-appt-row:first-child {
+  border-top: none;
+}
+
+.staff-appt-row--head {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  background: var(--color-surface-subtle);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
-.staff-today-slot-status {
-  flex-shrink: 0;
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--color-success);
-  background: var(--color-success-bg);
-  border-radius: 999px;
-  padding: 3px 9px;
-  text-transform: capitalize;
+.staff-appt-time {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--color-text-title);
+  white-space: nowrap;
 }
 
-.staff-today-slot-status.is-done {
+.staff-appt-patient {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.staff-appt-name,
+.staff-appt-vaccine,
+.staff-appt-booth {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.staff-appt-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-text-title);
+}
+
+.staff-appt-vaccine {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.staff-appt-booth {
+  font-size: 0.82rem;
   color: var(--color-text-body);
-  background: var(--color-soft-panel-deep);
+}
+
+.staff-appt-status {
+  justify-self: start;
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--tone);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
+  border-radius: 6px;
+}
+
+.staff-appt-empty {
+  margin: 16px 0 0;
+  padding: 20px 12px;
+  text-align: center;
+  color: var(--empty-text);
+  font-size: var(--empty-size);
+  background: var(--empty-bg);
+  border: 1px dashed var(--empty-border);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .staff-appt-card {
+    padding: 16px;
+  }
+
+  .staff-appt-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+  }
+
+  .staff-appt-row--head {
+    display: none;
+  }
+
+  .staff-appt-status {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .staff-appt-patient,
+  .staff-appt-booth {
+    grid-column: 1 / -1;
+  }
+
+  .staff-appt-booth {
+    font-size: 0.76rem;
+    color: var(--color-text-muted);
+  }
 }
 
 /* ==========================================================================

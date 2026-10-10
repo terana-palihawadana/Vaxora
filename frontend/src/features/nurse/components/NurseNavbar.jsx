@@ -64,6 +64,7 @@ export default function NurseNavbar() {
 
   const navItems = [
     { path: '/nurse/dashboard', label: 'Home' },
+    { path: '/nurse/appointments', label: 'Appointments' },
     { path: '/nurse/patients', label: 'Patients' },
     { path: '/nurse/shifts', label: 'My shifts' },
     { path: '/nurse/hospitals', label: 'Hospitals', badge: pendingInvites },
