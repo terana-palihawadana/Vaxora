@@ -28,7 +28,6 @@ import {
 import {
   DoctorLayout,
   DoctorDashboardOverview,
-  DoctorAppointmentsTab,
   DoctorPatientsTab,
   DoctorProfileTab,
   DoctorAffiliationsTab,
@@ -38,7 +37,6 @@ import {
 import {
   NurseLayout,
   NurseDashboardOverview,
-  NurseAppointmentsTab,
   NursePatientsTab,
   NurseProfileTab,
   NurseAffiliationsTab,
@@ -117,11 +115,13 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/doctor/dashboard" replace />} />
         <Route path="dashboard" element={<DoctorDashboardOverview />} />
-        <Route path="appointments" element={<DoctorAppointmentsTab />} />
+        <Route path="appointments" element={<Navigate to="/doctor/dashboard" replace />} />
         <Route path="patients" element={<DoctorPatientsTab />} />
         <Route path="patient-history" element={<Navigate to="/doctor/patients" replace />} />
         <Route path="history" element={<Navigate to="/doctor/patients" replace />} />
-        <Route path="affiliations" element={<DoctorAffiliationsTab />} />
+        <Route path="shifts" element={<DoctorAffiliationsTab view="shifts" />} />
+        <Route path="hospitals" element={<DoctorAffiliationsTab view="hospitals" />} />
+        <Route path="affiliations" element={<Navigate to="/doctor/hospitals" replace />} />
         <Route path="feedback" element={<DoctorFeedbackTab />} />
         <Route path="profile" element={<DoctorProfileTab />} />
       </Route>
@@ -137,11 +137,13 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/nurse/dashboard" replace />} />
         <Route path="dashboard" element={<NurseDashboardOverview />} />
-        <Route path="appointments" element={<NurseAppointmentsTab />} />
+        <Route path="appointments" element={<Navigate to="/nurse/dashboard" replace />} />
         <Route path="patients" element={<NursePatientsTab />} />
         <Route path="patient-history" element={<Navigate to="/nurse/patients" replace />} />
         <Route path="history" element={<Navigate to="/nurse/patients" replace />} />
-        <Route path="affiliations" element={<NurseAffiliationsTab />} />
+        <Route path="shifts" element={<NurseAffiliationsTab view="shifts" />} />
+        <Route path="hospitals" element={<NurseAffiliationsTab view="hospitals" />} />
+        <Route path="affiliations" element={<Navigate to="/nurse/hospitals" replace />} />
         <Route path="feedback" element={<NurseFeedbackTab />} />
         <Route path="profile" element={<NurseProfileTab />} />
       </Route>

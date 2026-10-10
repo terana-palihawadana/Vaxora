@@ -6,6 +6,7 @@ import { authService, getUser, subscribeAuthUser } from '../../auth';
 import DeleteAccountModal from '../../auth/components/DeleteAccountModal';
 import { IconClose, IconLogout, IconMenu, IconNurse, IconTrash } from '../../../shared/icons/AppIcons';
 import { withStaffTitle } from '../../../shared/utils/staffName';
+import usePendingInviteCount from '../../staff/hooks/usePendingInviteCount';
 
 export default function NurseNavbar() {
   const navigate = useNavigate();
@@ -49,11 +50,13 @@ export default function NurseNavbar() {
     navigate('/login');
   };
 
+  const pendingInvites = usePendingInviteCount();
+
   const navItems = [
     { path: '/nurse/dashboard', label: 'Home' },
-    { path: '/nurse/appointments', label: 'Appointments' },
-    { path: '/nurse/patients', label: 'Patient history' },
-    { path: '/nurse/affiliations', label: 'Affiliations' },
+    { path: '/nurse/patients', label: 'Patients' },
+    { path: '/nurse/shifts', label: 'My shifts' },
+    { path: '/nurse/hospitals', label: 'Hospitals', badge: pendingInvites },
     { path: '/nurse/feedback', label: 'Feedback' },
   ];
 
@@ -89,6 +92,7 @@ export default function NurseNavbar() {
                 onClick={() => handleNavigate(item.path)}
               >
                 {item.label}
+                {item.badge > 0 ? <span className="nav-count-badge">{item.badge}</span> : null}
               </button>
             );
           })}
@@ -207,6 +211,7 @@ export default function NurseNavbar() {
                   onClick={() => handleNavigate(item.path)}
                 >
                   {item.label}
+                  {item.badge > 0 ? <span className="nav-count-badge">{item.badge}</span> : null}
                 </button>
               );
             })}

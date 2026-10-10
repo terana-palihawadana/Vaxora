@@ -7,6 +7,7 @@ import ClinicalPrescribeModal from '../../doctor/components/ClinicalPrescribeMod
 import staffAppointmentService from '../services/staffAppointmentService';
 import { hospitalMinutesNow, hospitalToday } from '../../hospital/utils/hospitalDate';
 import PortalHero from '../../../components/PortalHero';
+import StaffSlotsCard from './StaffSlotsCard';
 import {
   IconCalendar,
   IconCheck,
@@ -719,7 +720,7 @@ export default function StaffClinicalDashboard({
                 <span>{dutyText}</span>
               </>
             ) : (
-              <span>Accept a hospital invitation on Affiliations to join a roster</span>
+              <span>Accept a hospital invitation under Hospitals to join a roster</span>
             )}
           </div>
         )}
@@ -1383,50 +1384,10 @@ export default function StaffClinicalDashboard({
             )}
           </div>
 
-          <div className="doctor-coldbox-card staff-today-slots">
-            <div className="staff-today-slots-header">
-              <div className="staff-today-slots-title">
-                <span className="icon-shade icon-shade-blue">
-                  <IconClock size={22} />
-                </span>
-                <span>Today&apos;s Slots</span>
-              </div>
-              <span className="staff-today-slots-count">
-                {todayAppointments.length}{' '}
-                {todayAppointments.length === 1 ? 'slot' : 'slots'}
-              </span>
-            </div>
-
-            {todayAppointments.length === 0 ? (
-              <p className="staff-today-slots-empty">No slots booked for today.</p>
-            ) : (
-              <ul className="staff-today-slots-list">
-                {todayAppointments.slice(0, 6).map((a) => {
-                  const done = a.status === 'Completed';
-                  return (
-                    <li
-                      key={a.id}
-                      className={`staff-today-slot-item${done ? ' is-done' : ''}`}
-                    >
-                      <div className="staff-today-slot-time">
-                        {a.timeSlot || a.startTime || '—'}
-                      </div>
-                      <div className="staff-today-slot-meta">
-                        <span className="staff-today-slot-name">
-                          {a.patientName || 'Patient'}
-                        </span>
-                        <span
-                          className={`staff-today-slot-status${done ? ' is-done' : ''}`}
-                        >
-                          {a.status || 'Scheduled'}
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <StaffSlotsCard
+            hospitalUserId={selectedHospitalUserId}
+            todayAppointments={todayAppointments}
+          />
         </div>
       </div>
 
