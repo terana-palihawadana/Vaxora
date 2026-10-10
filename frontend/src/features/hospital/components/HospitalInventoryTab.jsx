@@ -6,6 +6,8 @@ import BatchAuditModal from './BatchAuditModal';
 import inventoryService from '../services/inventoryService';
 import InventoryAIInventoryWorkflow from './InventoryAIInventoryWorkflow';
 import HospitalSubpageHero from './HospitalSubpageHero';
+import HeroTabs from '../../../components/HeroTabs';
+import useViewParam from '../../../shared/hooks/useViewParam';
 import {
   IconBot,
   IconClipboard,
@@ -20,8 +22,13 @@ import {
   IconThermometer,
   IconTrash,
 } from './HospitalIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+
+const INVENTORY_VIEWS = ['stock', 'formulary', 'vaults'];
 
 export default function HospitalInventoryTab() {
+  const [confirm, confirmDialog] = useConfirmDialog();
+  const [view, setView] = useViewParam(INVENTORY_VIEWS);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [isWastageOpen, setIsWastageOpen] = useState(false);
   const [selectedAuditVaccine, setSelectedAuditVaccine] = useState(null);
@@ -35,15 +42,20 @@ export default function HospitalInventoryTab() {
   const [newVaccineMfrInput, setNewVaccineMfrInput] = useState('');
   const [newVaccineCategoryInput, setNewVaccineCategoryInput] = useState('routine');
   const [newVaccinePriceInput, setNewVaccinePriceInput] = useState('0');
-  const [showRegistryBox, setShowRegistryBox] = useState(false);
-
+  const [showRegistryBox, setShowRegistryBox] = useState(() => view === 'formulary');
+  // Opening the formulary view expands the registry box (adjusted during render, not in an effect).
+  const [registryView, setRegistryView] = useState(view);
+  if (view !== registryView) {
+    setRegistryView(view);
+    if (view === 'formulary') setShowRegistryBox(true);
+  }
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [viewMode, setViewMode] = useState('table');
-
   const [inventory, setInventory] = useState([]);
   const [coldVaults, setColdVaults] = useState([]);
+
 
   const uniqueFormulations = useMemo(() => {
     const seen = new Set();
@@ -152,6 +164,13 @@ export default function HospitalInventoryTab() {
       alert('You must keep at least one registered vaccine product.');
       return;
     }
+    const ok = await confirm({
+      title: 'Remove product?',
+      message: `Remove "${name}" from the hospital formulary?`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const formulary = await inventoryService.getFormulary();
       const matches = (Array.isArray(formulary) ? formulary : []).filter(
@@ -246,14 +265,36 @@ export default function HospitalInventoryTab() {
     (item.storageUnit || '').toLowerCase().includes('ultra-cold')
   ).length;
 
+  const inventorySubtitle =
+    view === 'formulary'
+      ? 'Register vaccine products once — they appear in restock and session fee dropdowns.'
+      : view === 'vaults'
+        ? 'Live temperature, humidity, and lot occupancy for each cold-chain storage unit.'
+        : 'Monitor stock levels, expiry risk, and restock activity from one operational workspace.';
+
+  const inventoryHero = (
+    <HospitalSubpageHero
+      eyebrow="Cold-chain operations"
+      title="Vaccine inventory"
+      subtitle={inventorySubtitle}
+    >
+      <HeroTabs
+        label="Inventory views"
+        tabs={[
+          { key: 'stock', label: 'Stock' },
+          { key: 'formulary', label: 'Formulary' },
+          { key: 'vaults', label: 'Cold vaults', badge: coldVaults.length },
+        ]}
+        active={view}
+        onChange={setView}
+      />
+    </HospitalSubpageHero>
+  );
+
   if (loading) {
     return (
       <div className="hospital-manage-appointments-wrapper">
-        <HospitalSubpageHero
-          eyebrow="Cold-chain operations"
-          title="Vaccine inventory"
-          subtitle="Monitor stock, cold storage, expiry risk, and restock activity from one operational workspace."
-        />
+        {inventoryHero}
         <div className="hospital-inventory-content hospital-inventory-loading">
           <h3>Loading inventory…</h3>
         </div>
@@ -263,11 +304,7 @@ export default function HospitalInventoryTab() {
 
   return (
     <div className="hospital-manage-appointments-wrapper">
-      <HospitalSubpageHero
-        eyebrow="Cold-chain operations"
-        title="Vaccine inventory"
-        subtitle="Monitor stock, cold storage, expiry risk, and restock activity from one operational workspace."
-      />
+      {inventoryHero}
       <div className="hospital-inventory-content">
         {toastMessage && (
           <div className="inventory-toast-banner">
@@ -282,6 +319,8 @@ export default function HospitalInventoryTab() {
           </div>
         )}
 
+        {view === 'stock' && (
+        <>
         <div className="hospital-metrics-grid hospital-metrics-grid--4">
           <div className="hospital-stat-card">
             <div className="hospital-stat-icon stat-icon-slate">
@@ -551,7 +590,10 @@ export default function HospitalInventoryTab() {
             })}
           </div>
         )}
+        </>
+        )}
 
+        {view === 'formulary' && (
         <div className="vaccine-formulary-card">
           <div className="formulary-card-header">
             <div className="formulary-header-main">
@@ -718,8 +760,10 @@ export default function HospitalInventoryTab() {
             </div>
           )}
         </div>
+        )}
 
-        {coldVaults.length > 0 && (
+        {view === 'vaults' && (
+          coldVaults.length > 0 ? (
           <div className="cold-vaults-section">
             <div className="cold-vaults-header">
               <div className="formulary-header-main">
@@ -770,8 +814,15 @@ export default function HospitalInventoryTab() {
               })}
             </div>
           </div>
+          ) : (
+            <div className="hospital-appointments-table-wrapper inventory-empty-state">
+              <h3>No cold vaults yet</h3>
+              <p>Vault telemetry will appear here once storage units are linked.</p>
+            </div>
+          )
         )}
 
+        {view === 'stock' && (
         <div className="inventory-footer-notice">
           <div className="footer-notice-text">
             <IconShield size={16} />
@@ -781,6 +832,7 @@ export default function HospitalInventoryTab() {
             Sync registry
           </button>
         </div>
+        )}
       </div>
 
       {isRestockOpen && (
@@ -810,6 +862,7 @@ export default function HospitalInventoryTab() {
         onClose={() => setIsAIAgentOpen(false)}
         onApproved={loadAll}
       />
+      {confirmDialog}
     </div>
   );
 }

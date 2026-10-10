@@ -76,12 +76,20 @@ describe('Staff Management - Hospital Staff Directory', () => {
 
     expect(await screen.findByRole('heading', { name: /medical staff/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add new staff/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /^directory$/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /pending invites/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /all \(/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /doctors \(/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /nurses \(/i })).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Dr Nimal Perera')).toBeInTheDocument();
-      expect(screen.getByText('Nurse Amaya Fernando')).toBeInTheDocument();
-      expect(screen.getByText('Pending Request')).toBeInTheDocument();
     });
+    expect(screen.queryByText('Nurse Amaya Fernando')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /pending invites/i }));
+    expect(await screen.findByText('Nurse Amaya Fernando')).toBeInTheDocument();
+    expect(screen.getByText('Pending Request')).toBeInTheDocument();
 
     expect(screen.getByText('Active Affiliated Staff')).toBeInTheDocument();
   });

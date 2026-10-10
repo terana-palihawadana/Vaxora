@@ -212,6 +212,14 @@ export default function NursePatientsTab() {
 
       {!selectedPatient && (
         <div className="doctor-appointment-inner-card">
+          <div className="section-title-group" style={{ marginBottom: 16 }}>
+            <h2 className="doctor-card-title" style={{ margin: 0 }}>
+              Recent Dosage Updates
+            </h2>
+            <p className="section-title-desc">
+              Latest vaccination dosage changes — search to open a full patient record
+            </p>
+          </div>
           <div className="doctor-appointments-filter-bar">
             <div className="doctor-filter-group" style={{ flex: 1, position: 'relative' }}>
               <label className="doctor-filter-label" htmlFor="ph-nurse-search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
