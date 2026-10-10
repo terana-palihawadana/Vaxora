@@ -13,7 +13,7 @@
   color: var(--color-text-title);
   background:
     radial-gradient(520px 280px at 95% -10%, rgba(var(--rgb-primary), 0.16), transparent 70%),
-    linear-gradient(120deg, var(--color-soft-panel) 0%, #e2f1ee 55%, var(--color-soft-panel-deep) 100%);
+    linear-gradient(120deg, var(--color-soft-panel) 0%, var(--color-soft-panel-mid) 55%, var(--color-soft-panel-deep) 100%);
   border: 1.5px solid rgba(var(--rgb-primary), 0.45);
   box-shadow: 0 14px 34px -24px rgba(var(--rgb-primary-dark), 0.35);
 }
@@ -111,8 +111,8 @@
   object-fit: cover;
   object-position: center;
   /* The photo itself fades out, so the band shows through with no seam. */
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%);
-  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 22%, #000 48%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 22%, black 48%);
+  mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 22%, black 48%);
 }
 
 @media (max-width: 900px) {

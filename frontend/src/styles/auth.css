@@ -9,11 +9,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Soft brand wash so the white card stands out (the app pages stay white) */
-  background:
-    radial-gradient(900px 520px at 12% 8%, var(--color-soft-panel-deep), transparent 65%),
-    radial-gradient(800px 520px at 92% 92%, var(--color-info-bg), transparent 65%),
-    var(--color-soft-panel);
+  /* Faint neutral tint: lighter than the old mint wash, still lifts the white card */
+  background: var(--color-bg);
   padding: 32px 20px;
   position: relative;
   box-sizing: border-box;
