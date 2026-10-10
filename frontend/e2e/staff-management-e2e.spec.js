@@ -27,12 +27,9 @@ test.describe('Staff Management E2E', () => {
     await expect(page).toHaveURL(/\/hospital\/staff/);
 
     await expect(
-      page.getByRole('heading', { name: /hospital medical staff/i })
+      page.getByRole('heading', { name: /medical staff/i })
     ).toBeVisible();
     await expect(page.getByRole('button', { name: /add new staff/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /directory/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /shifts/i })).toBeVisible();
-    await expect(page.getByRole('tab', { name: /cover requests/i })).toBeVisible();
   });
 
   test('2. Add New Staff modal validates missing practitioner selection', async ({ page }) => {
@@ -48,9 +45,9 @@ test.describe('Staff Management E2E', () => {
     ).toBeVisible();
   });
 
-  test('3. Staff views switch between Directory, Shifts, and Cover requests', async ({ page }) => {
+  test('3. Roster views switch between Shifts and Cover requests', async ({ page }) => {
     await loginAsHospital(page);
-    await page.goto('/hospital/staff');
+    await page.goto('/hospital/roster');
 
     await page.getByRole('tab', { name: /shifts/i }).click();
     await expect(page.getByRole('tab', { name: /shifts/i })).toHaveAttribute(
@@ -64,8 +61,11 @@ test.describe('Staff Management E2E', () => {
       'true'
     );
 
-    await page.getByRole('tab', { name: /directory/i }).click();
-    await expect(page.getByRole('button', { name: /add new staff/i })).toBeVisible();
+    await page.getByRole('tab', { name: /shifts/i }).click();
+    await expect(page.getByRole('tab', { name: /shifts/i })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    );
   });
 
   test('4. Unauthenticated users cannot open hospital staff page', async ({ page }) => {
@@ -159,10 +159,9 @@ test.describe('Staff Management E2E', () => {
       });
     });
 
-    await page.goto('/hospital/staff');
-    await expect(page).toHaveURL(/\/hospital\/staff/);
+    await page.goto('/hospital/roster');
+    await expect(page).toHaveURL(/\/hospital\/roster/);
 
-    await page.getByRole('tab', { name: /shifts/i }).click();
     await expect(page.getByRole('button', { name: /open scheduling agent/i })).toBeVisible({
       timeout: 15000,
     });

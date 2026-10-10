@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import HospitalStaffTab from '../../src/features/hospital/components/HospitalStaffTab';
+import HospitalRosterTab from '../../src/features/hospital/components/HospitalRosterTab';
+import HospitalSessionsPage from '../../src/features/hospital/components/HospitalSessionsPage';
+import HospitalAppointmentsPage from '../../src/features/hospital/components/HospitalAppointmentsPage';
 import staffService from '../../src/features/hospital/services/staffService';
 
 vi.mock('../../src/features/hospital/services/staffService', () => ({
@@ -19,6 +23,22 @@ vi.mock('../../src/features/hospital/components/HospitalShiftsPanel', () => ({
 vi.mock('../../src/features/hospital/components/HospitalCoverRequestsPanel', () => ({
   default: () => <div data-testid="covers-panel">Cover Requests Panel</div>,
 }));
+
+vi.mock('../../src/features/hospital/components/HospitalBoothsPanel', () => ({
+  default: () => <div data-testid="booths-panel">Booths Panel</div>,
+}));
+
+vi.mock('../../src/features/hospital/components/HospitalAppointmentsTab', () => ({
+  default: ({ view }) => <div data-testid={`appointments-${view}`}>{view}</div>,
+}));
+
+vi.mock('../../src/features/hospital/components/HospitalDashboardOverview', () => ({
+  default: ({ view }) => <div data-testid={`dashboard-${view}`}>{view}</div>,
+}));
+
+function renderInRouter(ui) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe('Staff Management - Hospital Staff Directory', () => {
   beforeEach(() => {
@@ -52,9 +72,9 @@ describe('Staff Management - Hospital Staff Directory', () => {
       },
     ]);
 
-    render(<HospitalStaffTab />);
+    renderInRouter(<HospitalStaffTab />);
 
-    expect(await screen.findByRole('heading', { name: /hospital medical staff/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /medical staff/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add new staff/i })).toBeInTheDocument();
 
     await waitFor(() => {
@@ -69,33 +89,52 @@ describe('Staff Management - Hospital Staff Directory', () => {
   it('shows empty-state messaging when hospital has no affiliated staff', async () => {
     staffService.getHospitalStaff.mockResolvedValue([]);
 
-    render(<HospitalStaffTab />);
+    renderInRouter(<HospitalStaffTab />);
 
     expect(
       await screen.findByText(/no staff yet\. invite an approved doctor or nurse/i)
     ).toBeInTheDocument();
   });
 
-  it('switches between Directory, Shifts, and Cover requests views', async () => {
-    staffService.getHospitalStaff.mockResolvedValue([]);
+  it('sessions page switches between Sessions and Booths views', () => {
+    renderInRouter(<HospitalSessionsPage />);
+    expect(screen.getByTestId('appointments-sessions')).toBeInTheDocument();
 
-    render(<HospitalStaffTab />);
-    await waitFor(() => expect(staffService.getHospitalStaff).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('tab', { name: /booths/i }));
+    expect(screen.getByTestId('booths-panel')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /sessions/i }));
+    expect(screen.getByTestId('appointments-sessions')).toBeInTheDocument();
+  });
+
+  it('appointments page opens on Today and switches to Bookings', () => {
+    renderInRouter(<HospitalAppointmentsPage />);
+    expect(screen.getByTestId('dashboard-queue')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /bookings/i }));
+    expect(screen.getByTestId('appointments-bookings')).toBeInTheDocument();
+  });
+
+  it('roster page switches between Shifts and Cover requests and badges pending covers', async () => {
+    staffService.getHospitalShiftSwaps.mockResolvedValue([{ status: 'Pending' }, { status: 'Pending' }]);
+
+    renderInRouter(<HospitalRosterTab />);
+    expect(screen.getByTestId('shifts-panel')).toBeInTheDocument();
+
+    const coverTab = screen.getByRole('tab', { name: /cover requests/i });
+    await waitFor(() => expect(coverTab).toHaveTextContent('2'));
+
+    fireEvent.click(coverTab);
+    expect(screen.getByTestId('covers-panel')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('tab', { name: /shifts/i }));
     expect(screen.getByTestId('shifts-panel')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('tab', { name: /cover requests/i }));
-    expect(screen.getByTestId('covers-panel')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('tab', { name: /directory/i }));
-    expect(screen.getByRole('button', { name: /add new staff/i })).toBeInTheDocument();
   });
 
   it('opens the add-staff modal from the directory toolbar', async () => {
     staffService.getHospitalStaff.mockResolvedValue([]);
 
-    render(<HospitalStaffTab />);
+    renderInRouter(<HospitalStaffTab />);
     await waitFor(() => expect(staffService.getHospitalStaff).toHaveBeenCalled());
 
     fireEvent.click(screen.getByRole('button', { name: /add new staff/i }));

@@ -1,8 +1,6 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AddStaffRequestModal from './AddStaffRequestModal';
-import HospitalCoverRequestsPanel from './HospitalCoverRequestsPanel';
-import HospitalShiftsPanel from './HospitalShiftsPanel';
 import staffService from '../services/staffService';
 import PortalHero from '../../../components/PortalHero';
 import {
@@ -42,7 +40,6 @@ function mapAffiliationToCard(item) {
 }
 
 export default function HospitalStaffTab() {
-  const [pageView, setPageView] = useState('directory'); // 'directory' | 'shifts' | 'covers'
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -56,13 +53,9 @@ export default function HospitalStaffTab() {
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [sortBy] = useState('name');
   const [page, setPage] = useState(1);
-  const [pendingCoverCount, setPendingCoverCount] = useState(0);
   const pageSize = 6;
 
   const toastTimerRef = useRef(null);
-  const handlePendingCoverCount = useCallback((count) => {
-    setPendingCoverCount(Number(count) || 0);
-  }, []);
 
   const showToast = (message) => {
     setNotification(message);
@@ -92,25 +85,6 @@ export default function HospitalStaffTab() {
   useEffect(() => deferEffectCallback(() => {
     loadStaff();
   }), [loadStaff]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await staffService.getHospitalShiftSwaps({ status: 'Pending', limit: 40 });
-        if (cancelled) return;
-        const list = Array.isArray(data) ? data : [];
-        setPendingCoverCount(
-          list.filter((r) => String(r.status || '').toLowerCase() === 'pending').length
-        );
-      } catch {
-        if (!cancelled) setPendingCoverCount(0);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const handleSendRequest = async (registrationNumber) => {
     setIsSubmitting(true);
@@ -233,49 +207,10 @@ export default function HospitalStaffTab() {
 
       <PortalHero
         eyebrow="Staff management"
-        title="Hospital Medical Staff & Doctors"
-        subtitle="Manage affiliated doctors and nurses. Invite verified practitioners with their Vaxora ID."
-      >
-        <div className="hospital-staff-hero-tabs" role="tablist" aria-label="Staff views">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={pageView === 'directory'}
-            className={`hospital-staff-hero-tab ${pageView === 'directory' ? 'active' : ''}`}
-            onClick={() => setPageView('directory')}
-          >
-            Directory
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={pageView === 'shifts'}
-            className={`hospital-staff-hero-tab ${pageView === 'shifts' ? 'active' : ''}`}
-            onClick={() => setPageView('shifts')}
-          >
-            Shifts
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={pageView === 'covers'}
-            className={`hospital-staff-hero-tab ${pageView === 'covers' ? 'active' : ''}`}
-            onClick={() => setPageView('covers')}
-          >
-            Cover requests
-            {pendingCoverCount > 0 ? (
-              <span className="hospital-staff-hero-tab-badge">{pendingCoverCount}</span>
-            ) : null}
-          </button>
-        </div>
-      </PortalHero>
+        title="Medical staff"
+        subtitle="Manage affiliated doctors and nurses, and invite verified practitioners by their Vaxora ID."
+      />
 
-      {pageView === 'shifts' ? (
-        <HospitalShiftsPanel />
-      ) : pageView === 'covers' ? (
-        <HospitalCoverRequestsPanel onPendingCountChange={handlePendingCoverCount} />
-      ) : (
-      <>
       <div className="hospital-staff-toolbar">
         <button
           type="button"
@@ -618,8 +553,6 @@ export default function HospitalStaffTab() {
         onSendRequest={handleSendRequest}
         isSubmitting={isSubmitting}
       />
-      </>
-      )}
     </div>
   );
 }

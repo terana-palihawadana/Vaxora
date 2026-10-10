@@ -16,10 +16,11 @@ import {
 import {
   HospitalLayout,
   HospitalDashboardOverview,
-  HospitalAppointmentsTab,
   HospitalInventoryTab,
   HospitalStaffTab,
-  HospitalBoothsTab,
+  HospitalRosterTab,
+  HospitalAppointmentsPage,
+  HospitalSessionsPage,
   HospitalProfileTab,
   FeedbackTab as HospitalFeedbackTab,
 } from '../features/hospital';
@@ -93,10 +94,14 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="/hospital/dashboard" replace />} />
         <Route path="dashboard" element={<HospitalDashboardOverview />} />
-        <Route path="appointments" element={<HospitalAppointmentsTab />} />
+        <Route path="appointments" element={<HospitalAppointmentsPage />} />
+        <Route path="queue" element={<Navigate to="/hospital/appointments" replace />} />
+        <Route path="roster" element={<HospitalRosterTab />} />
         <Route path="inventory" element={<HospitalInventoryTab />} />
+        <Route path="sessions" element={<HospitalSessionsPage />} />
+        <Route path="schedules" element={<Navigate to="/hospital/sessions" replace />} />
+        <Route path="booths" element={<Navigate to="/hospital/sessions?view=booths" replace />} />
         <Route path="staff" element={<HospitalStaffTab />} />
-        <Route path="booths" element={<HospitalBoothsTab />} />
         <Route path="feedback" element={<HospitalFeedbackTab />} />
         <Route path="profile" element={<HospitalProfileTab />} />
       </Route>
