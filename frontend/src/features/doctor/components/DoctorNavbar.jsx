@@ -7,10 +7,12 @@ import DeleteAccountModal from '../../auth/components/DeleteAccountModal';
 import { IconClose, IconDoctor, IconLogout, IconMenu, IconStethoscope, IconTrash } from '../../../shared/icons/AppIcons';
 import { withStaffTitle } from '../../../shared/utils/staffName';
 import usePendingInviteCount from '../../staff/hooks/usePendingInviteCount';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 export default function DoctorNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -46,6 +48,14 @@ export default function DoctorNavbar() {
   }, [showProfileMenu]);
 
   const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: 'You will need to sign in again to access staff tools.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    });
+    if (!ok) return;
     await authService.logout();
     navigate('/login');
   };
@@ -252,6 +262,7 @@ export default function DoctorNavbar() {
       )}
 
       {/* Delete Account Confirmation Modal */}
+      {confirmDialog}
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}

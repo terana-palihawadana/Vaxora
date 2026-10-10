@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import staffService from '../services/staffService';
 import { RoleAvatarIcon } from './HospitalIcons';
 import { hospitalMinutesNow, hospitalToday } from '../utils/hospitalDate';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function roleLabel(role) {
   const value = String(role || '').toUpperCase();
@@ -225,6 +226,7 @@ function CoverRequestCard({ request, busy, onApprove, onDecline, onRanked }) {
 }
 
 export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [requests, setRequests] = useState([]);
@@ -264,6 +266,16 @@ export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
 
   const decide = async (request, { approved, replacementAffiliationId }) => {
     if (decidingId) return;
+    const ok = await confirm({
+      title: approved ? 'Assign cover?' : 'Decline cover request?',
+      message: approved
+        ? `Assign a replacement for ${request.requesterName || 'this staff member'}'s shift on ${request.shiftDate}? The original staff member will be covered.`
+        : `Decline cover for ${request.requesterName || 'this staff member'} on ${request.shiftDate}? They will need to make other arrangements.`,
+      confirmLabel: approved ? 'Assign cover' : 'Decline',
+      destructive: !approved,
+    });
+    if (!ok) return;
+
     setDecidingId(request.id);
     setError('');
     try {
@@ -371,6 +383,7 @@ export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

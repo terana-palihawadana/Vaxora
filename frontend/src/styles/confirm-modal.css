@@ -1,0 +1,101 @@
+/* Shared confirm dialog — tokens from variables.css (matches mobile confirmAction) */
+
+.confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: var(--color-overlay);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.confirm-modal-card {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  padding: 24px 24px 20px;
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-card);
+  border-radius: 16px;
+  box-shadow: 0 20px 48px rgba(var(--rgb-primary-dark), 0.18);
+}
+
+.confirm-modal-card.is-destructive {
+  border-color: var(--color-error-border);
+}
+
+.confirm-modal-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1rem; /* ~16px — typical dialog title */
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text-title);
+}
+
+.confirm-modal-card.is-destructive .confirm-modal-title {
+  color: var(--color-error);
+}
+
+.confirm-modal-message {
+  margin: 8px 0 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem; /* ~14px — standard supporting / dialog body */
+  line-height: 1.45;
+  color: var(--color-text-body);
+}
+
+.confirm-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.confirm-modal-btn {
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  font-size: 0.88rem;
+  border-radius: var(--btn-radius);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.confirm-modal-btn.cancel {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+}
+
+.confirm-modal-btn.cancel:hover {
+  background: var(--color-soft-panel);
+}
+
+.confirm-modal-btn.confirm {
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border: 1px solid transparent;
+}
+
+.confirm-modal-btn.confirm:hover {
+  background: var(--btn-primary-bg-hover);
+}
+
+.confirm-modal-btn.confirm.destructive {
+  background: var(--color-error);
+  color: var(--color-text-inverse);
+  border-color: var(--color-error);
+  box-shadow: 0 4px 14px rgba(var(--rgb-error), 0.28);
+}
+
+.confirm-modal-btn.confirm.destructive:hover {
+  filter: brightness(0.96);
+}

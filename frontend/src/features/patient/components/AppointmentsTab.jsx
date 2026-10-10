@@ -9,6 +9,7 @@ import {
   getPatientAppointmentStatusDisplay,
   normalizePatientAppointmentStatus,
 } from '../utils/appointmentStatusDisplay';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 const ACTIVE_APPOINTMENT_STATUSES = new Set([
   'confirmed',
@@ -64,6 +65,7 @@ function registerPayHereCallbacks(payhere, callbacks) {
 }
 
 export default function AppointmentsTab() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [vaccinesList, setVaccinesList] = useState([]);
   const [availableHospitals, setAvailableHospitals] = useState([]);
@@ -689,14 +691,21 @@ export default function AppointmentsTab() {
       return;
     }
 
-    if (window.confirm('Are you sure you want to cancel this appointment slot? Your 20-minute slot will be made free for other citizens and a cancellation email will be sent to you.')) {
-      try {
-        await appointmentService.cancelAppointment(apt.id || apt.Id);
-        showToast('Appointment cancelled successfully. A confirmation email has been dispatched and the slot is now free.');
-        await loadMyAppointments();
-      } catch (err) {
-        alert(`Failed to cancel appointment: ${err.message}`);
-      }
+    const ok = await confirm({
+      title: 'Cancel appointment?',
+      message: `Cancel your ${apt.vaccineName || apt.vaccine || 'vaccination'} session at ${apt.hospitalName || 'the hospital'}? Your 20-minute slot will be freed and a cancellation email will be sent.`,
+      cancelLabel: 'Keep',
+      confirmLabel: 'Cancel session',
+      destructive: true,
+    });
+    if (!ok) return;
+
+    try {
+      await appointmentService.cancelAppointment(apt.id || apt.Id);
+      showToast('Appointment cancelled successfully. A confirmation email has been dispatched and the slot is now free.');
+      await loadMyAppointments();
+    } catch (err) {
+      alert(`Failed to cancel appointment: ${err.message}`);
     }
   };
 
@@ -1521,6 +1530,7 @@ export default function AppointmentsTab() {
         </div>
       </div>
       </div>
+      {confirmDialog}
     </div>
   );
 }

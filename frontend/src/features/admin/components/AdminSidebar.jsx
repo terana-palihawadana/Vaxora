@@ -4,13 +4,23 @@ import logo from '../../../assets/images/logo.png';
 
 import { authService } from '../../auth';
 import { IconClose, IconMenu } from '../../../shared/icons/AppIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 export default function AdminSidebar({ pendingApprovalsCount = 0 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: 'You will need to sign in again to access the admin panel.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    });
+    if (!ok) return;
     await authService.logout();
     navigate('/login');
   };
@@ -188,6 +198,7 @@ export default function AdminSidebar({ pendingApprovalsCount = 0 }) {
           </button>
         </div>
       </aside>
+      {confirmDialog}
     </>
   );
 }

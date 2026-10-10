@@ -28,6 +28,7 @@ import {
   IconThermometer,
   RoleAvatarIcon,
 } from './HospitalIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function timeToMinutes(value) {
   const raw = String(value || '').slice(0, 5);
@@ -134,6 +135,7 @@ const HOME_QUEUE_PREVIEW_ROWS = 6;
  * view="queue": the full live queue with desk actions (check-in, payment, walk-in, no-show).
  */
 export default function HospitalDashboardOverview({ view = 'home' }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const isQueueView = view === 'queue';
   const [isWalkInOpen, setIsWalkInOpen] = useState(false);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
@@ -217,7 +219,13 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
   };
 
   const handleDeskNoShow = async (appointmentId) => {
-    if (!window.confirm('Mark this patient as a no-show?')) return;
+    const ok = await confirm({
+      title: 'Mark no-show?',
+      message: 'Mark this patient as a no-show? The appointment will be cancelled.',
+      confirmLabel: 'Mark no-show',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await appointmentService.updateAppointmentStatus(appointmentId, {
         status: 'Cancelled',
@@ -231,7 +239,13 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
   };
 
   const handleDeskDeclineUnpaid = async (appointmentId) => {
-    if (!window.confirm('Decline this unpaid appointment?')) return;
+    const ok = await confirm({
+      title: 'Decline unpaid appointment?',
+      message: 'Decline this unpaid appointment? The patient will see it as rejected.',
+      confirmLabel: 'Decline',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await appointmentService.updateAppointmentStatus(appointmentId, { status: 'Rejected' });
       showToast('Unpaid appointment declined.');
@@ -1278,6 +1292,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
           registeredVaccines={formularyVaccines.map((f) => f.vaccineName || f.name)}
         />
       )}
+      {confirmDialog}
     </div>
   );
 }
