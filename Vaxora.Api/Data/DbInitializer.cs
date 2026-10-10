@@ -23,6 +23,8 @@ public static class DbInitializer
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""DosageUpdatedAt"" TIMESTAMPTZ NULL;
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInAt"" TIMESTAMPTZ NULL;
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""CheckedInByUserId"" UUID NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""SessionStaffUserId"" UUID NULL;
+                    ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""SessionStaffName"" VARCHAR(200) NULL;
                     ALTER TABLE ""Batches"" ADD COLUMN IF NOT EXISTS ""OpenVialDosesRemaining"" INTEGER NULL;
                     ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""PlanJson"" TEXT NOT NULL DEFAULT '{{}}';
                     ALTER TABLE ""AgentWorkflows"" ADD COLUMN IF NOT EXISTS ""CompletedStepsJson"" TEXT NOT NULL DEFAULT '[]';
