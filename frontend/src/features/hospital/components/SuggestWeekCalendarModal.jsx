@@ -17,9 +17,22 @@ function formatDayRange(from, to) {
   return `${a.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} – ${b.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
 }
 
+// Same role colours as the live roster: bright stripe, readable accent text.
 const roleStyleMap = {
-  DOCTOR: { accent: 'var(--color-ai)', bg: 'var(--color-ai-bg)', border: 'var(--color-ai-border)', label: 'Doctor' },
-  NURSE: { accent: 'var(--color-success)', bg: 'var(--color-success-bg)', border: 'var(--color-success-border)', label: 'Nurse' },
+  DOCTOR: {
+    stripe: 'var(--color-role-doctor)',
+    accent: 'var(--color-blue)',
+    bg: 'var(--color-blue-bg)',
+    border: 'var(--color-blue-border)',
+    label: 'Doctor',
+  },
+  NURSE: {
+    stripe: 'var(--color-role-nurse)',
+    accent: 'var(--color-success)',
+    bg: 'var(--color-success-bg)',
+    border: 'var(--color-success-border)',
+    label: 'Nurse',
+  },
 };
 
 /**
@@ -266,7 +279,7 @@ export default function SuggestWeekCalendarModal({
                                   <div
                                     key={id}
                                     className={`suggest-week-card${selected ? ' is-selected' : ''}`}
-                                    style={{ borderLeftColor: roleStyle.accent }}
+                                    style={{ borderLeftColor: roleStyle.stripe }}
                                     onClick={() => !busy && onToggleSelect(id)}
                                     role="button"
                                     tabIndex={0}

@@ -1,7 +1,7 @@
 import StaffClinicalDashboard from '../../staff/components/StaffClinicalDashboard';
 import ClinicalAdministerModal from './ClinicalAdministerModal';
 import AefiReportModal from './AefiReportModal';
-import doctorHomeHero from '../../../assets/images/doctor-home-hero.jpg';
+import doctorHomeHero from '../../../assets/images/portal/hero-doctor.jpg';
 import { withStaffTitle } from '../../../shared/utils/staffName';
 
 function formatDoctorName(user) {

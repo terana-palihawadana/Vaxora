@@ -155,7 +155,7 @@ export default function WalkInRegistrationModal({
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
               <div className="modal-form-group">
                 <label className="modal-label">NIC / National ID *</label>
                 <input
@@ -167,14 +167,11 @@ export default function WalkInRegistrationModal({
                   required
                   className="modal-input"
                 />
-                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Matches an existing account by NIC, or creates one with the email/phone below.
-                </p>
               </div>
 
               <div className="modal-form-group">
                 <label className="modal-label">Age / Gender</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '6px' }}>
                   <input
                     type="number"
                     name="age"
@@ -196,8 +193,11 @@ export default function WalkInRegistrationModal({
                 </div>
               </div>
             </div>
+            <p style={{ margin: '-8px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              Matches an existing account by NIC, or creates one with the email and phone below.
+            </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
               <div className="modal-form-group">
                 <label className="modal-label">Email *</label>
                 <input
@@ -209,9 +209,6 @@ export default function WalkInRegistrationModal({
                   required
                   className="modal-input"
                 />
-                <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  For new guest accounts only: this is their login email, and the default password is their NIC.
-                </p>
               </div>
               <div className="modal-form-group">
                 <label className="modal-label">Phone *</label>
@@ -226,6 +223,9 @@ export default function WalkInRegistrationModal({
                 />
               </div>
             </div>
+            <p style={{ margin: '-8px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+              New guest accounts sign in with this email; the default password is their NIC.
+            </p>
 
             <div className="modal-form-group">
               <label className="modal-label">Vaccine Formulation</label>
@@ -242,12 +242,12 @@ export default function WalkInRegistrationModal({
               {vaccinePrices?.[formData.vaccine] ? (
                 <span style={{ display: 'block', marginTop: 4, fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                   Fee: {vaccinePrices[formData.vaccine]}
-                  {vaccinePrices[formData.vaccine] !== 'Free' ? ' — collect at the desk (Mark paid)' : ''}
+                  {vaccinePrices[formData.vaccine] !== 'Free' ? ', collect at the desk (Mark paid)' : ''}
                 </span>
               ) : null}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '12px' }}>
               <div className="modal-form-group">
                 <label className="modal-label">Dose Sequence</label>
                 <select
@@ -270,7 +270,7 @@ export default function WalkInRegistrationModal({
                   onChange={handleChange}
                   className="modal-select"
                 >
-                  <option value="">Auto — best booth for this vaccine</option>
+                  <option value="">Auto (best booth)</option>
                   {boothOptions.map((booth) => (
                     <option key={booth.id} value={booth.label}>{booth.label}</option>
                   ))}

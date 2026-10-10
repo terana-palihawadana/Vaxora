@@ -1,7 +1,7 @@
 import StaffClinicalDashboard from '../../staff/components/StaffClinicalDashboard';
 import NurseClinicalAdministerModal from './NurseClinicalAdministerModal';
 import NurseAefiReportModal from './NurseAefiReportModal';
-import nurseHomeHero from '../../../assets/images/nurse-home-hero.jpg';
+import nurseHomeHero from '../../../assets/images/portal/hero-nurse.jpg';
 import { withStaffTitle } from '../../../shared/utils/staffName';
 
 function formatNurseName(user) {
@@ -13,7 +13,6 @@ export default function NurseDashboardOverview() {
     <StaffClinicalDashboard
       formatTitle={formatNurseName}
       heroImage={nurseHomeHero}
-      heroClassName="nurse-home-hero"
       spotlightBadge="Active Immunization Station"
       allowHospitalSwitch
       AdministerModal={NurseClinicalAdministerModal}

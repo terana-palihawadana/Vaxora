@@ -47,13 +47,13 @@ test.describe('Staff Management accessibility (axe-core, WCAG 2.1 AA)', () => {
   test('2. Staff directory has no WCAG violations', async ({ page }, testInfo) => {
     await loginAsHospital(page);
     await page.goto('/hospital/staff');
-    await expect(page.getByRole('heading', { name: /hospital medical staff/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /medical staff/i })).toBeVisible();
     await scan(page, testInfo, 'staff-directory');
   });
 
   test('3. Shifts tab has no WCAG violations', async ({ page }, testInfo) => {
     await loginAsHospital(page);
-    await page.goto('/hospital/staff');
+    await page.goto('/hospital/roster');
     await page.getByRole('tab', { name: /shifts/i }).click();
     await expect(page.getByRole('tab', { name: /shifts/i })).toHaveAttribute('aria-selected', 'true');
     await scan(page, testInfo, 'staff-shifts');
@@ -61,7 +61,7 @@ test.describe('Staff Management accessibility (axe-core, WCAG 2.1 AA)', () => {
 
   test('4. Cover requests tab has no WCAG violations', async ({ page }, testInfo) => {
     await loginAsHospital(page);
-    await page.goto('/hospital/staff');
+    await page.goto('/hospital/roster');
     await page.getByRole('tab', { name: /cover requests/i }).click();
     await expect(page.getByRole('tab', { name: /cover requests/i })).toHaveAttribute('aria-selected', 'true');
     await scan(page, testInfo, 'staff-cover-requests');

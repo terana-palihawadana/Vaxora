@@ -6,6 +6,8 @@ import staffService from '../../hospital/services/staffService';
 import ClinicalPrescribeModal from '../../doctor/components/ClinicalPrescribeModal';
 import staffAppointmentService from '../services/staffAppointmentService';
 import { hospitalMinutesNow, hospitalToday } from '../../hospital/utils/hospitalDate';
+import PortalHero from '../../../components/PortalHero';
+import StaffSlotsCard from './StaffSlotsCard';
 import {
   IconCalendar,
   IconCheck,
@@ -91,7 +93,6 @@ function isPaymentSettled(patientOrStatus) {
 export default function StaffClinicalDashboard({
   formatTitle,
   heroImage,
-  heroClassName = '',
   spotlightBadge,
   allowHospitalSwitch = false,
   AdministerModal,
@@ -652,142 +653,132 @@ export default function StaffClinicalDashboard({
         </div>
       )}
 
-      <section className={`hospital-hero-banner doctor-home-hero ${heroClassName}`.trim()}>
-        <div className="hospital-hero-content doctor-home-hero-content">
-          <p className="hospital-hero-eyebrow">Clinical session</p>
-          <h1>
-            {greeting}, {displayTitle}
-          </h1>
-          <p className="hospital-hero-sub">
-            {heroDateLabel}
-            {primaryAffiliation?.hospitalName
-              ? ` · ${primaryAffiliation.hospitalName}`
-              : ' · No active hospital affiliation yet'}
-          </p>
-          {showHospitalSwitch ? (
-            <div
-              className={`doctor-hero-session-switch${hospitalMenuOpen ? ' is-open' : ''}`}
-              ref={hospitalMenuRef}
-            >
-              <button
-                type="button"
-                className="doctor-hero-session-pill doctor-hero-session-pill--switch"
-                aria-label="Working hospital"
-                aria-haspopup="listbox"
-                aria-expanded={hospitalMenuOpen}
-                disabled={statsLoading || statusUpdating}
-                onClick={() => setHospitalMenuOpen((open) => !open)}
-              >
-                <span className="doctor-hero-session-pill-main">
-                  <IconHospital size={14} aria-hidden="true" />
-                  <span>{primaryAffiliation?.hospitalName || 'Affiliated hospital'}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{dutyText}</span>
-                </span>
-                <span className="doctor-hero-session-pill-chevron" aria-hidden="true">
-                  ▾
-                </span>
-              </button>
-              {hospitalMenuOpen && (
-                <ul className="doctor-hero-session-menu" role="listbox" aria-label="Working hospital">
-                  {affiliations.map((h) => {
-                    const selected = h.hospitalUserId === selectedHospitalUserId;
-                    const label = presenceLabel(h);
-                    return (
-                      <li key={h.affiliationId || h.hospitalUserId} role="presentation">
-                        <button
-                          type="button"
-                          role="option"
-                          aria-selected={selected}
-                          className={`doctor-hero-session-menu-item${selected ? ' is-selected' : ''}`}
-                          onClick={() => handleHospitalChange(h.hospitalUserId)}
-                        >
-                          <span className="doctor-hero-session-menu-name">
-                            {h.hospitalName || h.hospitalUserId}
-                          </span>
-                          <span className="doctor-hero-session-menu-duty">{label}</span>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          ) : (
-            <div className="doctor-hero-session-pill">
-              {primaryAffiliation ? (
-                <>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                    <IconHospital size={14} />{' '}
-                    {primaryAffiliation.hospitalName || 'Affiliated hospital'}
-                  </span>
-                  <span>·</span>
-                  <span>{dutyText}</span>
-                </>
-              ) : (
-                <span>Accept a hospital invitation on Affiliations to join a roster</span>
-              )}
-            </div>
-          )}
-          <div className="doctor-hero-actions">
+      <PortalHero
+        eyebrow="Clinical session"
+        title={`${greeting}, ${displayTitle}`}
+        subtitle={`${heroDateLabel} · ${primaryAffiliation?.hospitalName || 'No active hospital affiliation yet'}`}
+        image={heroImage}
+      >
+        {showHospitalSwitch ? (
+          <div
+            className={`doctor-hero-session-switch${hospitalMenuOpen ? ' is-open' : ''}`}
+            ref={hospitalMenuRef}
+          >
             <button
               type="button"
-              className="doctor-btn-call-next"
-              onClick={handleCallNext}
-              disabled={statusUpdating || statsLoading || !selectedHospitalUserId || notOnDuty}
-              title={notOnDuty ? DUTY_REQUIRED_HINT : undefined}
+              className="doctor-hero-session-pill doctor-hero-session-pill--switch"
+              aria-label="Working hospital"
+              aria-haspopup="listbox"
+              aria-expanded={hospitalMenuOpen}
+              disabled={statsLoading || statusUpdating}
+              onClick={() => setHospitalMenuOpen((open) => !open)}
             >
-              Call Next Patient
+              <span className="doctor-hero-session-pill-main">
+                <IconHospital size={14} aria-hidden="true" />
+                <span>{primaryAffiliation?.hospitalName || 'Affiliated hospital'}</span>
+                <span aria-hidden="true">·</span>
+                <span>{dutyText}</span>
+              </span>
+              <span className="doctor-hero-session-pill-chevron" aria-hidden="true">
+                ▾
+              </span>
             </button>
-            <button
-              type="button"
-              className="doctor-btn-report-aefi"
-              onClick={() => setIsAefiModalOpen(true)}
-              disabled={!activePatient || statusUpdating}
-              title={!activePatient ? 'Call or select a patient first' : undefined}
-            >
-              Report AEFI
-            </button>
-            {primaryAffiliation ? (
-              <div className="doctor-duty-controls" role="group" aria-label="Duty status">
-                {onBreak || notOnDuty ? (
-                  <button
-                    type="button"
-                    className="doctor-btn-duty doctor-btn-duty--start"
-                    onClick={() => handleDutyChange('OnDuty')}
-                    disabled={dutyUpdating}
-                    title={onBreak ? undefined : 'For walk-ins or cover outside your rostered shift'}
-                  >
-                    {onBreak ? 'End break' : 'Clock in'}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="doctor-btn-duty"
-                    onClick={() => handleDutyChange('OnBreak')}
-                    disabled={dutyUpdating}
-                  >
-                    Take break
-                  </button>
-                )}
-                {primaryAffiliation.isClockedIn && !onBreak ? (
-                  <button
-                    type="button"
-                    className="doctor-btn-duty"
-                    onClick={() => handleDutyChange('Off')}
-                    disabled={dutyUpdating}
-                  >
-                    Clock out
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+            {hospitalMenuOpen && (
+              <ul className="doctor-hero-session-menu" role="listbox" aria-label="Working hospital">
+                {affiliations.map((h) => {
+                  const selected = h.hospitalUserId === selectedHospitalUserId;
+                  const label = presenceLabel(h);
+                  return (
+                    <li key={h.affiliationId || h.hospitalUserId} role="presentation">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={selected}
+                        className={`doctor-hero-session-menu-item${selected ? ' is-selected' : ''}`}
+                        onClick={() => handleHospitalChange(h.hospitalUserId)}
+                      >
+                        <span className="doctor-hero-session-menu-name">
+                          {h.hospitalName || h.hospitalUserId}
+                        </span>
+                        <span className="doctor-hero-session-menu-duty">{label}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
+        ) : (
+          <div className="doctor-hero-session-pill">
+            {primaryAffiliation ? (
+              <>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  <IconHospital size={14} />{' '}
+                  {primaryAffiliation.hospitalName || 'Affiliated hospital'}
+                </span>
+                <span>·</span>
+                <span>{dutyText}</span>
+              </>
+            ) : (
+              <span>Accept a hospital invitation under Hospitals to join a roster</span>
+            )}
+          </div>
+        )}
+        <div className="doctor-hero-actions">
+          <button
+            type="button"
+            className="doctor-btn-call-next"
+            onClick={handleCallNext}
+            disabled={statusUpdating || statsLoading || !selectedHospitalUserId || notOnDuty}
+            title={notOnDuty ? DUTY_REQUIRED_HINT : undefined}
+          >
+            Call Next Patient
+          </button>
+          <button
+            type="button"
+            className="doctor-btn-report-aefi"
+            onClick={() => setIsAefiModalOpen(true)}
+            disabled={!activePatient || statusUpdating}
+            title={!activePatient ? 'Call or select a patient first' : undefined}
+          >
+            Report AEFI
+          </button>
+          {primaryAffiliation ? (
+            <div className="doctor-duty-controls" role="group" aria-label="Duty status">
+              {onBreak || notOnDuty ? (
+                <button
+                  type="button"
+                  className="doctor-btn-duty doctor-btn-duty--start"
+                  onClick={() => handleDutyChange('OnDuty')}
+                  disabled={dutyUpdating}
+                  title={onBreak ? undefined : 'For walk-ins or cover outside your rostered shift'}
+                >
+                  {onBreak ? 'End break' : 'Clock in'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="doctor-btn-duty"
+                  onClick={() => handleDutyChange('OnBreak')}
+                  disabled={dutyUpdating}
+                >
+                  Take break
+                </button>
+              )}
+              {primaryAffiliation.isClockedIn && !onBreak ? (
+                <button
+                  type="button"
+                  className="doctor-btn-duty"
+                  onClick={() => handleDutyChange('Off')}
+                  disabled={dutyUpdating}
+                >
+                  Clock out
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <div className="hospital-hero-media" aria-hidden="true">
-          <img src={heroImage} alt="" className="hospital-hero-image doctor-home-hero-image" />
-        </div>
-      </section>
+      </PortalHero>
 
       <section className="hospital-metrics-grid hospital-metrics-grid--4 doctor-stats-grid">
         <div className="hospital-stat-card">
@@ -1393,50 +1384,10 @@ export default function StaffClinicalDashboard({
             )}
           </div>
 
-          <div className="doctor-coldbox-card staff-today-slots">
-            <div className="staff-today-slots-header">
-              <div className="staff-today-slots-title">
-                <span className="icon-shade icon-shade-blue">
-                  <IconClock size={22} />
-                </span>
-                <span>Today&apos;s Slots</span>
-              </div>
-              <span className="staff-today-slots-count">
-                {todayAppointments.length}{' '}
-                {todayAppointments.length === 1 ? 'slot' : 'slots'}
-              </span>
-            </div>
-
-            {todayAppointments.length === 0 ? (
-              <p className="staff-today-slots-empty">No slots booked for today.</p>
-            ) : (
-              <ul className="staff-today-slots-list">
-                {todayAppointments.slice(0, 6).map((a) => {
-                  const done = a.status === 'Completed';
-                  return (
-                    <li
-                      key={a.id}
-                      className={`staff-today-slot-item${done ? ' is-done' : ''}`}
-                    >
-                      <div className="staff-today-slot-time">
-                        {a.timeSlot || a.startTime || '—'}
-                      </div>
-                      <div className="staff-today-slot-meta">
-                        <span className="staff-today-slot-name">
-                          {a.patientName || 'Patient'}
-                        </span>
-                        <span
-                          className={`staff-today-slot-status${done ? ' is-done' : ''}`}
-                        >
-                          {a.status || 'Scheduled'}
-                        </span>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+          <StaffSlotsCard
+            hospitalUserId={selectedHospitalUserId}
+            todayAppointments={todayAppointments}
+          />
         </div>
       </div>
 

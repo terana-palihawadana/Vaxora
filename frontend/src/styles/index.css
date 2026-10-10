@@ -264,13 +264,13 @@ input[type="radio"]:focus-visible {
 }
 
 /* Clickable cards lift slightly on hover */
-.staff-shift-week-card--action,
+.staff-shift-card.is-actionable,
 .shift-week-card-action,
 .suggest-week-card {
   transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
 }
 
-.staff-shift-week-card--action:hover:not(:disabled),
+.staff-shift-card.is-actionable:hover,
 .shift-week-card-action:hover:not(:disabled),
 .suggest-week-card:hover {
   transform: translateY(-1px);

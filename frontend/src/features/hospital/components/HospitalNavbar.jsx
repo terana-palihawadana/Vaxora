@@ -51,9 +51,10 @@ export default function HospitalNavbar() {
   const navItems = [
     { path: '/hospital/dashboard', label: 'Home' },
     { path: '/hospital/appointments', label: 'Appointments' },
+    { path: '/hospital/roster', label: 'Roster' },
     { path: '/hospital/inventory', label: 'Inventory' },
+    { path: '/hospital/sessions', label: 'Sessions' },
     { path: '/hospital/staff', label: 'Staff' },
-    { path: '/hospital/booths', label: 'Booths' },
     { path: '/hospital/feedback', label: 'Feedback' },
   ];
 

@@ -2,7 +2,6 @@ export { default as DoctorLayout } from './pages/DoctorLayout';
 export {
   DoctorNavbar,
   DoctorDashboardOverview,
-  DoctorAppointmentsTab,
   DoctorPatientsTab,
   DoctorProfileTab,
   DoctorAffiliationsTab,

@@ -1,6 +1,7 @@
 
 import StaffHospitalAffiliationsTab from '../../staff/components/StaffHospitalAffiliationsTab';
 
-export default function DoctorAffiliationsTab() {
-  return <StaffHospitalAffiliationsTab roleLabel="Doctor" />;
+/** view: 'shifts' (My shifts page) or 'hospitals' (Hospitals page). */
+export default function DoctorAffiliationsTab({ view }) {
+  return <StaffHospitalAffiliationsTab roleLabel="Doctor" view={view} />;
 }

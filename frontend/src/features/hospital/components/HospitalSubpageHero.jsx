@@ -1,11 +1,5 @@
-
+import PortalHero from '../../../components/PortalHero';
 
 export default function HospitalSubpageHero({ eyebrow, title, subtitle }) {
-  return (
-    <section className="hospital-subpage-hero">
-      <p className="hospital-hero-eyebrow">{eyebrow}</p>
-      <h1>{title}</h1>
-      <p className="hospital-hero-sub">{subtitle}</p>
-    </section>
-  );
+  return <PortalHero eyebrow={eyebrow} title={title} subtitle={subtitle} />;
 }

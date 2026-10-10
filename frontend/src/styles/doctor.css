@@ -123,6 +123,24 @@
   transition: all var(--transition-smooth, 250ms cubic-bezier(0.4, 0, 0.2, 1));
 }
 
+/* Count on a nav tab, e.g. pending hospital invitations (amber = needs attention). */
+.nav-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-warning);
+  color: var(--color-text-inverse);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+
 .doctor-nav-btn:hover {
   color: var(--color-primary);
   background-color: var(--color-surface-subtle);
@@ -1660,6 +1678,10 @@
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-text-title);
+}
+
+.staff-slots-day-switch {
+  margin-bottom: 14px;
 }
 
 .staff-today-slots-count {
@@ -3283,14 +3305,26 @@
   }
 }
 
-/* Staff my-shifts week calendar (doctor/nurse affiliations tab) */
+/* ==========================================================================
+   Staff "My shifts" week calendar and cover requests (doctor and nurse)
+   Colour follows meaning: blue = scheduled, green = live or resolved,
+   amber = waiting on the hospital, red = declined, grey = past.
+   Teal is only for the "Request cover" action.
+   ========================================================================== */
 .staff-shift-week-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 12px 20px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.staff-cover-hint {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
 }
 
 .staff-shift-week-nav {
@@ -3300,34 +3334,33 @@
 }
 
 .staff-shift-week-nav-btn {
-  border: 1px solid var(--color-success-border);
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  font-size: 0.82rem;
-  font-weight: 700;
-  border-radius: 8px;
-  padding: 7px 12px;
-  cursor: pointer;
-}
-
-.staff-shift-week-nav-btn:hover {
-  background: var(--color-success-bg);
-  border-color: var(--color-success-border);
-}
-
-.staff-shift-week-range {
-  margin: 0 0 16px;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-family: var(--btn-font);
+  font-size: 0.84rem;
   font-weight: 600;
+  border-radius: var(--btn-radius);
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.staff-shift-week-nav-btn:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.staff-shift-week-nav-btn:disabled {
+  color: var(--color-text-placeholder);
+  cursor: default;
 }
 
 .staff-shift-week-calendar {
   background: var(--color-surface);
-  border: 1px solid var(--color-border-light);
-  border-radius: 16px;
+  border: 1px solid var(--color-border-card);
+  border-radius: 14px;
   overflow: hidden;
-  box-shadow: 0 4px 18px rgba(var(--rgb-primary-dark), 0.05);
 }
 
 .staff-shift-week-calendar-scroll {
@@ -3341,205 +3374,208 @@
 }
 
 .staff-shift-week-day-head {
-  background: var(--color-bg);
+  background: var(--color-surface-subtle);
   border-bottom: 1px solid var(--color-border-light);
   border-right: 1px solid var(--color-border-light);
-  padding: 12px 10px;
+  padding: 10px 12px;
 }
 
-.staff-shift-week-day-head:last-child,
+.staff-shift-week-day-head:nth-child(7),
 .staff-shift-week-cell:nth-child(14) {
   border-right: none;
 }
 
-.staff-shift-week-day-head.is-today {
-  background: var(--color-success-bg);
-}
-
+/* Day headers match the hospital roster calendar. Fixed top-row height so
+   the Today pill never pushes the date down. */
 .staff-shift-week-day-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
+  height: 20px;
 }
 
 .staff-shift-week-weekday {
-  font-size: 0.75rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  color: var(--color-text-body);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--color-text-title);
 }
 
 .staff-shift-week-date {
   display: block;
-  margin-top: 4px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text-title);
+  margin-top: 2px;
+  font-size: 0.78rem;
+  color: var(--color-text-body);
 }
 
 .staff-shift-week-today-pill {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--color-success);
-  background: var(--color-success-bg);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  padding: 0 6px;
   border-radius: 999px;
-  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-body);
+  background: var(--color-soft-panel-deep);
 }
 
-.staff-shift-week-cell {
-  min-height: 110px;
-  border-right: 1px solid var(--color-border-light);
-  border-bottom: 1px solid var(--color-border-light);
-  padding: 10px;
-  background: var(--color-surface);
+.staff-shift-week-day-head.is-today {
+  background: var(--color-bg);
+  box-shadow: inset 0 -2px 0 var(--color-primary);
 }
 
 .staff-shift-week-cell.is-today {
-  background: var(--color-success-bg);
+  background: var(--color-bg);
 }
 
-.staff-shift-week-empty {
-  color: var(--color-border-card);
-  font-size: 0.85rem;
+.staff-shift-week-cell {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 72px;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 132px;
+  padding: 10px;
+  border-right: 1px solid var(--color-border-light);
+  background: var(--color-surface);
 }
 
-.staff-shift-week-card {
-  border: 1px solid var(--color-success-border);
-  border-left: 4px solid var(--color-success-border);
+/* Role stripe colour, same as the hospital roster (blue doctor, emerald nurse) */
+.staff-shift-week-calendar {
+  --role-stripe: var(--color-role-nurse);
+}
+
+.staff-shift-week-calendar.is-doctor {
+  --role-stripe: var(--color-role-doctor);
+}
+
+.staff-shift-week-cell .shift-week-calendar-empty {
+  flex: 1;
+}
+
+/* Shift card: same height whatever the booth name length */
+.staff-shift-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px;
+  text-align: left;
+  font: inherit;
+  border: 1px solid var(--color-border-card);
+  border-left: 4px solid var(--role-stripe);
   border-radius: 8px;
-  padding: 8px;
-  margin-bottom: 8px;
-  background: var(--color-success-bg);
+  background: var(--color-surface);
+  cursor: default;
+  transition: box-shadow 0.15s ease;
 }
 
-.staff-shift-week-card:last-child {
-  margin-bottom: 0;
+.staff-shift-card:hover {
+  box-shadow: 0 4px 14px rgba(var(--rgb-primary-dark), 0.08);
 }
 
-.staff-shift-week-card-time {
-  font-weight: 800;
-  color: var(--color-success);
+.staff-shift-card-time {
   font-size: 0.78rem;
-  line-height: 1.2;
+  font-weight: 800;
+  color: var(--color-text-title);
 }
 
-.staff-shift-week-card-booth {
-  font-size: 0.68rem;
-  color: var(--color-success);
-  font-weight: 700;
-  margin-top: 4px;
+.staff-shift-card-booth,
+.staff-shift-card-line {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: 1.35;
-  word-break: break-word;
 }
 
-.staff-shift-week-card-notes {
+.staff-shift-card-booth {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-text-body);
+}
+
+.staff-shift-card-line {
   font-size: 0.68rem;
   color: var(--color-text-muted);
-  margin-top: 3px;
-  line-height: 1.35;
-  word-break: break-word;
 }
 
-.staff-shift-week-card-hospital {
-  font-size: 0.66rem;
-  color: var(--color-text-body);
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.staff-cover-hint {
-  margin: 0 0 14px;
-  font-size: 0.88rem;
-  color: var(--color-text-body);
-  font-weight: 600;
-  line-height: 1.45;
-}
-
-.staff-shift-week-card--action {
-  display: block;
-  width: 100%;
-  text-align: left;
+.staff-shift-card.is-actionable {
   cursor: pointer;
-  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.staff-shift-week-card--action:disabled {
-  cursor: default;
+.staff-shift-card.is-actionable:hover,
+.staff-shift-card.is-actionable:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 14px rgba(var(--rgb-primary), 0.14);
+  outline: none;
 }
 
-.staff-shift-week-card--action:hover:not(:disabled) {
-  border-color: var(--color-success-border);
-  box-shadow: 0 4px 12px rgba(var(--rgb-success), 0.12);
-}
-
-.staff-shift-week-card.is-cover-requested {
-  border-color: var(--color-warning-border);
-  border-left-color: var(--color-warning-border);
-  background: var(--color-warning-bg);
-}
-
-.staff-shift-week-card.is-cover-covering {
-  border-color: var(--color-info-border);
-  border-left-color: var(--color-primary);
-  background: var(--color-info-bg);
-}
-
-.staff-shift-week-card.is-cover-declined {
-  border-color: var(--color-error-border);
-  border-left-color: var(--color-error);
-  background: var(--color-error-bg);
-}
-
-.staff-shift-week-card.is-finished {
-  border-color: var(--color-border-light);
-  border-left-color: var(--color-border-card);
-  background: var(--color-bg);
-  opacity: 0.85;
-}
-
-.staff-cover-chip {
+.staff-shift-card-action {
   display: inline-flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 6px;
+  padding-top: 7px;
+  width: 100%;
+  border-top: 1px dashed var(--color-border-card);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* State is carried by the chip; the card keeps the role stripe like the roster.
+   Past shifts fade slightly so the week ahead stands out. */
+.staff-shift-card.is-finished {
+  opacity: 0.72;
+}
+
+/* Status chip (calendar cards and cover requests) */
+.staff-shift-chip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-top: 4px;
   padding: 2px 8px;
   border-radius: 999px;
-  font-size: 0.64rem;
-  font-weight: 800;
-  letter-spacing: 0.01em;
   border: 1px solid transparent;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
-.staff-cover-chip.is-request {
+.staff-shift-chip.is-grey {
+  color: var(--color-text-muted);
   background: var(--color-surface);
+  border-color: var(--color-border-card);
+}
+
+.staff-shift-chip.is-green {
   color: var(--color-success);
+  background: var(--color-success-bg);
   border-color: var(--color-success-border);
 }
 
-.staff-cover-chip.is-pending {
-  background: var(--color-warning-bg);
+.staff-shift-chip.is-amber {
   color: var(--color-warning);
+  background: var(--color-warning-bg);
   border-color: var(--color-warning-border);
 }
 
-.staff-cover-chip.is-approved {
-  background: var(--color-info-bg);
-  color: var(--color-primary-hover);
-  border-color: var(--color-info-border);
+.staff-shift-chip.is-blue {
+  color: var(--color-blue);
+  background: var(--color-blue-bg);
+  border-color: var(--color-blue-border);
 }
 
-.staff-cover-chip.is-declined {
-  background: var(--color-error-bg);
+.staff-shift-chip.is-red {
   color: var(--color-error);
+  background: var(--color-error-bg);
   border-color: var(--color-error-border);
 }
 
-/* Cover activity only — does not style the week shift table */
+/* Cover requests: filter toolbar, then two lanes of dated rows */
 .staff-cover-activity {
   padding: 24px;
   margin-bottom: 24px;
@@ -3547,26 +3583,85 @@
 }
 
 .staff-cover-activity-header {
+  margin-bottom: 14px;
+}
+
+.staff-cover-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
   margin-bottom: 18px;
 }
 
-.staff-cover-activity-title-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+.staff-cover-seg {
+  display: inline-flex;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--color-border-card);
+  border-radius: 999px;
+  background: var(--color-surface-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.staff-cover-activity-icon {
+.staff-cover-seg::-webkit-scrollbar {
+  display: none;
+}
+
+.staff-cover-seg-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--color-info-bg);
-  color: var(--color-primary);
-  border: 1px solid var(--color-info-border);
+  gap: 6px;
   flex-shrink: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 12px;
+  font-family: var(--btn-font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.staff-cover-seg-btn:hover {
+  color: var(--color-text-title);
+}
+
+.staff-cover-seg-btn.is-active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+}
+
+.staff-cover-seg-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  text-align: center;
+  background: var(--color-border-light);
+  color: var(--color-text-body);
+}
+
+.staff-cover-seg-btn.is-active .staff-cover-seg-count {
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+
+.staff-cover-select {
+  border: 1px solid var(--color-border-card);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding: 6px 12px;
+  font-family: var(--btn-font);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-body);
+  max-width: 100%;
 }
 
 .staff-cover-board {
@@ -3584,251 +3679,226 @@
 
 .staff-cover-lane {
   min-width: 0;
+  border: 1px solid var(--color-border-card);
+  border-top: 3px solid var(--lane);
   border-radius: 14px;
   padding: 14px;
-  border: 1px solid var(--color-info-bg);
-  background: var(--color-bg);
+  background: var(--color-surface);
+  /* One accent per lane: stripe, icon, count and date tiles share it */
+  --lane: var(--color-blue);
+  --lane-bg: var(--color-blue-bg);
+  --lane-border: var(--color-blue-border);
 }
 
-.staff-cover-lane.is-outgoing,
-.staff-cover-lane.is-incoming {
-  background: linear-gradient(180deg, var(--color-info-bg) 0%, var(--color-bg) 100%);
-  border-color: var(--color-info-bg);
+.staff-cover-lane.is-in {
+  --lane: var(--color-success);
+  --lane-bg: var(--color-success-bg);
+  --lane-border: var(--color-success-border);
 }
 
 .staff-cover-lane-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
-.staff-cover-lane-kicker {
-  margin: 0 0 2px;
-  font-size: 0.68rem;
+.staff-cover-lane-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--color-text-title);
+}
+
+.staff-cover-lane-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--lane);
+  background: var(--lane-bg);
+}
+
+.staff-cover-lane-count {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--lane);
+  background: var(--lane-bg);
+}
+
+.staff-cover-quiet {
+  margin: 0;
+  padding: 14px 4px;
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+}
+
+.staff-cover-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.staff-cover-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.staff-cover-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
-.staff-cover-lane-title {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--color-primary-dark);
+.staff-cover-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border-light);
 }
 
-.staff-cover-lane.is-outgoing .staff-cover-lane-title,
-.staff-cover-lane.is-incoming .staff-cover-lane-title {
-  color: var(--color-primary-dark);
-}
-
-.staff-cover-lane-count {
-  display: inline-flex;
+.staff-cover-item {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 8px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 800;
-  background: var(--color-info-bg);
-  border: 1px solid var(--color-info-border);
-  color: var(--color-primary);
-}
-
-.staff-cover-lane-empty {
-  margin: 0;
-  padding: 18px 12px;
-  text-align: center;
-  color: var(--color-text-placeholder);
-  font-size: 0.86rem;
-  font-weight: 600;
-  border: 1px dashed rgba(148, 163, 184, 0.55);
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-light);
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.55);
+  background: var(--color-surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.staff-cover-timeline {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.staff-cover-item:hover {
+  border-color: var(--color-border-card);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+.staff-cover-date {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 52px;
+  padding: 6px 0;
+  border-radius: 10px;
+  border: 1px solid var(--lane-border);
+  background: var(--lane-bg);
+  color: var(--lane);
+  line-height: 1.1;
 }
 
-.staff-cover-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 14px 1fr;
-  gap: 10px;
-  align-items: stretch;
+.staff-cover-date-wd,
+.staff-cover-date-mon {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.staff-cover-rail {
-  position: relative;
-  width: 14px;
+.staff-cover-date-day {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
 }
 
-.staff-cover-rail::before {
-  content: '';
-  position: absolute;
-  left: 5px;
-  top: 16px;
-  bottom: -18px;
-  width: 2px;
-  background: var(--color-soft-panel-deep);
-  border-radius: 999px;
+.staff-cover-item.is-past .staff-cover-date {
+  opacity: 0.6;
 }
 
-.staff-cover-row:last-child .staff-cover-rail::before {
-  display: none;
-}
-
-.staff-cover-rail::after {
-  content: '';
-  position: absolute;
-  left: 1px;
-  top: 14px;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-surface);
-  border: 2px solid var(--color-border-card);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.8);
-}
-
-.staff-cover-row.is-pending .staff-cover-rail::after {
-  border-color: var(--color-warning-border);
-}
-
-.staff-cover-row.is-approved .staff-cover-rail::after {
-  border-color: var(--color-success-border);
-}
-
-.staff-cover-row.is-declined .staff-cover-rail::after {
-  border-color: var(--color-error-border);
-}
-
-.staff-cover-row.is-cancelled .staff-cover-rail::after {
-  border-color: var(--color-border-card);
-}
-
-.staff-cover-row-body {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(var(--rgb-primary-dark), 0.06);
-  border-radius: 12px;
-  padding: 12px 13px;
-  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
-}
-
-.staff-cover-row:hover .staff-cover-row-body {
-  transform: translateY(-1px);
-  border-color: rgba(var(--rgb-primary), 0.16);
-  box-shadow: 0 8px 18px rgba(var(--rgb-primary-dark), 0.05);
-}
-
-.staff-cover-row-top {
+.staff-cover-item-main {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 4px;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 
-.staff-cover-row-top strong {
-  color: var(--color-text-title);
+.staff-cover-item-when {
   font-size: 0.92rem;
-  font-weight: 800;
-  line-height: 1.35;
+  font-weight: 700;
+  color: var(--color-text-title);
 }
 
-.staff-cover-row-when {
+.staff-cover-item-where {
+  font-size: 0.8rem;
+  color: var(--color-text-body);
+  overflow-wrap: anywhere;
+}
+
+.staff-cover-item-note {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.staff-cover-item .staff-shift-chip {
+  margin-top: 0;
+  align-self: flex-start;
+}
+
+/* Approved follows the lane accent; pending, declined and cancelled keep their status colours */
+.staff-cover-item .staff-shift-chip.is-green {
+  color: var(--lane);
+  background: var(--lane-bg);
+  border-color: var(--lane-border);
+}
+
+.staff-cover-more {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  border: 1px dashed var(--color-border-card);
+  border-radius: 10px;
+  background: transparent;
+  font-family: var(--btn-font);
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-text-body);
-  margin-bottom: 8px;
+  color: var(--color-primary);
+  cursor: pointer;
 }
 
-.staff-cover-row-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  align-items: center;
-}
-
-.staff-cover-booth-pill {
-  display: inline-flex;
-  align-items: center;
-  max-width: 100%;
-  padding: 3px 8px;
-  border-radius: 999px;
+.staff-cover-more:hover {
   background: var(--color-surface-subtle);
-  border: 1px solid var(--color-border-light);
+}
+
+@media (max-width: 520px) {
+  .staff-cover-activity {
+    padding: 16px;
+  }
+
+  .staff-cover-item {
+    gap: 10px;
+    padding: 10px;
+  }
+}
+
+.staff-cover-quota {
+  margin: 0 0 12px;
+  font-size: 0.84rem;
   color: var(--color-text-body);
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.staff-cover-note {
-  font-size: 0.76rem;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  line-height: 1.35;
-}
-
-.staff-cover-note.is-emphasis {
-  color: var(--color-text-body);
-}
-
-.staff-cover-activity .staff-cover-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1.2;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.staff-cover-activity .staff-cover-badge.is-approved {
-  background: var(--color-success-bg);
-  color: var(--color-success);
-  border-color: var(--color-success-border);
-}
-
-.staff-cover-activity .staff-cover-badge.is-pending {
-  background: var(--color-warning-bg);
-  color: var(--color-warning);
-  border-color: var(--color-warning-border);
-}
-
-.staff-cover-activity .staff-cover-badge.is-declined {
-  background: var(--color-error-bg);
-  color: var(--color-error);
-  border-color: var(--color-error-border);
-}
-
-.staff-cover-activity .staff-cover-badge.is-cancelled {
-  background: var(--color-surface-subtle);
-  color: var(--color-text-body);
-  border-color: var(--color-border-card);
-}
-
-.staff-cover-activity-empty {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: 0.9rem;
-  font-weight: 600;
 }
 
 .staff-cover-modal {

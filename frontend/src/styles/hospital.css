@@ -1098,48 +1098,56 @@
 }
 
 .btn-hospital-primary {
-  background: var(--color-surface);
-  color: var(--color-primary);
-  font-weight: 700;
-  font-size: 0.92rem;
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  font-size: 0.9rem;
   padding: 10px 18px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--btn-radius);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: var(--shadow-btn);
   transition: all var(--transition-smooth);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.btn-hospital-primary:hover {
-  background: var(--color-bg);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+.btn-hospital-primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+  box-shadow: var(--shadow-btn-hover);
+}
+
+.btn-hospital-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-hospital-secondary {
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--color-text-inverse);
-  font-weight: 600;
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
   font-size: 0.88rem;
   padding: 10px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--btn-secondary-border);
+  border-radius: var(--btn-radius);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  text-decoration: none;
   transition: all var(--transition-smooth);
-  backdrop-filter: blur(4px);
 }
 
-.btn-hospital-secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: var(--color-surface);
+.btn-hospital-secondary:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  color: var(--color-primary-hover);
+  border-color: var(--color-primary);
 }
 
 /* ==========================================================================
@@ -1155,6 +1163,16 @@
 /* Staff / booths pages use four metrics — keep them full-bleed like home. */
 .hospital-metrics-grid.hospital-metrics-grid--4 {
   grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.hospital-metrics-grid.hospital-metrics-grid--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 700px) {
+  .hospital-metrics-grid.hospital-metrics-grid--3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 .hospital-stat-card {
@@ -2493,6 +2511,9 @@
   box-shadow: 0 20px 40px -10px rgba(var(--rgb-primary-dark), 0.25);
   border: 1px solid var(--color-border-light);
   overflow: hidden;
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
   animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -2514,6 +2535,15 @@
   padding: 18px 24px;
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+/* Long forms scroll inside the card; header and footer stay in view. */
+.hospital-modal-card > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .modal-header h3 {
@@ -2544,6 +2574,9 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .modal-form-group {
@@ -2569,6 +2602,15 @@
   background: var(--color-surface);
   outline: none;
   transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Inputs and selects render at different heights by default; pin them. */
+input.modal-input,
+.modal-select {
+  height: 42px;
 }
 
 .modal-input:focus,
@@ -2585,6 +2627,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .btn-modal-cancel {
@@ -3092,7 +3135,7 @@
   background-color: var(--color-surface-subtle);
   border-radius: 18px;
   padding: 24px 28px 20px;
-  margin-top: 24px;
+  margin-top: 0;
   margin-bottom: 24px;
   box-shadow: 0 4px 14px rgba(var(--rgb-primary-dark), 0.05);
   box-sizing: border-box;
@@ -5303,6 +5346,158 @@ select.schedule-input-field {
 .shift-week-card-action:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+/* Roster toolbar, stat row and add/edit form (the week calendar below is unchanged) */
+.roster-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.roster-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* AI actions: teal because they are clickable, purple tag because they are AI */
+.roster-ai-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-family: var(--btn-font);
+  font-weight: var(--btn-weight);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: all var(--transition-smooth);
+}
+
+.roster-ai-btn:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--color-primary);
+}
+
+.roster-ai-btn.is-primary {
+  background: var(--btn-primary-bg);
+  color: var(--color-text-inverse);
+  border-color: transparent;
+  box-shadow: var(--shadow-btn);
+}
+
+.roster-ai-btn.is-primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+}
+
+.roster-ai-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.roster-ai-tag {
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--color-ai);
+  background: var(--color-ai-bg);
+  border: 1px solid var(--color-ai-border);
+}
+
+.roster-week-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.roster-week-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.roster-week-step {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--btn-radius);
+  border: 1px solid var(--btn-secondary-border);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.roster-week-step:hover {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--color-primary);
+}
+
+/* Readable week label; the date input on top opens the picker to jump weeks */
+.roster-week-label {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--btn-radius);
+  background: var(--color-surface);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-text-title);
+  cursor: pointer;
+}
+
+.roster-week-label input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.roster-week-label:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 3px rgba(var(--rgb-primary), 0.15);
+}
+
+.roster-week-btn {
+  padding: 8px 14px;
+}
+
+.roster-week-btn:disabled {
+  color: var(--color-text-placeholder);
+  cursor: default;
+}
+
+.roster-form-panel {
+  padding: 18px;
+  border: 1px solid var(--color-border-card);
+  border-radius: 14px;
+  background: var(--color-surface-subtle);
+}
+
+.roster-form-title {
+  margin: 0 0 14px;
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-title);
 }
 
 /* —— Suggest Week selection modal (separate from live roster calendar) —— */
