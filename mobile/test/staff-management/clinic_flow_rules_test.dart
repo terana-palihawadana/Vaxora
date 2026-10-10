@@ -112,6 +112,18 @@ void main() {
       expect(appointment(checkedInAt: '').isCheckedIn, isFalse);
     });
 
+    test('reads who is running a live session, and nobody when unset', () {
+      final live = StaffAppointmentModel.fromJson({
+        'id': 'appt-2',
+        'status': 'Administering',
+        'sessionStaffUserId': 'nurse-1',
+        'sessionStaffName': 'Nurse Kavindi',
+      });
+      expect(live.sessionStaffUserId, 'nurse-1');
+      expect(live.sessionStaffName, 'Nurse Kavindi');
+      expect(appointment().sessionStaffUserId, isNull);
+    });
+
     test('patients in session keep their clinical label', () {
       expect(appointment(status: 'Administering').statusLabel, 'In session');
     });

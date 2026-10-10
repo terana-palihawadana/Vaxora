@@ -119,6 +119,21 @@ class StaffRepository {
     await ApiClient.post(ApiConstants.appointmentCheckIn(appointmentId));
   }
 
+  /// Take over a colleague's live session; [status] must be the current status.
+  static Future<StaffAppointmentModel> takeOverSession({
+    required String appointmentId,
+    required String status,
+  }) async {
+    final response = await ApiClient.patch(
+      ApiConstants.appointmentStatus(appointmentId),
+      body: {'status': status, 'takeOver': true},
+    );
+    if (response is Map<String, dynamic>) {
+      return StaffAppointmentModel.fromJson(response);
+    }
+    throw ApiException('Failed to take over the session.');
+  }
+
   static Future<StaffAppointmentModel> updateAppointmentStatus({
     required String appointmentId,
     required String status,
