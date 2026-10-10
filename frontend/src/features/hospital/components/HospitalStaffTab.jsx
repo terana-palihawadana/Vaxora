@@ -4,7 +4,7 @@ import AddStaffRequestModal from './AddStaffRequestModal';
 import HospitalCoverRequestsPanel from './HospitalCoverRequestsPanel';
 import HospitalShiftsPanel from './HospitalShiftsPanel';
 import staffService from '../services/staffService';
-import staffHeroImage from '../../../assets/images/hospital-staff-hero.jpg';
+import PortalHero from '../../../components/PortalHero';
 import {
   IconClock,
   IconDoctor,
@@ -231,52 +231,44 @@ export default function HospitalStaffTab() {
         </div>
       )}
 
-      <div className="hospital-hero-banner hospital-staff-hero">
-        <div className="hospital-staff-hero-inner">
-          <div className="hospital-hero-content">
-            <p className="hospital-hero-eyebrow">Staff management</p>
-            <h1>Hospital Medical Staff &amp; Doctors</h1>
-            <p className="hospital-hero-sub">
-              Manage affiliated doctors and nurses. Invite verified practitioners with their Vaxora ID.
-            </p>
-            <div className="hospital-staff-hero-tabs" role="tablist" aria-label="Staff views">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={pageView === 'directory'}
-                className={`hospital-staff-hero-tab ${pageView === 'directory' ? 'active' : ''}`}
-                onClick={() => setPageView('directory')}
-              >
-                Directory
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={pageView === 'shifts'}
-                className={`hospital-staff-hero-tab ${pageView === 'shifts' ? 'active' : ''}`}
-                onClick={() => setPageView('shifts')}
-              >
-                Shifts
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={pageView === 'covers'}
-                className={`hospital-staff-hero-tab ${pageView === 'covers' ? 'active' : ''}`}
-                onClick={() => setPageView('covers')}
-              >
-                Cover requests
-                {pendingCoverCount > 0 ? (
-                  <span className="hospital-staff-hero-tab-badge">{pendingCoverCount}</span>
-                ) : null}
-              </button>
-            </div>
-          </div>
+      <PortalHero
+        eyebrow="Staff management"
+        title="Hospital Medical Staff & Doctors"
+        subtitle="Manage affiliated doctors and nurses. Invite verified practitioners with their Vaxora ID."
+      >
+        <div className="hospital-staff-hero-tabs" role="tablist" aria-label="Staff views">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pageView === 'directory'}
+            className={`hospital-staff-hero-tab ${pageView === 'directory' ? 'active' : ''}`}
+            onClick={() => setPageView('directory')}
+          >
+            Directory
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pageView === 'shifts'}
+            className={`hospital-staff-hero-tab ${pageView === 'shifts' ? 'active' : ''}`}
+            onClick={() => setPageView('shifts')}
+          >
+            Shifts
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={pageView === 'covers'}
+            className={`hospital-staff-hero-tab ${pageView === 'covers' ? 'active' : ''}`}
+            onClick={() => setPageView('covers')}
+          >
+            Cover requests
+            {pendingCoverCount > 0 ? (
+              <span className="hospital-staff-hero-tab-badge">{pendingCoverCount}</span>
+            ) : null}
+          </button>
         </div>
-        <div className="hospital-hero-media" aria-hidden="true">
-          <img src={staffHeroImage} alt="" className="hospital-hero-image" />
-        </div>
-      </div>
+      </PortalHero>
 
       {pageView === 'shifts' ? (
         <HospitalShiftsPanel />

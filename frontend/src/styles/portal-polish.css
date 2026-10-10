@@ -1,111 +1,17 @@
 /* ==========================================================================
    Portal polish (hospital, doctor, nurse, patient)
    Loaded last by each portal layout. Gives the portals the same premium
-   language as the landing page: one dark brand surface at the top of each
-   page, saturated accents that carry meaning (tones.css), and clear depth
-   between page, panels and content. Teal stays the colour of actions.
+   language as the landing page: saturated accents that carry meaning
+   (tones.css) and clear depth between page, panels and content. Teal stays
+   the colour of actions. Page banners live in portal-hero.css.
    ========================================================================== */
 
 :where(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container) {
-  --portal-hero-bg:
-    radial-gradient(520px 260px at 88% -10%, rgba(var(--rgb-primary), 0.55), transparent 70%),
-    radial-gradient(420px 240px at 8% 120%, rgba(var(--rgb-blue), 0.4), transparent 70%),
-    linear-gradient(120deg, var(--color-primary-deep) 0%, var(--color-brand-blue) 55%, var(--color-primary-hover) 100%);
   --portal-panel-shadow: 0 1px 2px rgba(var(--rgb-primary-dark), 0.04), 0 10px 28px -14px rgba(var(--rgb-primary-dark), 0.22);
 }
 
 /* --------------------------------------------------------------------------
-   1. Page hero: dark brand surface with white text
-   -------------------------------------------------------------------------- */
-.hospital-dashboard-container .hospital-hero-banner,
-.doctor-dashboard-container .hospital-hero-banner,
-.hospital-dashboard-container .hospital-subpage-hero,
-.doctor-dashboard-container .hospital-subpage-hero,
-.patient-dashboard-container .hospital-subpage-hero,
-.patient-dashboard-container .patient-welcome-banner {
-  color: var(--color-text-inverse);
-  background: var(--portal-hero-bg);
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 18px 40px -22px rgba(var(--rgb-primary-dark), 0.65);
-}
-
-/* Photo melts into the brand colour from the left */
-.hospital-dashboard-container .hospital-hero-media::before,
-.doctor-dashboard-container .hospital-hero-media::before {
-  background: linear-gradient(
-    90deg,
-    rgba(var(--rgb-primary-dark), 1) 0%,
-    rgba(var(--rgb-primary-dark), 0.92) 34%,
-    rgba(var(--rgb-primary-dark), 0.45) 62%,
-    rgba(var(--rgb-primary-dark), 0.15) 100%
-  );
-}
-
-.hospital-dashboard-container .hospital-hero-image,
-.doctor-dashboard-container .hospital-hero-image {
-  filter: saturate(1.05) contrast(1.05);
-}
-
-/* Eyebrow becomes a small glass pill */
-:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.hospital-hero-banner, .hospital-subpage-hero) .hospital-hero-eyebrow,
-.patient-dashboard-container .patient-welcome-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  align-self: flex-start;
-  width: fit-content;
-  padding: 4px 12px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-inverse);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: var(--radius-pill);
-}
-
-:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.hospital-hero-banner, .hospital-subpage-hero) h1,
-.patient-dashboard-container .patient-welcome-banner h1 {
-  color: var(--color-text-inverse) !important;
-  font-weight: 800;
-}
-
-:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.hospital-hero-banner, .hospital-subpage-hero) .hospital-hero-sub,
-.patient-dashboard-container .patient-welcome-banner .welcome-subtitle {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-/* Tags and pills on the dark hero are glass */
-:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.hospital-tag-item, .staff-affil-hero-pill, .patient-welcome-tag) {
-  color: var(--color-text-inverse);
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.24);
-}
-
-.hospital-dashboard-container .hospital-staff-hero-tab {
-  color: var(--color-text-inverse);
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.28);
-}
-
-.hospital-dashboard-container .hospital-staff-hero-tab:hover:not(.active) {
-  background: rgba(255, 255, 255, 0.18);
-}
-
-.hospital-dashboard-container .hospital-staff-hero-tab.active {
-  color: var(--color-primary-deep);
-  background: var(--color-surface);
-  border-color: var(--color-surface);
-}
-
-/* --------------------------------------------------------------------------
-   2. KPI stat cards: solid colour icon, soft glow in the card's tone
+   1. KPI stat cards: solid colour icon, soft glow in the card's tone
    -------------------------------------------------------------------------- */
 .hospital-stat-card:has(.stat-icon-blue) { --tone: var(--color-blue); --tone-bg: var(--color-blue-bg); }
 .hospital-stat-card:has(.stat-icon-teal) { --tone: var(--color-primary); --tone-bg: var(--color-soft-panel); }
@@ -150,7 +56,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   3. Panels: one consistent, slightly raised surface
+   2. Panels: one consistent, slightly raised surface
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.hospital-section-card, .doctor-card, .doctor-obs-card) {
@@ -167,7 +73,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   4. Booth cards: colour follows the booth's live status
+   3. Booth cards: colour follows the booth's live status
    -------------------------------------------------------------------------- */
 .booth-card:has(.booth-status-indicator.is-on-duty),
 .booth-card:has(.booth-status-indicator.is-in-session) {
@@ -234,7 +140,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   5. Stock and cold chain: colours carry meaning
+   4. Stock and cold chain: colours carry meaning
    -------------------------------------------------------------------------- */
 .hospital-dashboard-container .bar-green {
   background: var(--color-success);
@@ -260,78 +166,21 @@
 }
 
 /* --------------------------------------------------------------------------
-   6. Contrast: teal text on mint fills uses the deeper teal (AA)
+   5. Contrast: teal text on mint fills uses the deeper teal (AA)
    -------------------------------------------------------------------------- */
 .hospital-dashboard-container :is(.btn-queue-walkin, .cold-vaults-live-tag) {
   color: var(--color-primary-hover);
 }
 
-/* --------------------------------------------------------------------------
-   7. Patient welcome banner: same dark photo blend as the other portals
-   -------------------------------------------------------------------------- */
-.patient-dashboard-container .patient-welcome-media::before {
-  background: linear-gradient(
-    90deg,
-    rgba(var(--rgb-primary-dark), 1) 0%,
-    rgba(var(--rgb-primary-dark), 0.92) 36%,
-    rgba(var(--rgb-primary-dark), 0.4) 64%,
-    rgba(var(--rgb-primary-dark), 0.1) 100%
-  );
-}
-
-.patient-dashboard-container .patient-welcome-media::after {
-  display: none;
-}
-
-.patient-dashboard-container .patient-welcome-tag--soft {
-  color: var(--color-text-inverse);
-  background: rgba(255, 255, 255, 0.06);
-}
 
 /* Empty observation message sits on a tinted fill: use body text (AA) */
 .doctor-dashboard-container .doctor-obs-empty {
   color: var(--color-text-body);
 }
 
-/* --------------------------------------------------------------------------
-   8. Sub-page headers (staff-subpage-hero, also used by patient sub-pages):
-   same dark surface. Selectors are deliberately stronger than doctor.css's
-   !important title rule so the result never depends on load order.
-   -------------------------------------------------------------------------- */
-:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
-  section.hospital-hero-banner.staff-subpage-hero {
-  color: var(--color-text-inverse);
-  background: var(--portal-hero-bg);
-  border: none;
-  border-radius: 20px;
-  box-shadow: 0 18px 40px -22px rgba(var(--rgb-primary-dark), 0.65);
-}
-
-:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
-  section.hospital-hero-banner.staff-subpage-hero .hospital-hero-content h1,
-:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
-  section.hospital-hero-banner .hospital-hero-content h1 {
-  color: var(--color-text-inverse) !important;
-}
-
-:is(.doctor-dashboard-container, .patient-dashboard-container, .hospital-dashboard-container)
-  section.hospital-hero-banner.staff-subpage-hero .hospital-hero-sub {
-  color: rgba(255, 255, 255, 0.82);
-}
-
-/* The affiliations banner image is a near-empty blue wash: let the brand
-   surface show instead. */
-.doctor-dashboard-container .staff-affil-hero .hospital-hero-media {
-  display: none;
-}
-
-:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.staff-affil-hero-pill, .hospital-tag-item, .patient-welcome-tag) strong {
-  color: var(--color-text-inverse);
-}
 
 /* --------------------------------------------------------------------------
-   9. Tables: one clean style for every portal table
+   6. Tables: one clean style for every portal table
    White rows with hairline dividers, a quiet header, a soft blue hover.
    Selectors use the container + table class so they outrank the
    per-table "thead tr th" / "tbody tr td" rules.
@@ -401,7 +250,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   10. Cancel buttons: quiet red outline instead of a solid red block
+   7. Cancel buttons: quiet red outline instead of a solid red block
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .patient-dashboard-container)
   :is(.btn-cancel-schedule, .btn-cancel-appointment) {
@@ -419,7 +268,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   11. Empty states: white, calm, with a small icon
+   8. Empty states: white, calm, with a small icon
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.empty-table-cell, .empty-appointments-cell, .patient-empty-state, .ph-appointments-search-empty,
@@ -457,7 +306,7 @@
 }
 
 /* --------------------------------------------------------------------------
-   12. Form panels: white card with a brand accent bar
+   9. Form panels: white card with a brand accent bar
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .patient-dashboard-container) :is(.schedule-create-box, .book-appointment-box) {
   position: relative;

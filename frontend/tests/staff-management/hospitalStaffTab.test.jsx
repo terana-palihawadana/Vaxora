@@ -20,10 +20,6 @@ vi.mock('../../src/features/hospital/components/HospitalCoverRequestsPanel', () 
   default: () => <div data-testid="covers-panel">Cover Requests Panel</div>,
 }));
 
-vi.mock('../../src/assets/images/hospital-staff-hero.jpg', () => ({
-  default: 'staff-hero.jpg',
-}));
-
 describe('Staff Management - Hospital Staff Directory', () => {
   beforeEach(() => {
     vi.clearAllMocks();

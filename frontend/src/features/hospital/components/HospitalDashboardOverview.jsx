@@ -12,7 +12,8 @@ import {
   mapDbStatusToQueueStatus,
   queueStatusLabel,
 } from '../utils/appointmentStatus';
-import hospitalHeroImage from '../../../assets/images/hospital-hero-vaccine.webp';
+import hospitalHeroImage from '../../../assets/images/portal/hero-hospital.jpg';
+import PortalHero from '../../../components/PortalHero';
 import {
   IconClipboard,
   IconClock,
@@ -591,30 +592,24 @@ export default function HospitalDashboardOverview() {
   return (
     <div className="hospital-dashboard-tab">
       {/* 1. Hospital Facility Hero Banner */}
-      <div className="hospital-hero-banner">
-        <div className="hospital-hero-content">
-          <p className="hospital-hero-eyebrow">Hospital operations</p>
-          <h1>{hospitalCenterName}</h1>
-          <p className="hospital-hero-sub">
-            Real-time management for daily vaccinations, cold-chain monitoring,
-            and live patient queueing.
-          </p>
-          <div className="hospital-hero-tags">
-            {hospitalCenterCode && (
-              <span className="hospital-tag-item">{hospitalCenterCode}</span>
-            )}
-            {hospitalSessionHours && (
-              <span className="hospital-tag-item">Hours: {hospitalSessionHours}</span>
-            )}
-            {hospitalType && (
-              <span className="hospital-tag-item">{hospitalType}</span>
-            )}
-          </div>
+      <PortalHero
+        eyebrow="Hospital operations"
+        title={hospitalCenterName}
+        subtitle="Real-time management for daily vaccinations, cold-chain monitoring, and live patient queueing."
+        image={hospitalHeroImage}
+      >
+        <div className="hospital-hero-tags">
+          {hospitalCenterCode && (
+            <span className="hospital-tag-item">{hospitalCenterCode}</span>
+          )}
+          {hospitalSessionHours && (
+            <span className="hospital-tag-item">Hours: {hospitalSessionHours}</span>
+          )}
+          {hospitalType && (
+            <span className="hospital-tag-item">{hospitalType}</span>
+          )}
         </div>
-        <div className="hospital-hero-media" aria-hidden="true">
-          <img src={hospitalHeroImage} alt="" className="hospital-hero-image" />
-        </div>
-      </div>
+      </PortalHero>
 
       {/* Toast Notice */}
       {toastMessage && (

@@ -2,8 +2,8 @@ import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.j
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import staffService from '../../hospital/services/staffService';
 import { addHospitalDays, hospitalToday } from '../../hospital/utils/hospitalDate';
-import { IconHospital, IconRepeat } from '../../../shared/icons/AppIcons';
-import affilHeroImage from '../../../assets/images/staff-affiliations-hero.png';
+import { IconCalendar, IconClipboard, IconHospital, IconRepeat } from '../../../shared/icons/AppIcons';
+import PortalHero from '../../../components/PortalHero';
 
 function toDateInputValue(date = new Date()) {
   const y = date.getFullYear();
@@ -345,32 +345,57 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff' }) {
         </div>
       )}
 
-      <section className="hospital-hero-banner staff-affil-hero">
-        <div className="hospital-hero-content staff-affil-hero-content">
-          <p className="hospital-hero-eyebrow">Roster &amp; cover</p>
-          <h1>Hospital Affiliations</h1>
-          <p className="hospital-hero-sub">
-            Invitations, roster membership, shifts, and cover requests for your {roleLabel.toLowerCase()} account.
-          </p>
-          <div className="staff-affil-hero-pills" aria-label="Affiliation summary">
-            <span className="staff-affil-hero-pill">
-              <strong>{loading ? '—' : invitations.length}</strong> Pending invites
-            </span>
-            <span className="staff-affil-hero-pill">
-              <strong>{loading ? '—' : affiliations.length}</strong> Active
-            </span>
-            <span className="staff-affil-hero-pill">
-              <strong>{loading ? '—' : shifts.length}</strong> Shifts (week)
-            </span>
-            <span className="staff-affil-hero-pill">
-              <strong>{loading ? '—' : pendingOutgoing}</strong> Cover pending
-            </span>
+      <PortalHero
+        eyebrow="Roster & cover"
+        title="Hospital Affiliations"
+        subtitle={`Invitations, roster membership, shifts, and cover requests for your ${roleLabel.toLowerCase()} account.`}
+      />
+
+      <div className="hospital-metrics-grid hospital-metrics-grid--4" aria-label="Affiliation summary" style={{ marginBottom: '24px' }}>
+        <div className="hospital-stat-card">
+          <div className="hospital-stat-icon stat-icon-green">
+            <IconHospital size={22} />
+          </div>
+          <div className="hospital-stat-info">
+            <span className="hospital-stat-label">Active hospitals</span>
+            <span className="hospital-stat-value">{loading ? '—' : affiliations.length}</span>
+            <span className="hospital-stat-meta">Rosters you belong to</span>
           </div>
         </div>
-        <div className="hospital-hero-media" aria-hidden="true">
-          <img src={affilHeroImage} alt="" className="hospital-hero-image staff-affil-hero-image" />
+
+        <div className="hospital-stat-card">
+          <div className="hospital-stat-icon stat-icon-amber">
+            <IconClipboard size={22} />
+          </div>
+          <div className="hospital-stat-info">
+            <span className="hospital-stat-label">Pending invites</span>
+            <span className="hospital-stat-value">{loading ? '—' : invitations.length}</span>
+            <span className="hospital-stat-meta">Awaiting your answer</span>
+          </div>
         </div>
-      </section>
+
+        <div className="hospital-stat-card">
+          <div className="hospital-stat-icon stat-icon-blue">
+            <IconCalendar size={22} />
+          </div>
+          <div className="hospital-stat-info">
+            <span className="hospital-stat-label">Shifts this week</span>
+            <span className="hospital-stat-value">{loading ? '—' : shifts.length}</span>
+            <span className="hospital-stat-meta">On your roster</span>
+          </div>
+        </div>
+
+        <div className="hospital-stat-card">
+          <div className="hospital-stat-icon stat-icon-amber">
+            <IconRepeat size={22} />
+          </div>
+          <div className="hospital-stat-info">
+            <span className="hospital-stat-label">Cover pending</span>
+            <span className="hospital-stat-value">{loading ? '—' : pendingOutgoing}</span>
+            <span className="hospital-stat-meta">Requests you sent</span>
+          </div>
+        </div>
+      </div>
 
       <div className="doctor-card" style={{ padding: '24px', marginBottom: '24px' }}>
         <h2 className="doctor-card-title" style={{ marginTop: 0, marginBottom: 18 }}>
