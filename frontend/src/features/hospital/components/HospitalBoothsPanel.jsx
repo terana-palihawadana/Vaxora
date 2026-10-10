@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import staffService from '../services/staffService';
 import inventoryService from '../services/inventoryService';
 import { IconDoor } from './HospitalIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 const emptyForm = {
   code: '',
@@ -10,6 +11,7 @@ const emptyForm = {
 };
 
 export default function HospitalBoothsPanel() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [booths, setBooths] = useState([]);
   const [vaccines, setVaccines] = useState([]);
   const [form, setForm] = useState(emptyForm);
@@ -135,6 +137,19 @@ export default function HospitalBoothsPanel() {
   };
 
   const handleToggleActive = async (booth) => {
+    if (booth.isActive) {
+      const label = booth.name?.trim()
+        ? `${booth.code} · ${booth.name}`
+        : booth.code;
+      const ok = await confirm({
+        title: 'Deactivate booth?',
+        message: `Deactivate ${label}? It will stop appearing for new schedules until reactivated.`,
+        confirmLabel: 'Deactivate',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+
     setActionId(booth.boothId);
     setError('');
     try {
@@ -428,6 +443,7 @@ export default function HospitalBoothsPanel() {
           ))}
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

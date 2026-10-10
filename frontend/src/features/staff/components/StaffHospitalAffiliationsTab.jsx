@@ -4,6 +4,13 @@ import staffService from '../../hospital/services/staffService';
 import { addHospitalDays, hospitalToday } from '../../hospital/utils/hospitalDate';
 import { IconCalendar, IconHospital, IconRepeat } from '../../../shared/icons/AppIcons';
 import PortalHero from '../../../components/PortalHero';
+import HeroTabs from '../../../components/HeroTabs';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+import useViewParam from '../../../shared/hooks/useViewParam';
+
+/** First key = default full page; second = focused alternate view (same pattern as hospital roster). */
+const SHIFT_SECTIONS = ['week', 'cover'];
+const HOSPITAL_SECTIONS = ['hospitals', 'invitations'];
 
 function toDateInputValue(date = new Date()) {
   const y = date.getFullYear();
@@ -240,7 +247,9 @@ function HospitalAvatar({ logoUrl }) {
  * view="hospitals": Hospitals page (active affiliations and invitations).
  */
 export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view = 'shifts' }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const isShiftsView = view === 'shifts';
+  const [section, setSection] = useViewParam(isShiftsView ? SHIFT_SECTIONS : HOSPITAL_SECTIONS);
   const today = useMemo(() => hospitalToday(), []);
   const [weekStart, setWeekStart] = useState(() => startOfWeek(hospitalToday()));
   const [invitations, setInvitations] = useState([]);
@@ -381,6 +390,17 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
   }), [loadData]);
 
   const handleRespond = async (affiliationId, decision) => {
+    if (decision === 'Reject') {
+      const item = invitations.find((row) => row.affiliationId === affiliationId);
+      const ok = await confirm({
+        title: 'Reject invitation?',
+        message: `Decline the invitation from ${item?.hospitalName || 'this hospital'}? You can be invited again later.`,
+        confirmLabel: 'Reject',
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+
     setActionId(`${affiliationId}-${decision}`);
     try {
       await staffService.respondToInvitation(affiliationId, decision);
@@ -434,6 +454,13 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
       setCoverError(coverQuota.blockReason || 'Cover cannot be requested for this shift.');
       return;
     }
+
+    const ok = await confirm({
+      title: 'Request cover?',
+      message: `Ask the hospital to find cover for your ${formatShiftTime(coverShift)} shift on ${String(coverShift.shiftDate || '').slice(0, 10)}?`,
+      confirmLabel: 'Send request',
+    });
+    if (!ok) return;
 
     setCoverSubmitting(true);
     setCoverError('');
@@ -491,8 +518,20 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
             eyebrow="Roster & cover"
             title="My shifts"
             subtitle="Your week on the roster. Ask for cover on an upcoming shift, and follow covers you sent or took on."
-          />
+          >
+            <HeroTabs
+              label="Shift views"
+              active={section}
+              onChange={setSection}
+              tabs={[
+                { key: 'week', label: 'This week' },
+                { key: 'cover', label: 'Cover activity' },
+              ]}
+            />
+          </PortalHero>
 
+          {section === 'week' ? (
+          <>
           <div className="hospital-metrics-grid hospital-metrics-grid--3" aria-label="Shift summary" style={{ marginBottom: '24px' }}>
             <div className="hospital-stat-card">
               <div className="hospital-stat-icon stat-icon-blue">
@@ -528,7 +567,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
             </div>
           </div>
 
-          <div className="doctor-card" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div id="staff-shifts-week" className="doctor-card staff-page-section" style={{ padding: '24px', marginBottom: '24px' }}>
             <div className="staff-shift-week-header">
               <div>
                 <h2 className="doctor-card-title" style={{ margin: 0 }}>
@@ -640,8 +679,10 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
               </div>
             )}
           </div>
+          </>
+          ) : null}
 
-          <div className="doctor-card staff-cover-activity">
+          <div id="staff-cover-activity" className="doctor-card staff-cover-activity staff-page-section">
             <div className="staff-cover-activity-header">
               <h2 className="doctor-card-title" style={{ margin: 0 }}>
                 Cover requests
@@ -810,9 +851,19 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
             eyebrow="Affiliations"
             title="Hospitals"
             subtitle={`Hospitals you work at, and invitations to join a roster as a ${roleLabel.toLowerCase()}.`}
-          />
+          >
+            <HeroTabs
+              label="Hospital views"
+              active={section}
+              onChange={setSection}
+              tabs={[
+                { key: 'hospitals', label: 'Hospitals' },
+                { key: 'invitations', label: 'Pending invites', badge: invitations.length },
+              ]}
+            />
+          </PortalHero>
 
-          <div className="doctor-card" style={{ padding: '24px', marginBottom: '24px' }}>
+          <div id="staff-invitations" className="doctor-card staff-page-section" style={{ padding: '24px', marginBottom: '24px' }}>
             <h2 className="doctor-card-title" style={{ marginTop: 0, marginBottom: 18 }}>
               Pending Invitations ({invitations.length})
             </h2>
@@ -860,7 +911,8 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
             )}
           </div>
 
-          <div className="doctor-card" style={{ padding: '24px', marginBottom: '24px' }}>
+          {section === 'hospitals' ? (
+          <div id="staff-affiliations" className="doctor-card staff-page-section" style={{ padding: '24px', marginBottom: '24px' }}>
             <h2 className="doctor-card-title" style={{ marginTop: 0, marginBottom: 18 }}>
               Active Affiliations ({affiliations.length})
             </h2>
@@ -901,6 +953,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
               </div>
             )}
           </div>
+          ) : null}
         </>
       )}
 
@@ -1006,6 +1059,7 @@ export default function StaffHospitalAffiliationsTab({ roleLabel = 'Staff', view
           </div>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

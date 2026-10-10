@@ -11,6 +11,7 @@ import {
 import StaffSubpageHeader from "../../staff/components/StaffSubpageHeader";
 import AddMedicalHistoryModal from "./AddMedicalHistoryModal";
 import RecordVisitModal from "./RecordVisitModal";
+import useConfirmDialog from "../../../shared/hooks/useConfirmDialog";
 
 function mapPatientDetail(detail) {
   if (!detail) return null;
@@ -136,6 +137,7 @@ function MedicalHistoryRow({ record }) {
 }
 
 export default function DoctorPatientsTab() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -330,13 +332,13 @@ export default function DoctorPatientsTab() {
 
   const handleMarkMissed = async (pv) => {
     if (!pv?.id) return;
-    if (
-      !window.confirm(
-        `Mark ${pv.vaccine} on ${pv.date} as missed? This closes the incomplete visit.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Mark visit as missed?',
+      message: `Mark ${pv.vaccine} on ${pv.date} as missed? This closes the incomplete visit.`,
+      confirmLabel: 'Mark missed',
+      destructive: true,
+    });
+    if (!ok) return;
     setClosingMissedId(pv.id);
     setError("");
     try {
@@ -410,6 +412,14 @@ export default function DoctorPatientsTab() {
 
         {!selectedPatient && (
           <div className="doctor-appointment-inner-card">
+            <div className="section-title-group" style={{ marginBottom: 16 }}>
+              <h2 className="doctor-card-title" style={{ margin: 0 }}>
+                Recent Dosage Updates
+              </h2>
+              <p className="section-title-desc">
+                Latest vaccination dosage changes — search to open a full patient record
+              </p>
+            </div>
             <div className="doctor-appointments-filter-bar">
               <div
                 className="doctor-filter-group"
@@ -1063,6 +1073,7 @@ export default function DoctorPatientsTab() {
           }
         }}
       />
+      {confirmDialog}
     </div>
   );
 }

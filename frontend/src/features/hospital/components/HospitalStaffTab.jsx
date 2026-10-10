@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AddStaffRequestModal from './AddStaffRequestModal';
 import staffService from '../services/staffService';
 import PortalHero from '../../../components/PortalHero';
+import HeroTabs from '../../../components/HeroTabs';
 import {
   IconClock,
   IconDoctor,
@@ -10,6 +11,7 @@ import {
   IconUsers,
   RoleAvatarIcon,
 } from './HospitalIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function mapAffiliationToCard(item) {
   const isPending = item.status === 'Pending';
@@ -40,6 +42,7 @@ function mapAffiliationToCard(item) {
 }
 
 export default function HospitalStaffTab() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,8 +52,6 @@ export default function HospitalStaffTab() {
   const [loading, setLoading] = useState(true);
   const [staffList, setStaffList] = useState([]);
   const [actionId, setActionId] = useState(null);
-  // Removing staff also frees their upcoming shifts, so ask for a second click.
-  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
   const [sortBy] = useState('name');
   const [page, setPage] = useState(1);
   const pageSize = 6;
@@ -101,6 +102,15 @@ export default function HospitalStaffTab() {
   };
 
   const handleCancelRequest = async (affiliationId) => {
+    const staff = staffList.find((s) => s.id === affiliationId);
+    const ok = await confirm({
+      title: 'Cancel invitation?',
+      message: `Cancel the pending invite for ${staff?.name || 'this staff member'}?`,
+      confirmLabel: 'Cancel invite',
+      destructive: true,
+    });
+    if (!ok) return;
+
     setActionId(affiliationId);
     try {
       await staffService.removeAffiliation(affiliationId);
@@ -114,11 +124,15 @@ export default function HospitalStaffTab() {
   };
 
   const handleRemoveStaff = async (affiliationId) => {
-    if (confirmRemoveId !== affiliationId) {
-      setConfirmRemoveId(affiliationId);
-      return;
-    }
-    setConfirmRemoveId(null);
+    const staff = staffList.find((s) => s.id === affiliationId);
+    const ok = await confirm({
+      title: 'Remove staff?',
+      message: `Remove ${staff?.name || 'this staff member'} from the roster? Their upcoming shifts here will be freed for reassignment.`,
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
+
     setActionId(affiliationId);
     try {
       const result = await staffService.removeAffiliation(affiliationId);
@@ -142,9 +156,11 @@ export default function HospitalStaffTab() {
       const matchesSearch = haystack.includes(searchQuery.toLowerCase());
 
       if (!matchesSearch) return false;
+      if (activeTab === 'pending') return staff.affiliationStatus === 'Pending';
+      // Directory views: active affiliations only
+      if (staff.affiliationStatus !== 'Active') return false;
       if (activeTab === 'doctors') return staff.role === 'Doctor';
       if (activeTab === 'nurses') return staff.role === 'Nurse';
-      if (activeTab === 'pending') return staff.affiliationStatus === 'Pending';
       return true;
     });
 
@@ -209,7 +225,17 @@ export default function HospitalStaffTab() {
         eyebrow="Staff management"
         title="Medical staff"
         subtitle="Manage affiliated doctors and nurses, and invite verified practitioners by their Vaxora ID."
-      />
+      >
+        <HeroTabs
+          label="Staff sections"
+          active={activeTab === 'pending' ? 'pending' : 'directory'}
+          onChange={(key) => setActiveTab(key === 'pending' ? 'pending' : 'all')}
+          tabs={[
+            { key: 'directory', label: 'Directory' },
+            { key: 'pending', label: 'Pending invites', badge: pendingCount },
+          ]}
+        />
+      </PortalHero>
 
       <div className="hospital-staff-toolbar">
         <button
@@ -276,6 +302,7 @@ export default function HospitalStaffTab() {
       </div>
 
       <div className="hospital-staff-toolbar">
+        {activeTab !== 'pending' ? (
         <div className="hospital-staff-filters" role="group" aria-label="Filter staff by category">
           <button
             type="button"
@@ -286,7 +313,7 @@ export default function HospitalStaffTab() {
               border: '1px solid var(--color-border-card)',
             }}
           >
-            All ({staffList.length})
+            All ({activeStaff.length})
           </button>
 
           <button
@@ -298,7 +325,7 @@ export default function HospitalStaffTab() {
               border: '1px solid var(--color-border-card)',
             }}
           >
-            Doctors ({staffList.filter((s) => s.role === 'Doctor').length})
+            Doctors ({doctorsCount})
           </button>
 
           <button
@@ -310,21 +337,12 @@ export default function HospitalStaffTab() {
               border: '1px solid var(--color-border-card)',
             }}
           >
-            Nurses ({staffList.filter((s) => s.role === 'Nurse').length})
-          </button>
-
-          <button
-            type="button"
-            className={`hospital-nav-btn ${activeTab === 'pending' ? 'active' : ''}`}
-            onClick={() => setActiveTab('pending')}
-            style={{
-              background: activeTab === 'pending' ? 'var(--color-primary)' : 'var(--color-surface)',
-              border: '1px solid var(--color-border-card)',
-            }}
-          >
-            Pending ({pendingCount})
+            Nurses ({nursesCount})
           </button>
         </div>
+        ) : (
+          <div className="hospital-staff-filters" aria-hidden="true" />
+        )}
 
         <input
           aria-label="Search staff directory"
@@ -476,11 +494,7 @@ export default function HospitalStaffTab() {
                       type="button"
                       onClick={() => handleRemoveStaff(staff.id)}
                       disabled={actionId === staff.id}
-                      title={
-                        confirmRemoveId === staff.id
-                          ? 'Their upcoming shifts here will be freed for reassignment'
-                          : undefined
-                      }
+                      title="Their upcoming shifts here will be freed for reassignment"
                       style={{
                         background: 'none',
                         border: 'none',
@@ -490,28 +504,8 @@ export default function HospitalStaffTab() {
                         cursor: 'pointer',
                       }}
                     >
-                      {actionId === staff.id
-                        ? 'Removing...'
-                        : confirmRemoveId === staff.id
-                          ? 'Confirm remove?'
-                          : 'Remove'}
+                      {actionId === staff.id ? 'Removing...' : 'Remove'}
                     </button>
-                    {confirmRemoveId === staff.id && actionId !== staff.id ? (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmRemoveId(null)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--color-text-muted)',
-                          fontWeight: 600,
-                          fontSize: '0.78rem',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Keep
-                      </button>
-                    ) : null}
                   </>
                 )}
               </div>
@@ -553,6 +547,7 @@ export default function HospitalStaffTab() {
         onSendRequest={handleSendRequest}
         isSubmitting={isSubmitting}
       />
+      {confirmDialog}
     </div>
   );
 }

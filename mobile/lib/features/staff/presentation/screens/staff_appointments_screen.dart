@@ -59,6 +59,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
   bool _isDoctor = false;
   String _facilitySuffix = '';
   String? _activePatientId;
+  String? _myUserId;
 
   String _displayName = 'there';
   String _roleLabel = 'Staff';
@@ -93,6 +94,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
         _allowHospitalSwitch = !isNurse;
         _isDoctor = role.contains('DOCTOR');
         _facilitySuffix = isNurse ? ' · Nursing Station' : '';
+        _myUserId = user?['id']?.toString();
         if (user != null) {
           _displayName = user['name']?.toString().trim().isNotEmpty == true
               ? user['name'].toString().trim()
@@ -182,17 +184,14 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
       final list = results[0] as List<StaffAppointmentModel>;
       final lots = results[1] as List<BatchModel>;
       _todayShifts = results[2] as List<ShiftModel>;
-      final consulting = list.where((a) => a.uiStatus == 'consulting').toList();
       setState(() {
         _appointments = list;
         _lots = lots;
         _loadingAppointments = false;
-        if (_activePatientId != null &&
-            consulting.any((a) => a.id == _activePatientId)) {
-          // keep current spotlight
-        } else {
-          _activePatientId =
-              consulting.isEmpty ? null : consulting.first.id;
+        // Keep the chosen session while it is live; otherwise the spotlight falls
+        // back to a session I may work (see _activePatient), never a colleague's.
+        if (!list.any((a) => a.id == _activePatientId && a.uiStatus == 'consulting')) {
+          _activePatientId = null;
         }
       });
     } catch (e) {
@@ -247,14 +246,57 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
     }
   }
 
+  /// Off duty: no spotlight. On duty: the chosen patient, else my own live
+  /// session, else my booth's.
   StaffAppointmentModel? get _activePatient {
-    if (_activePatientId == null) return null;
-    try {
-      return _appointments.firstWhere((a) => a.id == _activePatientId);
-    } catch (_) {
-      return null;
+    if (!_isOnDuty) return null;
+    for (final a in _appointments) {
+      if (a.id == _activePatientId && (!_isInSession(a) || _canWorkSession(a))) return a;
     }
+    final workable = _appointments
+        .where((a) => a.uiStatus == 'consulting' && _canWorkSession(a))
+        .toList();
+    for (final a in workable) {
+      if (a.sessionStaffUserId != null && a.sessionStaffUserId == _myUserId) return a;
+    }
+    return workable.isEmpty ? null : workable.first;
   }
+
+  static bool _isInSession(StaffAppointmentModel a) =>
+      a.uiStatus == 'consulting' || a.uiStatus == 'observation';
+
+  static bool _hasBooth(StaffAppointmentModel a) =>
+      (a.boothId ?? '').isNotEmpty || (a.boothLabel?.trim() ?? '').isNotEmpty;
+
+  static bool _isAtBooth(StaffAppointmentModel a, ({String? id, String label}) booth) {
+    final id = a.boothId ?? '';
+    if ((booth.id ?? '').isNotEmpty && id.isNotEmpty) return id == booth.id;
+    return (a.boothLabel?.trim() ?? '').toLowerCase() == booth.label.toLowerCase();
+  }
+
+  /// A live session belongs to its booth team or whoever called the patient in;
+  /// the API enforces the same rule, and anyone else must take it over.
+  bool _canWorkSession(StaffAppointmentModel a) {
+    if (!_isOnDuty) return false;
+    if (a.sessionStaffUserId != null && a.sessionStaffUserId == _myUserId) return true;
+    if (!_hasBooth(a)) return a.sessionStaffUserId == null;
+    final booth = _myBooth;
+    return booth != null && _isAtBooth(a, booth);
+  }
+
+  /// "B01 · Nurse Kavindi": who has a colleague's live session.
+  static String _sessionOwnerLabel(StaffAppointmentModel a) {
+    final boothCode = a.boothLabel?.split(' · ').first.trim();
+    final parts = [
+      if (boothCode != null && boothCode.isNotEmpty) boothCode,
+      if ((a.sessionStaffName ?? '').isNotEmpty) a.sessionStaffName!,
+    ];
+    return parts.isEmpty ? 'another booth' : parts.join(' · ');
+  }
+
+  /// Owner label when this is a colleague's session I cannot work, else null.
+  String? _colleagueOwner(StaffAppointmentModel a) =>
+      _isInSession(a) && !_canWorkSession(a) ? _sessionOwnerLabel(a) : null;
 
   /// Booth of my live shift at the selected hospital (clock-ins have none).
   ({String? id, String label})? get _myBooth {
@@ -284,13 +326,7 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
   List<StaffAppointmentModel> get _scopedAppointments {
     final booth = _myBooth;
     if (booth == null || !_myBoothOnly) return _appointments;
-    return _appointments.where((a) {
-      final label = a.boothLabel?.trim() ?? '';
-      final id = a.boothId ?? '';
-      if (label.isEmpty && id.isEmpty) return true;
-      if ((booth.id ?? '').isNotEmpty && id.isNotEmpty) return id == booth.id;
-      return label.toLowerCase() == booth.label.toLowerCase();
-    }).toList();
+    return _appointments.where((a) => !_hasBooth(a) || _isAtBooth(a, booth)).toList();
   }
 
   List<StaffAppointmentModel> get _filteredAppointments {
@@ -447,6 +483,33 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
     }
   }
 
+  Future<void> _takeOver(StaffAppointmentModel patient) async {
+    if (!_requireDuty()) return;
+    final ok = await confirmAction(
+      context,
+      title: 'Take over session?',
+      message:
+          '${patient.patientName} is with ${_sessionOwnerLabel(patient)}. '
+          'Take over only if they cannot continue. This is logged.',
+      confirmLabel: 'Take over',
+    );
+    if (!ok || !mounted) return;
+    setState(() => _updating = true);
+    try {
+      await StaffRepository.takeOverSession(
+        appointmentId: patient.id,
+        status: patient.status,
+      );
+      setState(() => _activePatientId = patient.id);
+      await _loadAppointments();
+      _toast('You now have ${patient.patientName}.');
+    } catch (e) {
+      _toast(e is ApiException ? e.message : 'Could not take over the session.');
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
   Future<void> _returnToQueue(StaffAppointmentModel patient) async {
     if (!_requireDuty()) return;
     await _updateStatus(patient, 'Confirmed');
@@ -490,6 +553,19 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
     if (!patient.isPaymentSettled) {
       _toast('Payment must be settled before discharging the patient.');
       return;
+    }
+    final minsLeft =
+        _observationMinutesLeft(patient.updatedAt, DateTime.now()) ?? 0;
+    if (minsLeft > 0) {
+      final ok = await confirmAction(
+        context,
+        title: 'Discharge early?',
+        message:
+            '${patient.patientName} still has $minsLeft min left in the '
+            '$_observationWindowMinutes-minute watch. Discharge only if they are well.',
+        confirmLabel: 'Discharge',
+      );
+      if (!ok || !mounted) return;
     }
     await _updateStatus(patient, 'Completed');
     if (_activePatientId == patient.id) {
@@ -725,6 +801,8 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                         patient: obs,
                         minsLeft: _observationMinutesLeft(obs.updatedAt, now),
                         busy: _updating,
+                        ownerLabel: _colleagueOwner(obs),
+                        onTakeOver: _isOnDuty ? () => _takeOver(obs) : null,
                         onDischarge: () => _discharge(obs),
                         onAefi: () => _reportAefi(obs),
                       ),
@@ -862,6 +940,8 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
                   child: _AppointmentCard(
                     appointment: a,
                     busy: _updating,
+                    ownerLabel: _colleagueOwner(a),
+                    onTakeOver: _isOnDuty ? () => _takeOver(a) : null,
                     canPrescribe: _isDoctor,
                     onPrescribe: () => _prescribe(a),
                     onExamine: () => _examine(a),
@@ -1178,6 +1258,9 @@ class _ObservationCard extends StatelessWidget {
   final StaffAppointmentModel patient;
   final int? minsLeft;
   final bool busy;
+  /// Set when a colleague has this session; replaces Discharge with Take over.
+  final String? ownerLabel;
+  final VoidCallback? onTakeOver;
   final VoidCallback onDischarge;
   final VoidCallback onAefi;
 
@@ -1185,6 +1268,8 @@ class _ObservationCard extends StatelessWidget {
     required this.patient,
     required this.minsLeft,
     required this.busy,
+    required this.ownerLabel,
+    required this.onTakeOver,
     required this.onDischarge,
     required this.onAefi,
   });
@@ -1223,32 +1308,60 @@ class _ObservationCard extends StatelessWidget {
                         color: StaffSurfaces.textSecondary,
                       ),
                     ),
+                    if (ownerLabel != null) ...[
+                      const SizedBox(height: 4),
+                      _SessionOwnerText(label: ownerLabel!),
+                    ],
                   ],
                 ),
               ),
-              FilledButton(
-                // The API refuses discharge before the 15-minute window ends.
-                onPressed: busy || !patient.isPaymentSettled || (minsLeft ?? 0) > 0
-                    ? null
-                    : onDischarge,
-                style: FilledButton.styleFrom(backgroundColor: AppColors.success),
-                child: Text(
-                  (minsLeft ?? 0) > 0 ? 'Discharge in $minsLeft min' : 'Discharge',
+              if (ownerLabel == null)
+                FilledButton(
+                  onPressed: busy || !patient.isPaymentSettled ? null : onDischarge,
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.success),
+                  child: const Text('Discharge'),
+                )
+              else if (onTakeOver != null)
+                OutlinedButton(
+                  onPressed: busy ? null : onTakeOver,
+                  child: const Text('Take over'),
                 ),
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: busy ? null : onAefi,
-              icon: const Icon(Icons.warning_amber_rounded, size: 16),
-              label: const Text('Report AEFI'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+          if (ownerLabel == null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: busy ? null : onAefi,
+                icon: const Icon(Icons.warning_amber_rounded, size: 16),
+                label: const Text('Report AEFI'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              ),
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+}
+
+/// "With B01 · Nurse Kavindi" on a colleague's live session.
+class _SessionOwnerText extends StatelessWidget {
+  final String label;
+
+  const _SessionOwnerText({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'With $label',
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(
+        fontSize: 12.5,
+        fontWeight: FontWeight.w600,
+        color: AppColors.info,
       ),
     );
   }
@@ -1257,6 +1370,9 @@ class _ObservationCard extends StatelessWidget {
 class _AppointmentCard extends StatelessWidget {
   final StaffAppointmentModel appointment;
   final bool busy;
+  /// Set when a colleague has this session; replaces the clinical action with Take over.
+  final String? ownerLabel;
+  final VoidCallback? onTakeOver;
   final bool canPrescribe;
   final VoidCallback onPrescribe;
   final VoidCallback onExamine;
@@ -1267,6 +1383,8 @@ class _AppointmentCard extends StatelessWidget {
   const _AppointmentCard({
     required this.appointment,
     required this.busy,
+    required this.ownerLabel,
+    required this.onTakeOver,
     required this.canPrescribe,
     required this.onPrescribe,
     required this.onExamine,
@@ -1309,7 +1427,17 @@ class _AppointmentCard extends StatelessWidget {
     };
 
     Widget? action;
-    if (a.uiStatus == 'waiting' && !a.isCheckedIn) {
+    if (ownerLabel != null) {
+      action = onTakeOver == null
+          ? null
+          : TextButton(
+              onPressed: busy ? null : onTakeOver,
+              child: const Text(
+                'Take over',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            );
+    } else if (a.uiStatus == 'waiting' && !a.isCheckedIn) {
       action = TextButton(
         onPressed: busy ? null : onCheckIn,
         child: const Text(
@@ -1340,12 +1468,11 @@ class _AppointmentCard extends StatelessWidget {
         ),
       );
     } else if (a.uiStatus == 'observation') {
-      final left = _observationMinutesLeft(a.updatedAt, DateTime.now()) ?? 0;
       action = TextButton(
-        onPressed: busy || !a.isPaymentSettled || left > 0 ? null : onDischarge,
-        child: Text(
-          left > 0 ? 'In $left min' : 'Discharge',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+        onPressed: busy || !a.isPaymentSettled ? null : onDischarge,
+        child: const Text(
+          'Discharge',
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
       );
     }
@@ -1416,6 +1543,10 @@ class _AppointmentCard extends StatelessWidget {
                       color: StaffSurfaces.textSecondary,
                     ),
                   ),
+                ],
+                if (ownerLabel != null) ...[
+                  const SizedBox(height: 6),
+                  _SessionOwnerText(label: ownerLabel!),
                 ],
                 if (canPrescribe && appointment.uiStatus == 'waiting') ...[
                   const SizedBox(height: 4),

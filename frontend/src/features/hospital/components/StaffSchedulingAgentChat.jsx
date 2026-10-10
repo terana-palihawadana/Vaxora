@@ -3,6 +3,7 @@ import agentService from '../../patient/services/agentService';
 import staffService from '../services/staffService';
 import { IconBot, IconClose } from '../../../shared/icons/AppIcons';
 import { proposalIdentity } from './proposalIdentity';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function speakDate(iso) {
   const [year, month, day] = String(iso || '').slice(0, 10).split('-').map(Number);
@@ -268,6 +269,7 @@ export default function StaffSchedulingAgentChat({
   onProposalsReady,
   onClose,
 }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -469,6 +471,12 @@ export default function StaffSchedulingAgentChat({
       (p) => p._status !== 'approved' && p._status !== 'declined'
     );
     if (pending.length === 0) return;
+    const ok = await confirm({
+      title: 'Approve selected shifts?',
+      message: `Create ${pending.length} shift${pending.length === 1 ? '' : 's'} on the hospital roster? This cannot be undone from here.`,
+      confirmLabel: `Approve (${pending.length})`,
+    });
+    if (!ok) return;
     stickToBottomRef.current = false;
     setApprovingId('batch');
     const approvedIds = new Set();
@@ -535,6 +543,14 @@ export default function StaffSchedulingAgentChat({
   };
 
   const handleDeclineProposal = async (proposal, workflowId, remainingCount, approvedCount = 0) => {
+    const ok = await confirm({
+      title: 'Decline suggestion?',
+      message: `Remove ${proposal.staffName || 'this staff member'} · ${String(proposal.startTime || '').slice(0, 5)}–${String(proposal.endTime || '').slice(0, 5)} from this plan? You can ask again for new suggestions.`,
+      confirmLabel: 'Decline',
+      destructive: true,
+    });
+    if (!ok) return;
+
     const id = proposalIdentity(proposal);
     stickToBottomRef.current = false;
 
@@ -1179,6 +1195,7 @@ export default function StaffSchedulingAgentChat({
           <span>Send</span>
         </button>
       </div>
+      {confirmDialog}
     </div>
   );
 }

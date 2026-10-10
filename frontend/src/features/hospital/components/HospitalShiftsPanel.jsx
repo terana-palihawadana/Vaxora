@@ -8,6 +8,7 @@ import { proposalIdentity } from './proposalIdentity';
 import { hospitalMinutesNow, hospitalToday } from '../utils/hospitalDate';
 import { IconCalendar, IconDoctor, IconNurse, IconShield, RoleAvatarIcon } from './HospitalIcons';
 import { IconBot } from '../../../shared/icons/AppIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function toDateInputValue(date = new Date()) {
   const y = date.getFullYear();
@@ -143,6 +144,7 @@ function shiftPayloadFromProposal(proposal) {
 }
 
 export default function HospitalShiftsPanel() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [activeStaff, setActiveStaff] = useState([]);
   const [booths, setBooths] = useState([]);
   const [shifts, setShifts] = useState([]);
@@ -384,6 +386,17 @@ export default function HospitalShiftsPanel() {
   };
 
   const handleDelete = async (shiftId) => {
+    const shift = shifts.find((s) => s.shiftId === shiftId);
+    const ok = await confirm({
+      title: 'Delete shift?',
+      message: shift
+        ? `Remove ${shift.staffName || 'this staff member'}'s ${String(shift.startTime || '').slice(0, 5)}–${String(shift.endTime || '').slice(0, 5)} shift on ${String(shift.shiftDate || '').slice(0, 10)}?`
+        : 'Remove this shift from the roster?',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+
     setActionId(shiftId);
     setError('');
     // Optimistic remove so the calendar does not flash / remount.
@@ -532,6 +545,12 @@ export default function HospitalShiftsPanel() {
       (p) => p._selected && p._status !== 'approved' && p._status !== 'declined'
     );
     if (pending.length === 0) return;
+    const ok = await confirm({
+      title: 'Approve selected shifts?',
+      message: `Create ${pending.length} shift${pending.length === 1 ? '' : 's'} on the hospital roster? This cannot be undone from here.`,
+      confirmLabel: `Approve (${pending.length})`,
+    });
+    if (!ok) return;
     setProposalActionId('batch');
     setError('');
     const approvedIds = new Set();
@@ -578,6 +597,14 @@ export default function HospitalShiftsPanel() {
   };
 
   const handleDeclineProposal = async (proposal) => {
+    const ok = await confirm({
+      title: 'Decline suggestion?',
+      message: `Remove ${proposal.staffName || 'this staff member'} · ${String(proposal.startTime || '').slice(0, 5)}–${String(proposal.endTime || '').slice(0, 5)} from this plan? You can reroll later for new suggestions.`,
+      confirmLabel: 'Decline',
+      destructive: true,
+    });
+    if (!ok) return;
+
     const id = proposalIdentity(proposal);
     setProposalActionId(id);
     setError('');
@@ -670,7 +697,8 @@ export default function HospitalShiftsPanel() {
                 setShowAgentChat(true);
               }}
             >
-              <IconBot size={17} /> Scheduling agent <span className="roster-ai-tag">AI</span>
+              <IconBot size={17} className="roster-ai-bot-icon" /> Scheduling agent{' '}
+              <span className="roster-ai-tag">AI</span>
             </button>
             <button
               type="button"
@@ -1205,6 +1233,7 @@ export default function HospitalShiftsPanel() {
           </div>
         </div>
       )}
+      {confirmDialog}
     </div>
   );
 }

@@ -7,7 +7,8 @@ import ClinicalPrescribeModal from '../../doctor/components/ClinicalPrescribeMod
 import staffAppointmentService from '../services/staffAppointmentService';
 import { hospitalMinutesNow, hospitalToday } from '../../hospital/utils/hospitalDate';
 import PortalHero from '../../../components/PortalHero';
-import StaffSlotsCard from './StaffSlotsCard';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+import StaffAppointmentsSummaryCard from './StaffAppointmentsSummaryCard';
 import {
   IconCalendar,
   IconCheck,
@@ -62,6 +63,16 @@ function pickDefaultHospitalId(active, preferredId) {
 
 const DUTY_REQUIRED_HINT = 'Clock in to start clinical work';
 
+function isInSession(patient) {
+  return patient.status === 'consulting' || patient.status === 'observation';
+}
+
+/** "B01 · Nurse Kavindi": who has a colleague's live session. */
+function sessionOwnerLabel(patient) {
+  const boothCode = patient.booth ? String(patient.booth).split(' · ')[0] : null;
+  return [boothCode, patient.sessionStaffName].filter(Boolean).join(' · ') || 'another booth';
+}
+
 function presenceLabel(affiliation) {
   if (!affiliation) return null;
   if (String(affiliation.dutyStatus || '').toLowerCase() === 'onbreak') return 'On break';
@@ -76,6 +87,11 @@ function clockToMinutes(value) {
 
 function normalizeBooth(value) {
   return String(value || '').trim().toLowerCase();
+}
+
+function isAtBooth(patient, booth) {
+  if (booth.id && patient.boothId) return patient.boothId === booth.id;
+  return normalizeBooth(patient.booth) === normalizeBooth(booth.label);
 }
 
 function isPaymentSettled(patientOrStatus) {
@@ -103,6 +119,7 @@ export default function StaffClinicalDashboard({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [toastMessage, setToastMessage] = useState(null);
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [user] = useState(() => getUser());
   const isDoctor = String(user?.role || '').toUpperCase() === 'DOCTOR';
   const [prescribeTargetId, setPrescribeTargetId] = useState(null);
@@ -192,13 +209,11 @@ export default function StaffClinicalDashboard({
       setTodayAppointments(rows);
       setInventoryLots(Array.isArray(lots) ? lots : []);
 
-      const administering = rows.find((a) => mapDbStatusToUi(a.status) === 'consulting');
-      setActivePatientId((prev) => {
-        if (prev && rows.some((a) => a.id === prev && mapDbStatusToUi(a.status) === 'consulting')) {
-          return prev;
-        }
-        return administering?.id || null;
-      });
+      // Keep the chosen session while it is live; otherwise the spotlight falls back to
+      // a session this user may work (see activePatient), never a colleague's.
+      setActivePatientId((prev) =>
+        prev && rows.some((a) => a.id === prev && mapDbStatusToUi(a.status) === 'consulting') ? prev : null
+      );
     } catch (err) {
       setLoadError(err?.message || 'Could not load your clinical session. Check your connection and retry.');
       setAffiliations([]);
@@ -304,12 +319,15 @@ export default function StaffClinicalDashboard({
         token: `T-${short}`,
         patientProfileId: a.patientProfileId || null,
         name: a.patientName || 'Patient',
+        photoUrl: a.patientProfilePhotoUrl || null,
         vaccine: a.vaccineName || '—',
         dose: a.prescribedDosage || 'Dosage not set',
         hasDosage: Boolean(a.prescribedDosage),
         prescribedBy: a.prescribedByDoctorName || null,
         paymentStatus: a.paymentStatus || '—',
         checkedIn: Boolean(a.checkedInAt),
+        sessionStaffUserId: a.sessionStaffUserId || null,
+        sessionStaffName: a.sessionStaffName || null,
         booth: a.boothLabel || null,
         boothId: a.boothId || null,
         time: a.timeSlot || [a.startTime, a.endTime].filter(Boolean).join(' – ') || '—',
@@ -340,12 +358,22 @@ export default function StaffClinicalDashboard({
   // Patients without a booth (e.g. walk-ins at a hospital with no booths) stay visible to everyone.
   const scopedPatients = useMemo(() => {
     if (!boothFiltered) return patients;
-    return patients.filter((p) => {
-      if (!p.booth && !p.boothId) return true;
-      if (myBooth.id && p.boothId) return p.boothId === myBooth.id;
-      return normalizeBooth(p.booth) === normalizeBooth(myBooth.label);
-    });
+    return patients.filter((p) => (!p.booth && !p.boothId) || isAtBooth(p, myBooth));
   }, [patients, boothFiltered, myBooth]);
+
+  // A live session belongs to its booth team or whoever called the patient in;
+  // the backend enforces the same rule, and anyone else must take it over.
+  const myUserId = user?.id || null;
+  const onDutyHere = Boolean(primaryAffiliation?.isOnDutyNow);
+  const canWorkSession = useCallback(
+    (p) => {
+      if (!onDutyHere) return false;
+      if (p.sessionStaffUserId && p.sessionStaffUserId === myUserId) return true;
+      if (!p.booth && !p.boothId) return !p.sessionStaffUserId;
+      return Boolean(myBooth) && isAtBooth(p, myBooth);
+    },
+    [onDutyHere, myUserId, myBooth]
+  );
 
   const observationPatients = useMemo(
     () =>
@@ -360,16 +388,24 @@ export default function StaffClinicalDashboard({
             ? new Date(p.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             : '—',
           minsLeft: observationMinutesLeft(p.updatedAt, now),
+          canWork: canWorkSession(p),
+          patient: p,
         })),
-    [scopedPatients, now]
+    [scopedPatients, now, canWorkSession]
   );
 
-  const activePatient = useMemo(
-    () => patients.find((p) => p.id === activePatientId) || null,
-    [patients, activePatientId]
-  );
+  // Off duty: no spotlight. On duty: the chosen patient, else my own live session, else my booth's.
+  const activePatient = useMemo(() => {
+    if (!onDutyHere) return null;
+    const chosen = patients.find((p) => p.id === activePatientId);
+    if (chosen && (!isInSession(chosen) || canWorkSession(chosen))) return chosen;
+    const workable = patients.filter((p) => p.status === 'consulting' && canWorkSession(p));
+    return workable.find((p) => p.sessionStaffUserId === myUserId) || workable[0] || null;
+  }, [patients, activePatientId, onDutyHere, canWorkSession, myUserId]);
 
   const activePatientContact = activePatient ? contactCache[activePatient.id] : null;
+  const activePatientPhotoUrl =
+    activePatient?.photoUrl || activePatientContact?.patientProfilePhotoUrl || null;
 
   const activePaymentSettled = activePatient ? isPaymentSettled(activePatient) : true;
 
@@ -420,9 +456,11 @@ export default function StaffClinicalDashboard({
       return;
     }
 
-    const current = activePatientId
-      ? patients.find((p) => p.id === activePatientId)
-      : patients.find((p) => p.status === 'consulting');
+    // Only my own (or my booth's) open session blocks calling the next patient.
+    const current =
+      activePatient?.status === 'consulting'
+        ? activePatient
+        : patients.find((p) => p.status === 'consulting' && canWorkSession(p));
 
     // Do not silently move consulting → Observation (that consumes inventory).
     if (current?.status === 'consulting') {
@@ -479,9 +517,34 @@ export default function StaffClinicalDashboard({
       return;
     }
 
+    if (isInSession(patient) && !canWorkSession(patient)) {
+      showToast(`${patient.name} is with ${sessionOwnerLabel(patient)}.`);
+      return;
+    }
+
     // Spotlight only drives clinical actions for the active consulting patient.
     // Observation / completed rows can still be focused for read-only context.
     setActivePatientId(patient.id);
+  };
+
+  const handleTakeOver = async (patient) => {
+    const ok = await confirm({
+      title: 'Take over session?',
+      message: `${patient.name} is with ${sessionOwnerLabel(patient)}. Take over only if they cannot continue. This is logged.`,
+      confirmLabel: 'Take over',
+    });
+    if (!ok) return;
+    setStatusUpdating(true);
+    try {
+      await staffAppointmentService.takeOverSession(patient.id, patient.appointmentStatus);
+      setActivePatientId(patient.id);
+      await loadDashboardData(selectedHospitalUserId);
+      showToast(`You now have ${patient.name}.`);
+    } catch (err) {
+      showToast(err.message || 'Could not take over the session.');
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const handleCertifyAdministration = async (certifiedData) => {
@@ -544,6 +607,17 @@ export default function StaffClinicalDashboard({
     const patient = patients.find((p) => p.id === id);
     if (patient && !isPaymentSettled(patient)) {
       showToast('Payment must be settled before discharging the patient.');
+      return;
+    }
+    const minsLeft = observationMinutesLeft(patient?.updatedAt, now) ?? 0;
+    if (
+      minsLeft > 0 &&
+      !(await confirm({
+        title: 'Discharge early?',
+        message: `${name} still has ${minsLeft} min left in the ${OBSERVATION_WINDOW_MINUTES}-minute watch. Discharge only if they are well.`,
+        confirmLabel: 'Discharge',
+      }))
+    ) {
       return;
     }
     try {
@@ -833,7 +907,7 @@ export default function StaffClinicalDashboard({
       </section>
 
       {activePatient && (
-        <section className="doctor-spotlight-card">
+        <section id="staff-active-patient" className="doctor-spotlight-card staff-page-section">
           <div className="doctor-spotlight-header">
             <div>
               <div className="doctor-spotlight-badge">
@@ -861,8 +935,12 @@ export default function StaffClinicalDashboard({
 
           <div className="doctor-spotlight-details-grid">
             <div className="doctor-patient-bio">
-              <div className="doctor-patient-avatar">
-                <IconUser size={28} />
+              <div className={`doctor-patient-avatar${activePatientPhotoUrl ? ' has-photo' : ''}`}>
+                {activePatientPhotoUrl ? (
+                  <img src={activePatientPhotoUrl} alt="" />
+                ) : (
+                  <IconUser size={28} />
+                )}
               </div>
               <div>
                 <div className="doctor-patient-name">{activePatient.name}</div>
@@ -998,11 +1076,11 @@ export default function StaffClinicalDashboard({
       )}
 
       <div className="doctor-main-grid">
-        <div className="doctor-card doctor-queue-card">
+        <div id="staff-queue" className="doctor-card doctor-queue-card staff-page-section">
           <div className="section-card-header queue-section-header">
             <div className="section-title-group">
               <h2>
-                <span className="section-title-icon icon-shade-blue">
+                <span className="section-title-icon section-title-icon--teal">
                   <IconClipboard size={22} />
                 </span>
                 Today&apos;s Consultation Queue
@@ -1209,101 +1287,118 @@ export default function StaffClinicalDashboard({
                           </span>
                         </td>
                         <td>
-                          <div className="queue-action-btns">
-                            {isDoctor && p.status === 'waiting' && !p.hasDosage && (
-                              <button
-                                type="button"
-                                className="btn-queue-action btn-queue-action--icon"
-                                onClick={() => setPrescribeTargetId(p.id)}
-                                disabled={statusUpdating || notOnDuty}
-                                title={notOnDuty ? DUTY_REQUIRED_HINT : 'Prescribe'}
-                                aria-label="Prescribe"
-                              >
-                                <IconPencil size={15} />
-                              </button>
-                            )}
-                            {p.status === 'waiting' && !p.checkedIn && (
-                              <button
-                                type="button"
-                                className="btn-queue-action btn-queue-action--icon"
-                                onClick={() => handleCheckIn(p)}
-                                disabled={statusUpdating}
-                                title="Check in — patient has arrived"
-                                aria-label="Check in"
-                              >
-                                <IconUser size={15} />
-                              </button>
-                            )}
-                            {p.status === 'waiting' && p.checkedIn && (
-                              <button
-                                type="button"
-                                className="btn-queue-action btn-queue-action--icon"
-                                onClick={() => handleSelectPatient(p)}
-                                disabled={!isPaymentSettled(p) || !p.hasDosage || statusUpdating || notOnDuty}
-                                title={
-                                  notOnDuty
-                                    ? DUTY_REQUIRED_HINT
-                                    : !isPaymentSettled(p)
-                                    ? 'Payment must be settled first'
-                                    : !p.hasDosage
-                                      ? 'Waiting for the doctor to prescribe a dose'
-                                      : 'Examine'
-                                }
-                                aria-label="Examine"
-                              >
-                                <IconStethoscope size={15} />
-                              </button>
-                            )}
-                            {p.status === 'consulting' && (
-                              <button
-                                type="button"
-                                className="btn-queue-action btn-queue-action--icon btn-queue-action--session"
-                                onClick={() => {
-                                  setActivePatientId(p.id);
-                                  setIsAdministerModalOpen(true);
-                                }}
-                                disabled={!isPaymentSettled(p) || statusUpdating || notOnDuty}
-                                title={
-                                  notOnDuty
-                                    ? DUTY_REQUIRED_HINT
-                                    : !isPaymentSettled(p)
-                                    ? 'Payment must be settled first'
-                                    : 'Administer'
-                                }
-                                aria-label="Administer"
-                              >
-                                <IconSyringe size={15} />
-                              </button>
-                            )}
-                            {p.status === 'observation' && (
-                              <button
-                                type="button"
-                                className="btn-queue-action btn-queue-action--icon btn-queue-action--release"
-                                onClick={() => handleDischargeObservation(p.id, p.name)}
-                                disabled={
-                                  !isPaymentSettled(p) ||
-                                  statusUpdating ||
-                                  notOnDuty ||
-                                  (observationMinutesLeft(p.updatedAt, now) ?? 0) > 0
-                                }
-                                title={
-                                  notOnDuty
-                                    ? DUTY_REQUIRED_HINT
-                                    : (observationMinutesLeft(p.updatedAt, now) ?? 0) > 0
-                                    ? `Observation: ${observationMinutesLeft(p.updatedAt, now)} min left`
-                                    : !isPaymentSettled(p)
-                                    ? 'Payment must be settled first'
-                                    : 'Discharge'
-                                }
-                                aria-label="Discharge"
-                              >
-                                <IconCheck size={15} />
-                              </button>
-                            )}
-                            {p.status === 'completed' && (
-                              <span className="queue-pass-note">Certified</span>
-                            )}
-                          </div>
+                          {isInSession(p) && !canWorkSession(p) ? (
+                            <div className="queue-action-btns">
+                              <span className="queue-session-owner" title={`With ${sessionOwnerLabel(p)}`}>
+                                With {sessionOwnerLabel(p)}
+                              </span>
+                              {onDutyHere ? (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action"
+                                  onClick={() => handleTakeOver(p)}
+                                  disabled={statusUpdating}
+                                >
+                                  Take over
+                                </button>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <div className="queue-action-btns">
+                              {isDoctor && p.status === 'waiting' && !p.hasDosage && (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action btn-queue-action--icon"
+                                  onClick={() => setPrescribeTargetId(p.id)}
+                                  disabled={statusUpdating || notOnDuty}
+                                  title={notOnDuty ? DUTY_REQUIRED_HINT : 'Prescribe'}
+                                  aria-label="Prescribe"
+                                >
+                                  <IconPencil size={15} />
+                                </button>
+                              )}
+                              {p.status === 'waiting' && !p.checkedIn && (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action btn-queue-action--icon"
+                                  onClick={() => handleCheckIn(p)}
+                                  disabled={statusUpdating}
+                                  title="Check in — patient has arrived"
+                                  aria-label="Check in"
+                                >
+                                  <IconUser size={15} />
+                                </button>
+                              )}
+                              {p.status === 'waiting' && p.checkedIn && (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action btn-queue-action--icon"
+                                  onClick={() => handleSelectPatient(p)}
+                                  disabled={!isPaymentSettled(p) || !p.hasDosage || statusUpdating || notOnDuty}
+                                  title={
+                                    notOnDuty
+                                      ? DUTY_REQUIRED_HINT
+                                      : !isPaymentSettled(p)
+                                      ? 'Payment must be settled first'
+                                      : !p.hasDosage
+                                        ? 'Waiting for the doctor to prescribe a dose'
+                                        : 'Examine'
+                                  }
+                                  aria-label="Examine"
+                                >
+                                  <IconStethoscope size={15} />
+                                </button>
+                              )}
+                              {p.status === 'consulting' && (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action btn-queue-action--icon btn-queue-action--session"
+                                  onClick={() => {
+                                    setActivePatientId(p.id);
+                                    setIsAdministerModalOpen(true);
+                                  }}
+                                  disabled={!isPaymentSettled(p) || statusUpdating || notOnDuty}
+                                  title={
+                                    notOnDuty
+                                      ? DUTY_REQUIRED_HINT
+                                      : !isPaymentSettled(p)
+                                      ? 'Payment must be settled first'
+                                      : 'Administer'
+                                  }
+                                  aria-label="Administer"
+                                >
+                                  <IconSyringe size={15} />
+                                </button>
+                              )}
+                              {p.status === 'observation' && (
+                                <button
+                                  type="button"
+                                  className="btn-queue-action btn-queue-action--icon btn-queue-action--release"
+                                  onClick={() => handleDischargeObservation(p.id, p.name)}
+                                  disabled={
+                                    !isPaymentSettled(p) ||
+                                    statusUpdating ||
+                                    notOnDuty
+                                  }
+                                  title={
+                                    notOnDuty
+                                      ? DUTY_REQUIRED_HINT
+                                      : !isPaymentSettled(p)
+                                      ? 'Payment must be settled first'
+                                      : (observationMinutesLeft(p.updatedAt, now) ?? 0) > 0
+                                      ? `Discharge early (${observationMinutesLeft(p.updatedAt, now)} min left in watch)`
+                                      : 'Discharge'
+                                  }
+                                  aria-label="Discharge"
+                                >
+                                  <IconCheck size={15} />
+                                </button>
+                              )}
+                              {p.status === 'completed' && (
+                                <span className="queue-pass-note">Certified</span>
+                              )}
+                            </div>
+                          )}
                         </td>
                       </tr>
                     );
@@ -1315,7 +1410,7 @@ export default function StaffClinicalDashboard({
         </div>
 
         <div className="doctor-side-column">
-          <div className="doctor-obs-card">
+          <div id="staff-observation" className="doctor-obs-card staff-page-section">
             <div className="doctor-obs-header">
               <div
                 className="doctor-obs-title"
@@ -1368,15 +1463,37 @@ export default function StaffClinicalDashboard({
                             ? 'Ready to discharge'
                             : `${obs.minsLeft} min left`}
                       </span>
-                      <button
-                        type="button"
-                        className="doctor-obs-btn-discharge"
-                        onClick={() => handleDischargeObservation(obs.id, obs.name)}
-                        disabled={statusUpdating || notOnDuty || (obs.minsLeft ?? 0) > 0}
-                        title={notOnDuty ? DUTY_REQUIRED_HINT : undefined}
-                      >
-                        {(obs.minsLeft ?? 0) > 0 ? `Discharge in ${obs.minsLeft} min` : 'Discharge Patient'}
-                      </button>
+                      {!obs.canWork ? (
+                        <>
+                          <span className="queue-session-owner">With {sessionOwnerLabel(obs.patient)}</span>
+                          {onDutyHere ? (
+                            <button
+                              type="button"
+                              className="doctor-obs-btn-discharge"
+                              onClick={() => handleTakeOver(obs.patient)}
+                              disabled={statusUpdating}
+                            >
+                              Take over
+                            </button>
+                          ) : null}
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="doctor-obs-btn-discharge"
+                          onClick={() => handleDischargeObservation(obs.id, obs.name)}
+                          disabled={statusUpdating || notOnDuty}
+                          title={
+                            notOnDuty
+                              ? DUTY_REQUIRED_HINT
+                              : (obs.minsLeft ?? 0) > 0
+                                ? `Early discharge available (${obs.minsLeft} min left in watch)`
+                                : undefined
+                          }
+                        >
+                          Discharge Patient
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1384,10 +1501,13 @@ export default function StaffClinicalDashboard({
             )}
           </div>
 
-          <StaffSlotsCard
-            hospitalUserId={selectedHospitalUserId}
-            todayAppointments={todayAppointments}
-          />
+          <div id="staff-appointments" className="staff-page-section">
+            <StaffAppointmentsSummaryCard
+              hospitalUserId={selectedHospitalUserId}
+              todayAppointments={todayAppointments}
+              appointmentsPath={isDoctor ? '/doctor/appointments' : '/nurse/appointments'}
+            />
+          </div>
         </div>
       </div>
 
@@ -1416,6 +1536,8 @@ export default function StaffClinicalDashboard({
         onSubmitReport={handleAefiSubmit}
         patient={activePatient}
       />
+
+      {confirmDialog}
     </div>
   );
 }

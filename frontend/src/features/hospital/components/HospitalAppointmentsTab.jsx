@@ -6,6 +6,7 @@ import { staffService } from '../services/staffService';
 import { appointmentService } from '../../patient/services/appointmentService';
 import { getAppointmentActionDisplay } from '../utils/appointmentStatus';
 import { IconCalendar, IconRefresh } from '../../../shared/icons/AppIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 const DAYS_OF_WEEK = [
   { key: 'Monday', label: 'Mon' },
@@ -75,6 +76,7 @@ function monthsAheadStr(months) {
  * view="bookings": every booking with a date filter and desk actions (Appointments page).
  */
 export default function HospitalAppointmentsTab({ view = 'sessions' }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const isBookingsView = view === 'bookings';
   const [vaccines, setVaccines] = useState([]);
   const [booths, setBooths] = useState([]);
@@ -508,11 +510,15 @@ export default function HospitalAppointmentsTab({ view = 'sessions' }) {
 
   // Cancel schedule in database
   const handleCancelSchedule = async (id) => {
-    if (!window.confirm(
-      'Cancel this immunization schedule? This is blocked if patients still have upcoming appointments on it.'
-    )) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Cancel schedule?',
+      message:
+        'Cancel this immunization schedule? This is blocked if patients still have upcoming appointments on it.',
+      cancelLabel: 'Keep',
+      confirmLabel: 'Cancel slot',
+      destructive: true,
+    });
+    if (!ok) return;
 
     try {
       await scheduleService.cancelSchedule(id);
@@ -534,7 +540,13 @@ export default function HospitalAppointmentsTab({ view = 'sessions' }) {
   };
 
   const handleRejectAppointment = async (id) => {
-    if (!window.confirm('Decline this appointment? The patient will see it as rejected.')) return;
+    const ok = await confirm({
+      title: 'Decline appointment?',
+      message: 'Decline this appointment? The patient will see it as rejected.',
+      confirmLabel: 'Decline',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await appointmentService.updateAppointmentStatus(id, { status: 'Rejected' });
       showToast('Appointment declined.', 'warning');
@@ -545,7 +557,14 @@ export default function HospitalAppointmentsTab({ view = 'sessions' }) {
   };
 
   const handleCancelAppointment = async (id) => {
-    if (!window.confirm('Cancel this confirmed appointment?')) return;
+    const ok = await confirm({
+      title: 'Cancel appointment?',
+      message: 'Cancel this confirmed appointment?',
+      cancelLabel: 'Keep',
+      confirmLabel: 'Cancel',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await appointmentService.cancelAppointment(id);
       showToast('Appointment cancelled.', 'warning');
@@ -1218,6 +1237,7 @@ export default function HospitalAppointmentsTab({ view = 'sessions' }) {
           </div>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

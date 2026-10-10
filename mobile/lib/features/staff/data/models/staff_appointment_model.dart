@@ -26,6 +26,10 @@ class StaffAppointmentModel {
   final String? updatedAt;
   final String? checkedInAt;
 
+  /// Doctor or nurse running the live session (Administering or Observation).
+  final String? sessionStaffUserId;
+  final String? sessionStaffName;
+
   const StaffAppointmentModel({
     required this.id,
     required this.patientUserId,
@@ -53,6 +57,8 @@ class StaffAppointmentModel {
     this.dosageUpdatedAt,
     this.updatedAt,
     this.checkedInAt,
+    this.sessionStaffUserId,
+    this.sessionStaffName,
   });
 
   /// UI queue bucket mirrored from web StaffClinicalDashboard.
@@ -133,6 +139,8 @@ class StaffAppointmentModel {
       dosageUpdatedAt: json['dosageUpdatedAt']?.toString(),
       updatedAt: json['updatedAt']?.toString(),
       checkedInAt: json['checkedInAt']?.toString(),
+      sessionStaffUserId: json['sessionStaffUserId']?.toString(),
+      sessionStaffName: json['sessionStaffName']?.toString(),
     );
   }
 }

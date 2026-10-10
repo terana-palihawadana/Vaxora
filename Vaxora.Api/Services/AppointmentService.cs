@@ -56,9 +56,6 @@ public class AppointmentService : IAppointmentService
     /// Clinical session transitions that only doctors/nurses may perform (not hospital desk).
     /// Also used for payment-settled checks before administration.
     /// </summary>
-    /// <summary>Minimum post-vaccination observation before discharge.</summary>
-    private const int ObservationMinutes = 15;
-
     private static readonly HashSet<string> ClinicalSessionStatuses =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -985,7 +982,8 @@ public class AppointmentService : IAppointmentService
             AppointmentId = appointment.Id,
             PatientNic = profile?.NicNumber ?? appointment.PatientNic,
             PatientPhone = profile?.PhoneNumber ?? appointment.PatientUser?.PhoneNumber ?? appointment.PatientPhone,
-            PatientEmail = appointment.PatientUser?.Email ?? appointment.PatientEmail
+            PatientEmail = appointment.PatientUser?.Email ?? appointment.PatientEmail,
+            PatientProfilePhotoUrl = profile?.ProfilePhotoUrl
         };
     }
 
@@ -1050,9 +1048,13 @@ public class AppointmentService : IAppointmentService
             throw new KeyNotFoundException("Appointment record not found.");
 
         var isHospitalOwner = appointment.HospitalUserId == actorUserId;
+        User? actor = null;
         if (!isHospitalOwner)
         {
-            var actor = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == actorUserId);
+            actor = await _context.Users.AsNoTracking()
+                .Include(u => u.DoctorProfile)
+                .Include(u => u.NurseProfile)
+                .FirstOrDefaultAsync(u => u.Id == actorUserId);
             if (actor == null || actor.Role is not (UserRole.DOCTOR or UserRole.NURSE))
                 throw new UnauthorizedAccessException("Only the hospital or affiliated clinical staff can update this appointment.");
 
@@ -1116,6 +1118,43 @@ public class AppointmentService : IAppointmentService
             await StaffDutyHelper.EnsureStaffOnDutyAsync(_context, actorUserId, appointment.HospitalUserId);
         }
 
+        // A live session belongs to the staff working its booth (or whoever called the patient).
+        // Anyone else must take it over explicitly, which is logged.
+        var inSession =
+            string.Equals(appointment.Status, "Administering", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(appointment.Status, "Observation", StringComparison.OrdinalIgnoreCase);
+        if (dto.TakeOver == true)
+        {
+            if (isHospitalOwner || actor == null)
+                throw new UnauthorizedAccessException("Only clinical staff can take over a session.");
+            if (!inSession || !string.Equals(nextStatus, appointment.Status, StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("Only a patient who is being administered or under watch can be taken over.");
+
+            var previousOwner = appointment.SessionStaffName;
+            appointment.SessionStaffUserId = actorUserId;
+            appointment.SessionStaffName = StaffNameFormatter.Format(actor);
+            // UpdatedAt is left alone: it marks the start of the observation window.
+            _context.AuditLogs.Add(new AuditLog
+            {
+                UserId = actorUserId,
+                UserEmail = actor.Email,
+                Role = actor.Role.ToString(),
+                Action = "CLINICAL_SESSION_TAKEN_OVER",
+                Details = $"Took over {appointment.PatientName} ({appointment.Status}) for appointment {appointment.Id}" +
+                          (string.IsNullOrWhiteSpace(previousOwner) ? string.Empty : $" from {previousOwner}"),
+                Timestamp = DateTime.UtcNow
+            });
+            await _context.SaveChangesAsync();
+            return MapToDto(appointment);
+        }
+
+        if (!isHospitalOwner && inSession && !await CanWorkSessionAsync(actorUserId, appointment))
+        {
+            var owner = appointment.SessionStaffName ?? (await ResolveAppointmentBoothAsync(appointment)).Label ?? "another booth";
+            throw new InvalidOperationException(
+                $"{appointment.PatientName} is with {owner}. Take over the session to continue.");
+        }
+
         // Dose/session transitions require settled payment (free bookings are Paid at create).
         if (ClinicalSessionStatuses.Contains(nextStatus) &&
             !string.Equals(appointment.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase))
@@ -1138,21 +1177,6 @@ public class AppointmentService : IAppointmentService
         {
             throw new InvalidOperationException(
                 "A doctor must prescribe the dose before administration. Ask the doctor to prescribe it first.");
-        }
-
-        // Post-vaccination observation: at least 15 minutes before discharge.
-        if (!isHospitalOwner &&
-            string.Equals(nextStatus, "Completed", StringComparison.OrdinalIgnoreCase) &&
-            string.Equals(previousStatus, "Observation", StringComparison.OrdinalIgnoreCase))
-        {
-            var observedFor = DateTime.UtcNow - (appointment.UpdatedAt ?? DateTime.UtcNow);
-            var remaining = TimeSpan.FromMinutes(ObservationMinutes) - observedFor;
-            if (remaining > TimeSpan.Zero)
-            {
-                var minutes = (int)Math.Ceiling(remaining.TotalMinutes);
-                throw new InvalidOperationException(
-                    $"Observation is not complete — {minutes} more minute{(minutes == 1 ? "" : "s")} before discharge.");
-            }
         }
 
         // Real clinics only call patients who have arrived.
@@ -1216,6 +1240,20 @@ public class AppointmentService : IAppointmentService
 
         appointment.Status = nextStatus;
         appointment.UpdatedAt = DateTime.UtcNow;
+
+        // The caller owns the session until the patient leaves it.
+        if (actor != null &&
+            string.Equals(nextStatus, "Administering", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(previousStatus, "Administering", StringComparison.OrdinalIgnoreCase))
+        {
+            appointment.SessionStaffUserId = actorUserId;
+            appointment.SessionStaffName = StaffNameFormatter.Format(actor);
+        }
+        else if (nextStatus is "Confirmed" or "PendingPayment" or "Cancelled" or "Rejected")
+        {
+            appointment.SessionStaffUserId = null;
+            appointment.SessionStaffName = null;
+        }
 
         if (string.Equals(nextStatus, "Cancelled", StringComparison.OrdinalIgnoreCase) &&
             !string.IsNullOrWhiteSpace(dto.Remarks))
@@ -1990,6 +2028,64 @@ public class AppointmentService : IAppointmentService
         return (pick.Id, pick.DisplayLabel);
     }
 
+    /// <summary>
+    /// True when the on-duty actor may work this live session: they called the patient in,
+    /// or they have a live shift at the patient's booth. Unowned sessions with no booth
+    /// (e.g. older walk-ins) stay open to any on-duty staff.
+    /// </summary>
+    private async Task<bool> CanWorkSessionAsync(Guid actorUserId, Appointment appointment)
+    {
+        if (appointment.SessionStaffUserId == actorUserId) return true;
+
+        var booth = await ResolveAppointmentBoothAsync(appointment);
+        if (booth.Id == null && booth.Label == null)
+            return appointment.SessionStaffUserId == null;
+
+        var today = StaffDutyHelper.HospitalToday();
+        var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
+        var myLiveShifts = await _context.StaffShifts
+            .AsNoTracking()
+            .Where(s =>
+                s.Affiliation.StaffUserId == actorUserId &&
+                s.Affiliation.HospitalUserId == appointment.HospitalUserId &&
+                s.Affiliation.Status == AffiliationStatus.Active &&
+                s.ShiftDate == today &&
+                s.StartTime <= now &&
+                s.EndTime > now)
+            .Select(s => new { s.BoothId, s.BoothOrStation })
+            .ToListAsync();
+
+        return myLiveShifts.Any(s =>
+            (booth.Id != null && s.BoothId == booth.Id) ||
+            (booth.Label != null && string.Equals(s.BoothOrStation?.Trim(), booth.Label, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    /// <summary>Booth the patient is seen at: the walk-in booth in notes, else the session's booth.</summary>
+    private async Task<(Guid? Id, string? Label)> ResolveAppointmentBoothAsync(Appointment appointment)
+    {
+        var notesBooth = ExtractBoothFromNotes(appointment.Notes);
+        if (notesBooth != null)
+        {
+            var booths = await _context.HospitalBooths
+                .AsNoTracking()
+                .Where(b => b.HospitalUserId == appointment.HospitalUserId)
+                .ToListAsync();
+            var match = booths.FirstOrDefault(b =>
+                string.Equals(b.DisplayLabel, notesBooth, StringComparison.OrdinalIgnoreCase));
+            return (match?.Id, notesBooth);
+        }
+
+        if (appointment.VaccineScheduleId is not Guid scheduleId) return (null, null);
+        var schedule = await _context.VaccineSchedules
+            .AsNoTracking()
+            .Where(s => s.Id == scheduleId)
+            .Select(s => new { s.BoothId, s.BoothLabel })
+            .FirstOrDefaultAsync();
+        return schedule == null || (schedule.BoothId == null && string.IsNullOrWhiteSpace(schedule.BoothLabel))
+            ? (null, null)
+            : (schedule.BoothId, string.IsNullOrWhiteSpace(schedule.BoothLabel) ? null : schedule.BoothLabel.Trim());
+    }
+
     private static string? ExtractBoothFromNotes(string? notes)
     {
         if (string.IsNullOrWhiteSpace(notes)) return null;
@@ -2249,6 +2345,7 @@ public class AppointmentService : IAppointmentService
             PatientProfileId = a.PatientProfileId ?? profile?.Id,
             // Prefer live profile fields so hospital/staff queues reflect profile edits.
             PatientName = !string.IsNullOrWhiteSpace(liveName) ? liveName : a.PatientName,
+            PatientProfilePhotoUrl = profile?.ProfilePhotoUrl,
             PatientNic = !string.IsNullOrWhiteSpace(liveNic) ? liveNic : a.PatientNic,
             PatientPhone = !string.IsNullOrWhiteSpace(livePhone) ? livePhone : a.PatientPhone,
             PatientEmail = !string.IsNullOrWhiteSpace(liveEmail) ? liveEmail : a.PatientEmail,
@@ -2280,6 +2377,8 @@ public class AppointmentService : IAppointmentService
             PrescribedByDoctorName = a.PrescribedByDoctorName,
             DosageUpdatedAt = a.DosageUpdatedAt,
             CheckedInAt = a.CheckedInAt,
+            SessionStaffUserId = a.SessionStaffUserId,
+            SessionStaffName = a.SessionStaffName,
             CreatedAt = a.CreatedAt,
             UpdatedAt = a.UpdatedAt
         };

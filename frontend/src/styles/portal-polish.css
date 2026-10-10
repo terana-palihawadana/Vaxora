@@ -10,6 +10,11 @@
   --portal-panel-shadow: 0 1px 2px rgba(var(--rgb-primary-dark), 0.04), 0 10px 28px -14px rgba(var(--rgb-primary-dark), 0.22);
 }
 
+/* Same soft page wash as the login screen (admin keeps its dark theme) */
+:is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container) {
+  background-color: var(--color-bg);
+}
+
 /* --------------------------------------------------------------------------
    1. KPI stat cards: solid colour icon, soft glow in the card's tone
    -------------------------------------------------------------------------- */
@@ -181,7 +186,7 @@
 
 /* --------------------------------------------------------------------------
    6. Tables: one clean style for every portal table
-   White rows with hairline dividers, a quiet header, a soft blue hover.
+   White rows with hairline dividers, a quiet header, a soft teal hover.
    Selectors use the container + table class so they outrank the
    per-table "thead tr th" / "tbody tr td" rules.
    -------------------------------------------------------------------------- */
@@ -238,7 +243,7 @@
   :is(.custom-appointments-table, .doctor-appointments-mockup-table, .doctor-table,
       .hospital-appointments-mockup-table, .hospital-queue-table, .inventory-custom-table,
       .patient-mockup-table) tbody tr:hover td {
-  background: color-mix(in srgb, var(--color-blue-bg) 70%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-soft-panel) 75%, var(--color-surface));
 }
 
 /* The table already has its own frame: drop the extra wrapper fills */
@@ -272,7 +277,7 @@
    -------------------------------------------------------------------------- */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.empty-table-cell, .empty-appointments-cell, .patient-empty-state, .ph-appointments-search-empty,
-      .staff-today-slots-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty) {
+      .staff-appt-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty) {
   padding: 32px 20px;
   text-align: center;
   color: var(--color-text-body);
@@ -281,7 +286,7 @@
 }
 
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
-  :is(.patient-empty-state, .ph-appointments-search-empty, .staff-today-slots-empty, .doctor-obs-empty,
+  :is(.patient-empty-state, .ph-appointments-search-empty, .staff-appt-empty, .doctor-obs-empty,
       .hospital-cover-empty, .shift-week-calendar-empty) {
   border: 1px dashed var(--color-border-card);
 }
@@ -289,7 +294,7 @@
 /* Inbox-style icon above the message: neutral, since empty is not a status (stroke = --color-text-muted) */
 :is(.hospital-dashboard-container, .doctor-dashboard-container, .patient-dashboard-container)
   :is(.empty-table-cell, .empty-appointments-cell, .patient-empty-state, .ph-appointments-search-empty,
-      .staff-today-slots-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty)::before {
+      .staff-appt-empty, .doctor-obs-empty, .hospital-cover-empty, .shift-week-calendar-empty)::before {
   content: "";
   display: block;
   width: 44px;

@@ -222,6 +222,13 @@ namespace Vaxora.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("SessionStaffName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("SessionStaffUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("StartTime")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");

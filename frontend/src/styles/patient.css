@@ -6,7 +6,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
 }
 
 /* ==========================================================================
@@ -382,6 +382,16 @@
   min-height: 0;
   margin: 0;
   box-sizing: border-box;
+}
+
+/* The page already spaces its children with a 20px flex gap; trim the banner's
+   own margin so banner-to-content matches the other portals (28px). */
+.patient-subpage-page > .portal-hero {
+  margin-bottom: 8px;
+}
+
+.patient-subpage-page > :not(.portal-hero) > :first-child {
+  margin-top: 0;
 }
 
 .patient-subpage-page .manage-appointments-wrapper {
@@ -2011,6 +2021,46 @@
   flex-direction: column;
   gap: 13px;
   width: 100%;
+}
+
+.feedback-anonymous-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-title);
+  cursor: pointer;
+  margin-bottom: 12px;
+  line-height: 1.35;
+}
+
+.feedback-anonymous-label input[type="checkbox"] {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.feedback-anonymous-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 6px;
+  row-gap: 2px;
+  min-width: 0;
+}
+
+.feedback-anonymous-title {
+  white-space: nowrap;
+}
+
+.feedback-anonymous-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
 .feedback-mockup-input {

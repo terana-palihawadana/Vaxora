@@ -57,6 +57,8 @@ describe('Staff Management - Hospital cover requests', () => {
     expect(assign).toBeEnabled();
 
     fireEvent.click(assign);
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Assign cover' }));
     await waitFor(() =>
       expect(staffService.decideShiftSwap).toHaveBeenCalledWith('req-1', {
         approved: true,

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { aiAgentService, inventoryDraftService } from '../services/inventoryAiAgentService';
 import InventoryDraftDocument from './InventoryDraftDocument';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 const PRESET_ACTIONS = [
   {
@@ -22,6 +23,7 @@ const PRESET_ACTIONS = [
 ];
 
 export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApproved }) {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [status, setStatus] = useState('idle');
   const [activeAction, setActiveAction] = useState(null);
   const [agentResponse, setAgentResponse] = useState(null);
@@ -68,6 +70,17 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
   const handleApprove = async () => {
     if (!agentResponse?.draft) return;
     const draft = agentResponse.draft;
+    const lineCount = Array.isArray(draft.line_items) ? draft.line_items.length : 0;
+    const ok = await confirm({
+      title: 'Approve AI purchase draft?',
+      message:
+        lineCount > 0
+          ? `Execute this draft with ${lineCount} line item${lineCount === 1 ? '' : 's'}? Stock changes will be applied.`
+          : 'Execute this draft? Stock changes will be applied.',
+      confirmLabel: 'Approve',
+    });
+    if (!ok) return;
+
     setStatus('executing');
     setErrorMsg('');
 
@@ -102,7 +115,16 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
     }
   };
 
-  const handleReject = () => reset();
+  const handleReject = async () => {
+    const ok = await confirm({
+      title: 'Discard AI draft?',
+      message: 'Clear this proposal without executing it?',
+      confirmLabel: 'Discard',
+      destructive: true,
+    });
+    if (!ok) return;
+    reset();
+  };
   const handleClose = () => { reset(); onClose(); };
 
   return (
@@ -224,6 +246,7 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
           </div>
         )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import clinicalPatientService from '../services/clinicalPatientService';
 import staffAppointmentService from '../../staff/services/staffAppointmentService';
 import { IconClose, IconSearch } from '../../../shared/icons/AppIcons';
 import StaffSubpageHeader from '../../staff/components/StaffSubpageHeader';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 function isPastDate(dateStr) {
   if (!dateStr) return false;
@@ -66,6 +67,7 @@ function mapPatientDetail(detail) {
 }
 
 export default function NursePatientsTab() {
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -158,9 +160,13 @@ export default function NursePatientsTab() {
 
   const handleMarkMissed = async (pv) => {
     if (!pv?.id) return;
-    if (!window.confirm(`Mark ${pv.vaccine} on ${pv.date} as missed? This closes the incomplete visit.`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Mark visit as missed?',
+      message: `Mark ${pv.vaccine} on ${pv.date} as missed? This closes the incomplete visit.`,
+      confirmLabel: 'Mark missed',
+      destructive: true,
+    });
+    if (!ok) return;
     setClosingMissedId(pv.id);
     setError('');
     try {
@@ -206,6 +212,14 @@ export default function NursePatientsTab() {
 
       {!selectedPatient && (
         <div className="doctor-appointment-inner-card">
+          <div className="section-title-group" style={{ marginBottom: 16 }}>
+            <h2 className="doctor-card-title" style={{ margin: 0 }}>
+              Recent Dosage Updates
+            </h2>
+            <p className="section-title-desc">
+              Latest vaccination dosage changes — search to open a full patient record
+            </p>
+          </div>
           <div className="doctor-appointments-filter-bar">
             <div className="doctor-filter-group" style={{ flex: 1, position: 'relative' }}>
               <label className="doctor-filter-label" htmlFor="ph-nurse-search" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
@@ -502,6 +516,7 @@ export default function NursePatientsTab() {
         </>
       )}
       </div>
+      {confirmDialog}
     </div>
   );
 }

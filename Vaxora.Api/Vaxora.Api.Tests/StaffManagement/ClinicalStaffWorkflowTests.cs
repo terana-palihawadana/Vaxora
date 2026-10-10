@@ -171,7 +171,7 @@ public class ClinicalStaffWorkflowTests
     }
 
     [Fact]
-    public async Task Discharge_is_refused_before_the_15_minute_observation_window()
+    public async Task Discharge_is_allowed_before_the_15_minute_observation_window()
     {
         await using var context = TestDb.CreateContext();
         var hospital = TestDb.AddHospital(context);
@@ -184,13 +184,12 @@ public class ClinicalStaffWorkflowTests
         await context.SaveChangesAsync();
 
         var service = CreateAppointmentService(context);
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            service.UpdateAppointmentStatusAsync(
-                nurse.Id,
-                appointment.Id,
-                new UpdateAppointmentStatusDto { Status = "Completed" }));
+        var updated = await service.UpdateAppointmentStatusAsync(
+            nurse.Id,
+            appointment.Id,
+            new UpdateAppointmentStatusDto { Status = "Completed" });
 
-        Assert.Contains("Observation is not complete", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Completed", updated.Status);
     }
 
     [Fact]
@@ -326,6 +325,135 @@ public class ClinicalStaffWorkflowTests
         var stored = await context.Appointments.SingleAsync(a => a.Id == appointment.Id);
         Assert.Equal(observationStarted, stored.UpdatedAt);
         Assert.Contains("AEFI", stored.Notes ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Calling_a_patient_records_the_caller_as_session_owner()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var nurse = TestDb.AddNurse(context, "nurse@example.com", "VAX-N-3040");
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, nurse), hospital);
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Confirmed");
+        appointment.PrescribedDosage = "0.5ml";
+        appointment.CheckedInAt = DateTime.UtcNow;
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var called = await service.UpdateAppointmentStatusAsync(
+            nurse.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Administering" });
+        Assert.Equal(nurse.Id, called.SessionStaffUserId);
+
+        var returned = await service.UpdateAppointmentStatusAsync(
+            nurse.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Confirmed" });
+        Assert.Null(returned.SessionStaffUserId);
+        Assert.Null(returned.SessionStaffName);
+    }
+
+    [Fact]
+    public async Task Staff_at_another_booth_cannot_work_a_colleagues_session()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var b01 = AddBooth(context, hospital, "B01");
+        var b02 = AddBooth(context, hospital, "B02");
+        var caller = TestDb.AddNurse(context, "caller@example.com", "VAX-N-3041");
+        var other = TestDb.AddNurse(context, "other@example.com", "VAX-N-3042");
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, caller), hospital).BoothId = b01.Id;
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, other), hospital).BoothId = b02.Id;
+        var appointment = AddSession(context, hospital, b01, caller.Id);
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                other.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Confirmed" }));
+
+        Assert.Contains("Take over", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("Observation", (await context.Appointments.SingleAsync()).Status);
+    }
+
+    [Fact]
+    public async Task Booth_partner_can_continue_a_session_they_did_not_start()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var b01 = AddBooth(context, hospital, "B01");
+        var doctor = TestDb.AddDoctor(context, "doctor@example.com", "VAX-D-3043");
+        var nurse = TestDb.AddNurse(context, "nurse@example.com", "VAX-N-3043");
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, doctor), hospital).BoothId = b01.Id;
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, nurse), hospital).BoothId = b01.Id;
+        var appointment = AddSession(context, hospital, b01, doctor.Id);
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var updated = await service.UpdateAppointmentStatusAsync(
+            nurse.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Completed" });
+
+        Assert.Equal("Completed", updated.Status);
+    }
+
+    [Fact]
+    public async Task Take_over_moves_the_session_without_resetting_the_watch()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var b01 = AddBooth(context, hospital, "B01");
+        var caller = TestDb.AddNurse(context, "caller@example.com", "VAX-N-3044");
+        var other = TestDb.AddNurse(context, "other@example.com", "VAX-N-3045");
+        TestDb.AddActiveAffiliation(context, hospital, caller);
+        TestDb.AddLiveShift(context, TestDb.AddActiveAffiliation(context, hospital, other), hospital);
+        var appointment = AddSession(context, hospital, b01, caller.Id);
+        var watchStarted = appointment.UpdatedAt;
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        var taken = await service.UpdateAppointmentStatusAsync(
+            other.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Observation", TakeOver = true });
+
+        Assert.Equal(other.Id, taken.SessionStaffUserId);
+        Assert.Equal("Observation", taken.Status);
+        Assert.Equal(watchStarted, (await context.Appointments.SingleAsync()).UpdatedAt);
+        Assert.Contains(context.AuditLogs, l => l.Action == "CLINICAL_SESSION_TAKEN_OVER");
+    }
+
+    [Fact]
+    public async Task Off_duty_staff_cannot_take_over_a_session()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var b01 = AddBooth(context, hospital, "B01");
+        var caller = TestDb.AddNurse(context, "caller@example.com", "VAX-N-3046");
+        var offDuty = TestDb.AddNurse(context, "off@example.com", "VAX-N-3047");
+        TestDb.AddActiveAffiliation(context, hospital, offDuty);
+        var appointment = AddSession(context, hospital, b01, caller.Id);
+        await context.SaveChangesAsync();
+
+        var service = CreateAppointmentService(context);
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.UpdateAppointmentStatusAsync(
+                offDuty.Id, appointment.Id, new UpdateAppointmentStatusDto { Status = "Observation", TakeOver = true }));
+
+        Assert.Equal(caller.Id, (await context.Appointments.SingleAsync()).SessionStaffUserId);
+    }
+
+    private static HospitalBooth AddBooth(Vaxora.Api.Data.ApplicationDbContext context, User hospital, string code)
+    {
+        var booth = new HospitalBooth { HospitalUserId = hospital.Id, Code = code, Name = "Adult" };
+        context.HospitalBooths.Add(booth);
+        return booth;
+    }
+
+    /// <summary>Walk-in under watch at <paramref name="booth"/>, called in by <paramref name="callerId"/>.</summary>
+    private static Appointment AddSession(
+        Vaxora.Api.Data.ApplicationDbContext context, User hospital, HospitalBooth booth, Guid callerId)
+    {
+        var appointment = TestDb.AddAppointment(context, hospital, status: "Observation");
+        appointment.PrescribedDosage = "0.5ml";
+        appointment.Notes = $"Walk-in{Environment.NewLine}Booth: {booth.DisplayLabel}";
+        appointment.SessionStaffUserId = callerId;
+        appointment.SessionStaffName = "Nurse Caller";
+        return appointment;
     }
 
     private static AppointmentService CreateAppointmentService(Vaxora.Api.Data.ApplicationDbContext context) =>

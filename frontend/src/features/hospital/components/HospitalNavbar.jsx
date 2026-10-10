@@ -5,10 +5,12 @@ import logo from '../../../assets/images/logo.png';
 import { authService, getUser, subscribeAuthUser } from '../../auth';
 import DeleteAccountModal from '../../auth/components/DeleteAccountModal';
 import { IconClose, IconHospital, IconLogout, IconMenu, IconTrash } from './HospitalIcons';
+import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
 export default function HospitalNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [confirm, confirmDialog] = useConfirmDialog();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,6 +46,14 @@ export default function HospitalNavbar() {
   }, [showProfileMenu]);
 
   const handleLogout = async () => {
+    const ok = await confirm({
+      title: 'Log out?',
+      message: 'You will need to sign in again to manage this hospital.',
+      cancelLabel: 'Stay',
+      confirmLabel: 'Log out',
+      destructive: true,
+    });
+    if (!ok) return;
     await authService.logout();
     navigate('/login');
   };
@@ -248,6 +258,7 @@ export default function HospitalNavbar() {
         </div>
       )}
 
+      {confirmDialog}
       {/* Delete Account Confirmation Modal */}
       <DeleteAccountModal
         isOpen={isDeleteModalOpen}
