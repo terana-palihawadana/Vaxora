@@ -6,7 +6,7 @@ import StaffSchedulingAgentChat from './StaffSchedulingAgentChat';
 import SuggestWeekCalendarModal from './SuggestWeekCalendarModal';
 import { proposalIdentity } from './proposalIdentity';
 import { hospitalMinutesNow, hospitalToday } from '../utils/hospitalDate';
-import { IconCalendar, RoleAvatarIcon } from './HospitalIcons';
+import { IconCalendar, IconDoctor, IconNurse, IconShield, RoleAvatarIcon } from './HospitalIcons';
 import { IconBot } from '../../../shared/icons/AppIcons';
 
 function toDateInputValue(date = new Date()) {
@@ -106,20 +106,22 @@ const emptyForm = {
   notes: '',
 };
 
-const weekNavButtonStyle = {
-  border: 'none',
-  background: 'var(--color-surface)',
-  color: 'var(--color-primary)',
-  fontSize: '1.1rem',
-  fontWeight: 700,
-  lineHeight: 1,
-  padding: '8px 14px',
-  cursor: 'pointer',
-};
-
+// stripe: bright role colour for the card edge and legend; accent: readable text colour.
 const roleCalendarStyle = {
-  DOCTOR: { accent: 'var(--color-ai)', bg: 'var(--color-ai-bg)', border: 'var(--color-ai-border)', label: 'Doctor' },
-  NURSE: { accent: 'var(--color-success)', bg: 'var(--color-success-bg)', border: 'var(--color-success-border)', label: 'Nurse' },
+  DOCTOR: {
+    stripe: 'var(--color-role-doctor)',
+    accent: 'var(--color-blue)',
+    bg: 'var(--color-blue-bg)',
+    border: 'var(--color-blue-border)',
+    label: 'Doctor',
+  },
+  NURSE: {
+    stripe: 'var(--color-role-nurse)',
+    accent: 'var(--color-success)',
+    bg: 'var(--color-success-bg)',
+    border: 'var(--color-success-border)',
+    label: 'Nurse',
+  },
 };
 
 function normalizeProposalTime(value) {
@@ -145,6 +147,9 @@ export default function HospitalShiftsPanel() {
   const [booths, setBooths] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [coverage, setCoverage] = useState(null);
+  // Add/edit form stays tucked away until needed, so the calendar sits near the top.
+  const [formOpen, setFormOpen] = useState(false);
+  const formPanelRef = useRef(null);
   const [form, setForm] = useState(emptyForm);
   const [editingShiftId, setEditingShiftId] = useState(null);
   /** Original date/start of the shift being edited — allows saving booth/notes on an already-started today slot. */
@@ -257,6 +262,8 @@ export default function HospitalShiftsPanel() {
     return staffOptions.filter((opt) => opt.search.includes(query));
   }, [staffOptions, staffQuery]);
 
+  const lowCoverageDays = coverage?.daysWithLowCoverage ?? 0;
+
   const staffCalendarRows = useMemo(() => {
     const sorted = [...activeStaff].sort((a, b) => {
       const roleOrder = { DOCTOR: 0, NURSE: 1 };
@@ -323,6 +330,8 @@ export default function HospitalShiftsPanel() {
       notes: shift.notes || '',
     });
     setError('');
+    setFormOpen(true);
+    requestAnimationFrame(() => formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   };
 
   const handleSaveShift = async (e) => {
@@ -364,6 +373,7 @@ export default function HospitalShiftsPanel() {
         });
         showToast('Shift created.');
       }
+      if (editingShiftId) setFormOpen(false);
       resetForm();
       await refreshRosterQuietly();
     } catch (err) {
@@ -641,193 +651,148 @@ export default function HospitalShiftsPanel() {
       )}
 
       <div className="hospital-section-card" style={{ marginBottom: '20px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '14px',
-            flexWrap: 'wrap',
-            gap: '12px',
-          }}
-        >
+        <div className="roster-toolbar">
           <div className="section-title-group">
             <h2 style={{ margin: 0 }}>
-              <span className="section-title-icon"><IconCalendar size={22} /></span> Staff Shift Roster
+              <span className="section-title-icon icon-shade-blue"><IconCalendar size={22} /></span> Staff shift roster
             </h2>
             <p className="section-title-desc">
               Weekly roster with coverage insights. Overlaps and shifts over 12 hours are blocked.
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setAgentPrompt(null);
-              setShowAgentChat(true);
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '9px 18px',
-              background: 'linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 100%)',
-              color: 'var(--color-text-inverse)',
-              border: 'none',
-              borderRadius: '10px',
-              fontSize: '14px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(var(--rgb-info), 0.35)',
-              transition: 'all 0.2s ease',
-              flexShrink: 0,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            <IconBot size={18} />
-            <span>Open Scheduling Agent</span>
-            <span
-              style={{
-                background: 'rgba(255, 255, 255, 0.25)',
-                padding: '2px 8px',
-                borderRadius: '12px',
-                fontSize: '11px',
-                fontWeight: 600,
-              }}
-            >
-              AI
-            </span>
-          </button>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            flexWrap: 'wrap',
-            marginBottom: '16px',
-            paddingBottom: '16px',
-            borderBottom: '1px solid var(--color-border-light)',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                border: '1px solid var(--color-border-card)',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                background: 'var(--color-surface)',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setWeekStart(addDays(weekStart, -7))}
-                title="Previous week"
-                style={weekNavButtonStyle}
-              >
-                ‹
-              </button>
-              <input
-                type="date"
-                aria-label="Week starting"
-                value={weekStart}
-                onChange={(e) => setWeekStart(startOfWeek(e.target.value || hospitalToday()))}
-                style={{
-                  border: 'none',
-                  borderLeft: '1px solid var(--color-border-light)',
-                  borderRight: '1px solid var(--color-border-light)',
-                  padding: '8px 10px',
-                  fontSize: '0.88rem',
-                  color: 'var(--color-text-title)',
-                  outline: 'none',
-                  fontFamily: 'inherit',
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setWeekStart(addDays(weekStart, 7))}
-                title="Next week"
-                style={weekNavButtonStyle}
-              >
-                ›
-              </button>
-            </div>
-
+          <div className="roster-ai-actions">
             <button
               type="button"
-              className="hospital-filter-btn"
+              className="roster-ai-btn"
+              onClick={() => {
+                setAgentPrompt(null);
+                setShowAgentChat(true);
+              }}
+            >
+              <IconBot size={17} /> Scheduling agent <span className="roster-ai-tag">AI</span>
+            </button>
+            <button
+              type="button"
+              className="roster-ai-btn is-primary"
+              onClick={handleSuggestWeek}
+              disabled={loading || suggestingWeek || staffOptions.length === 0}
+            >
+              {suggestingWeek ? 'Suggesting…' : 'Suggest week'} <span className="roster-ai-tag">AI</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="roster-week-bar">
+          <div className="roster-week-nav">
+            <button
+              type="button"
+              className="roster-week-step"
+              onClick={() => setWeekStart(addDays(weekStart, -7))}
+              aria-label="Previous week"
+            >
+              ‹
+            </button>
+            <label className="roster-week-label" htmlFor="roster-week-start">
+              <span>Week of {formatDayLabel(weekStart)} – {formatDayLabel(weekEnd)}</span>
+              <input
+                id="roster-week-start"
+                type="date"
+                aria-label="Jump to week"
+                value={weekStart}
+                onChange={(e) => setWeekStart(startOfWeek(e.target.value || hospitalToday()))}
+              />
+            </label>
+            <button
+              type="button"
+              className="roster-week-step"
+              onClick={() => setWeekStart(addDays(weekStart, 7))}
+              aria-label="Next week"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              className="btn-hospital-secondary roster-week-btn"
+              onClick={() => setWeekStart(startOfWeek(today))}
+              disabled={weekStart === startOfWeek(today)}
+            >
+              This week
+            </button>
+            <button
+              type="button"
+              className="btn-hospital-secondary roster-week-btn"
               onClick={loadData}
               disabled={loading}
-              style={{ padding: '8px 14px' }}
             >
-              {loading ? 'Refreshing...' : 'Refresh'}
+              {loading ? 'Refreshing…' : 'Refresh'}
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSuggestWeek}
-            disabled={loading || suggestingWeek || staffOptions.length === 0}
-            style={{
-              padding: '9px 18px',
-              borderRadius: '8px',
-              border: '1px solid var(--color-primary)',
-              background:
-                loading || suggestingWeek || staffOptions.length === 0 ? 'var(--color-border-light)' : 'var(--color-primary)',
-              color:
-                loading || suggestingWeek || staffOptions.length === 0 ? 'var(--color-text-placeholder)' : 'var(--color-surface)',
-              fontSize: '0.88rem',
-              fontWeight: 700,
-              cursor:
-                loading || suggestingWeek || staffOptions.length === 0 ? 'not-allowed' : 'pointer',
-              flexShrink: 0,
-            }}
-          >
-            {suggestingWeek ? 'Suggesting…' : 'Suggest Week'}
-          </button>
+          {!formOpen && (
+            <button
+              type="button"
+              className="btn-hospital-primary"
+              onClick={() => {
+                resetForm();
+                setFormOpen(true);
+              }}
+              disabled={staffOptions.length === 0}
+            >
+              + Add shift
+            </button>
+          )}
         </div>
 
-        <div className="hospital-metrics-grid hospital-metrics-grid--4" style={{ marginBottom: '16px' }}>
+        <div className="hospital-metrics-grid hospital-metrics-grid--4" style={{ marginBottom: formOpen ? '20px' : 0 }}>
           <div className="hospital-stat-card">
+            <div className="hospital-stat-icon stat-icon-blue">
+              <IconDoctor size={22} />
+            </div>
             <div className="hospital-stat-info">
-              <span className="hospital-stat-label">Active Doctors</span>
+              <span className="hospital-stat-label">Doctors on roster</span>
               <span className="hospital-stat-value">{coverage?.activeDoctors ?? 0}</span>
+              <span className="hospital-stat-meta">Active affiliations</span>
             </div>
           </div>
           <div className="hospital-stat-card">
+            <div className="hospital-stat-icon stat-icon-green">
+              <IconNurse size={22} />
+            </div>
             <div className="hospital-stat-info">
-              <span className="hospital-stat-label">Active Nurses</span>
+              <span className="hospital-stat-label">Nurses on roster</span>
               <span className="hospital-stat-value">{coverage?.activeNurses ?? 0}</span>
+              <span className="hospital-stat-meta">Active affiliations</span>
             </div>
           </div>
           <div className="hospital-stat-card">
+            <div className="hospital-stat-icon stat-icon-blue">
+              <IconCalendar size={22} />
+            </div>
             <div className="hospital-stat-info">
-              <span className="hospital-stat-label">Low Coverage Days</span>
-              <span className="hospital-stat-value" style={{ color: 'var(--color-error)' }}>
-                {coverage?.daysWithLowCoverage ?? 0}
-              </span>
+              <span className="hospital-stat-label">Shifts this week</span>
+              <span className="hospital-stat-value">{shifts.length}</span>
+              <span className="hospital-stat-meta">Across all booths</span>
             </div>
           </div>
           <div className="hospital-stat-card">
+            <div className={`hospital-stat-icon ${lowCoverageDays > 0 ? 'stat-icon-amber' : 'stat-icon-green'}`}>
+              <IconShield size={22} />
+            </div>
             <div className="hospital-stat-info">
-              <span className="hospital-stat-label">Week</span>
-              <span className="hospital-stat-value" style={{ fontSize: '1rem' }}>
-                {weekStart} → {weekEnd}
+              <span className="hospital-stat-label">Low coverage days</span>
+              <span className="hospital-stat-value">{lowCoverageDays}</span>
+              <span className={`hospital-stat-meta ${lowCoverageDays > 0 ? 'meta-warning' : 'meta-positive'}`}>
+                {lowCoverageDays > 0 ? 'Need more staff' : 'Every day covered'}
               </span>
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleSaveShift} style={{ display: 'grid', gap: '12px' }}>
+        {formOpen && (
+        <div className="roster-form-panel" ref={formPanelRef}>
+          <h3 className="roster-form-title">{editingShiftId ? 'Edit shift' : 'Add a shift'}</h3>
+          <form onSubmit={handleSaveShift} style={{ display: 'grid', gap: '12px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <div className="modal-form-group" style={{ margin: 0, position: 'relative' }}>
               <label className="modal-label" htmlFor="shift-staff-search">Staff *</label>
@@ -988,11 +953,17 @@ export default function HospitalShiftsPanel() {
             <button type="submit" className="btn-hospital-primary" disabled={saving || staffOptions.length === 0}>
               {saving ? 'Saving...' : editingShiftId ? 'Save Changes' : 'Create Shift'}
             </button>
-            {editingShiftId && (
-              <button type="button" className="btn-hospital-secondary" onClick={() => resetForm()} disabled={saving}>
-                Cancel
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn-hospital-secondary"
+              onClick={() => {
+                resetForm();
+                setFormOpen(false);
+              }}
+              disabled={saving}
+            >
+              {editingShiftId ? 'Cancel edit' : 'Close'}
+            </button>
           </div>
           {error && (
             <p role="alert" style={{ margin: 0, color: 'var(--color-error)', fontSize: '0.85rem' }}>
@@ -1006,6 +977,8 @@ export default function HospitalShiftsPanel() {
             </p>
           )}
         </form>
+        </div>
+        )}
       </div>
 
       {showAgentChat && (
@@ -1160,13 +1133,13 @@ export default function HospitalShiftsPanel() {
                           className={`shift-week-calendar-cell ${isToday ? 'is-today' : ''}`}
                         >
                           {dayShifts.length === 0 ? (
-                            <span className="shift-week-calendar-empty">—</span>
+                            <span className="shift-week-calendar-empty" aria-label="No shift" />
                           ) : (
                             dayShifts.map((shift) => (
                               <div
                                 key={shift.shiftId}
                                 className="shift-week-card"
-                                style={{ borderLeftColor: roleStyle.accent }}
+                                style={{ borderLeftColor: roleStyle.stripe }}
                               >
                                 <div className="shift-week-card-time">{formatShiftTime(shift)}</div>
                                 <div
@@ -1218,14 +1191,14 @@ export default function HospitalShiftsPanel() {
             <span className="shift-week-calendar-legend-item">
               <span
                 className="shift-week-calendar-legend-swatch"
-                style={{ background: 'var(--color-ai)' }}
+                style={{ background: roleCalendarStyle.DOCTOR.stripe }}
               />
               Doctor shift
             </span>
             <span className="shift-week-calendar-legend-item">
               <span
                 className="shift-week-calendar-legend-swatch"
-                style={{ background: 'var(--color-success)' }}
+                style={{ background: roleCalendarStyle.NURSE.stripe }}
               />
               Nurse shift
             </span>

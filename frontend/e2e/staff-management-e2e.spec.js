@@ -162,10 +162,10 @@ test.describe('Staff Management E2E', () => {
     await page.goto('/hospital/roster');
     await expect(page).toHaveURL(/\/hospital\/roster/);
 
-    await expect(page.getByRole('button', { name: /open scheduling agent/i })).toBeVisible({
+    await expect(page.getByRole('button', { name: /scheduling agent/i })).toBeVisible({
       timeout: 15000,
     });
-    await page.getByRole('button', { name: /open scheduling agent/i }).click();
+    await page.getByRole('button', { name: /scheduling agent/i }).click();
 
     await expect(
       page.getByRole('heading', { name: /vaxora staff scheduling agent/i })

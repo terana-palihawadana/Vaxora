@@ -76,6 +76,11 @@
   --color-blue-border: #c6d8f7;
   --rgb-blue: 42, 99, 201;
 
+  /* Role stripes on shift cards (roster and My shifts calendars).
+     Bright for a 4px stripe; card text uses the darker AA-safe tokens. */
+  --color-role-doctor: var(--color-blue);
+  --color-role-nurse: #059669;
+
   /* AI Assistant Accents */
   --color-ai: #6d5bae;
   --color-ai-bg: #ede9f8;
