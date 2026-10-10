@@ -10,16 +10,69 @@
   display: block;
   margin-bottom: 28px;
   border-radius: 20px;
+  overflow: hidden;
   color: var(--color-text-title);
-  background:
-    radial-gradient(520px 280px at 95% -10%, rgba(var(--rgb-primary), 0.16), transparent 70%),
-    linear-gradient(120deg, var(--color-soft-panel) 0%, var(--color-soft-panel-mid) 55%, var(--color-soft-panel-deep) 100%);
+  /* Soft mint wash (token colours) keeps dark text readable over the wave art */
+  background-color: var(--color-soft-panel);
+  background-image:
+    linear-gradient(
+      105deg,
+      color-mix(in srgb, var(--color-soft-panel) 92%, transparent) 0%,
+      color-mix(in srgb, var(--color-soft-panel) 72%, transparent) 42%,
+      color-mix(in srgb, var(--color-soft-panel-deep) 38%, transparent) 72%,
+      color-mix(in srgb, var(--color-soft-panel-deep) 18%, transparent) 100%
+    ),
+    url('../assets/images/portal/hero-wave-banner.jpg');
+  background-size: cover, cover;
+  background-position: center, right center;
+  background-repeat: no-repeat;
   border: 1.5px solid rgba(var(--rgb-primary), 0.45);
   box-shadow: 0 14px 34px -24px rgba(var(--rgb-primary-dark), 0.35);
 }
 
 .portal-hero--home {
   min-height: 300px;
+}
+
+/* Full-bleed home banner: edge-to-edge under the navbar, not a card.
+   Scoped to pages that opt in with .portal-hero--bleed. */
+.portal-hero--bleed {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  margin-top: 0;
+  margin-bottom: 28px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(var(--rgb-primary), 0.22);
+  box-shadow: none;
+  min-height: clamp(280px, 34vh, 400px);
+}
+
+.portal-hero--bleed .portal-hero__content {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px 32px;
+}
+
+.portal-hero--bleed .portal-hero__media {
+  border-radius: 0;
+}
+
+/* Drop the main content top pad so the bleed hero starts at the navbar */
+.doctor-content-area:has(.portal-hero--bleed),
+.hospital-content-area:has(.portal-hero--bleed),
+.patient-main-content:has(.portal-hero--bleed) {
+  padding-top: 0;
+}
+
+.doctor-dashboard-container:has(.portal-hero--bleed),
+.hospital-dashboard-container:has(.portal-hero--bleed),
+.patient-dashboard-container:has(.portal-hero--bleed) {
+  overflow-x: clip;
 }
 
 .portal-hero__content {
@@ -120,6 +173,10 @@
     padding: 26px 24px;
   }
 
+  .portal-hero--bleed .portal-hero__content {
+    padding: 32px 20px;
+  }
+
   /* Narrow screens: the photo sits faintly behind the text. */
   .portal-hero__image {
     width: 100%;
@@ -135,12 +192,22 @@
     margin-bottom: 20px;
   }
 
-  .portal-hero--home {
+  .portal-hero--bleed {
+    border-radius: 0;
+    min-height: clamp(240px, 32vh, 320px);
+    margin-bottom: 20px;
+  }
+
+  .portal-hero--home:not(.portal-hero--bleed) {
     min-height: 0;
   }
 
   .portal-hero__content,
   .portal-hero--compact .portal-hero__content {
     padding: 22px 18px;
+  }
+
+  .portal-hero--bleed .portal-hero__content {
+    padding: 28px 16px;
   }
 }

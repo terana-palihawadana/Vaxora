@@ -279,6 +279,32 @@ export function IconBot(props) {
   );
 }
 
+/** Copilot-style sparkles for AI agent CTAs (animate via .roster-ai-sparkle-*). */
+export function IconAgentSparkles({ className, size = 18, ...props }) {
+  return (
+    <SvgIcon size={size} className={className} {...props}>
+      <path
+        className="roster-ai-sparkle roster-ai-sparkle-a"
+        fill="currentColor"
+        stroke="none"
+        d="M11.2 3.2c.25 2.35 1.55 3.7 3.9 3.95-2.35.25-3.65 1.6-3.9 3.95-.25-2.35-1.55-3.7-3.9-3.95 2.35-.25 3.65-1.6 3.9-3.95z"
+      />
+      <path
+        className="roster-ai-sparkle roster-ai-sparkle-b"
+        fill="currentColor"
+        stroke="none"
+        d="M17.4 11.1c.16 1.45.95 2.28 2.4 2.45-1.45.16-2.24.99-2.4 2.45-.16-1.46-.95-2.29-2.4-2.45 1.45-.17 2.24-1 2.4-2.45z"
+      />
+      <path
+        className="roster-ai-sparkle roster-ai-sparkle-c"
+        fill="currentColor"
+        stroke="none"
+        d="M7.1 14.2c.14 1.2.78 1.9 2 2.05-1.22.14-1.86.84-2 2.05-.14-1.21-.78-1.91-2-2.05 1.22-.15 1.86-.85 2-2.05z"
+      />
+    </SvgIcon>
+  );
+}
+
 export function IconFile(props) {
   return (
     <SvgIcon {...props}>

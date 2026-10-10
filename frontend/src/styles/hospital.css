@@ -6,7 +6,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   color: var(--color-text-body);
   font-family: var(--font-body);
 }
@@ -709,7 +709,7 @@
   margin-left: 6px;
   padding: 0 6px;
   border-radius: 999px;
-  background: var(--color-warning);
+  background: var(--color-primary);
   color: var(--color-text-inverse);
   font-size: 0.72rem;
   font-weight: 700;
@@ -717,8 +717,8 @@
 }
 
 .hospital-staff-hero-tab.active .hospital-staff-hero-tab-badge {
-  background: var(--color-warning);
-  color: var(--color-text-title);
+  background: var(--color-surface);
+  color: var(--color-primary);
 }
 
 .hospital-cover-panel {
@@ -1493,21 +1493,33 @@
 
 .queue-contact-reveal-btn {
   margin-top: 4px;
-  padding: 0;
+  padding: 2px 6px;
+  margin-left: -6px;
   border: none;
-  background: none;
-  color: var(--color-ai);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-primary);
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  transition: background-color var(--transition-fast, 0.15s ease);
+}
+
+.queue-contact-reveal-btn:hover:not(:disabled) {
+  background-color: var(--color-surface-subtle);
+}
+
+.queue-contact-reveal-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  background-color: var(--color-surface-subtle);
 }
 
 .queue-contact-reveal-btn:disabled {
-  color: var(--color-text-body);
+  color: var(--color-text-placeholder);
   cursor: not-allowed;
-  text-decoration: none;
+  background: transparent;
 }
 
 .queue-controls-bar {
@@ -5380,7 +5392,7 @@ select.schedule-input-field {
   gap: 10px;
 }
 
-/* AI actions: teal because they are clickable, purple tag because they are AI */
+/* AI actions: teal because they are clickable; AI tag uses landing Roles blue */
 .roster-ai-btn {
   display: inline-flex;
   align-items: center;
@@ -5400,6 +5412,29 @@ select.schedule-input-field {
 .roster-ai-btn:hover:not(:disabled) {
   background: var(--btn-secondary-bg-hover);
   border-color: var(--color-primary);
+}
+
+/* Soft idle bob — reads as “live agent” without flashing */
+.roster-ai-bot-icon {
+  flex-shrink: 0;
+  transform-origin: 50% 85%;
+  animation: roster-ai-bot-bob 2.4s ease-in-out infinite;
+}
+
+@keyframes roster-ai-bot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1.5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roster-ai-bot-icon {
+    animation: none;
+  }
 }
 
 .roster-ai-btn.is-primary {
@@ -5423,9 +5458,16 @@ select.schedule-input-field {
   border-radius: 999px;
   font-size: 0.66rem;
   font-weight: 800;
-  color: var(--color-ai);
-  background: var(--color-ai-bg);
-  border: 1px solid var(--color-ai-border);
+  /* Brand teal soft tint — matches the portal, not blue/purple */
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+  border: 1px solid color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.roster-ai-btn.is-primary .roster-ai-tag {
+  color: var(--color-primary-dark);
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(255, 255, 255, 0.55);
 }
 
 .roster-week-bar {

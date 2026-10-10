@@ -275,33 +275,18 @@ export default function FeedbackTab() {
                 )}
 
                 {/* Anonymous toggle */}
-                <label
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    fontSize: "0.85rem",
-                    fontWeight: 600,
-                    color: "var(--color-text-title)",
-                    cursor: "pointer",
-                    marginBottom: 12,
-                  }}
-                >
+                <label className="feedback-anonymous-label">
                   <input
                     type="checkbox"
                     checked={isAnonymous}
                     onChange={(e) => handleAnonymousToggle(e.target.checked)}
                     disabled={submitting}
                   />
-                  Submit anonymously
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      fontWeight: 400,
-                      color: "var(--color-text-muted)",
-                    }}
-                  >
-                    (name, email, and phone will not be recorded)
+                  <span className="feedback-anonymous-copy">
+                    <span className="feedback-anonymous-title">Submit anonymously</span>
+                    <span className="feedback-anonymous-hint">
+                      (name, email, and phone will not be recorded)
+                    </span>
                   </span>
                 </label>
 

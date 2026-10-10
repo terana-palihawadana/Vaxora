@@ -697,7 +697,8 @@ export default function HospitalShiftsPanel() {
                 setShowAgentChat(true);
               }}
             >
-              <IconBot size={17} /> Scheduling agent <span className="roster-ai-tag">AI</span>
+              <IconBot size={17} className="roster-ai-bot-icon" /> Scheduling agent{' '}
+              <span className="roster-ai-tag">AI</span>
             </button>
             <button
               type="button"

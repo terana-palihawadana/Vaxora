@@ -7,7 +7,7 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--color-surface);
+  background-color: var(--color-bg);
   color: var(--color-text-body);
   font-family: var(--font-body);
 }
@@ -1042,7 +1042,7 @@
 }
 
 .doctor-obs-item-state.is-clear {
-  color: var(--color-ai);
+  color: var(--color-warning);
 }
 
 .doctor-row-note {
@@ -1500,9 +1500,9 @@
 }
 
 .doctor-obs-count-badge {
-  background-color: var(--color-ai-bg);
-  color: var(--color-ai);
-  border: 1px solid var(--color-ai-border);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
   font-weight: 700;
   font-size: 0.75rem;
   padding: 3px 10px;
@@ -1514,8 +1514,8 @@
   padding: 24px 12px;
   color: var(--color-text-muted);
   font-size: 0.88rem;
-  background: var(--color-ai-bg);
-  border: 1px dashed var(--color-ai-border);
+  background: var(--color-warning-bg);
+  border: 1px dashed var(--color-warning-border);
   border-radius: 12px;
 }
 
@@ -1526,9 +1526,9 @@
 }
 
 .doctor-obs-item {
-  background-color: var(--color-ai-bg);
-  border: 1px solid var(--color-ai-border);
-  border-left: 4px solid var(--color-ai);
+  background-color: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-left: 4px solid var(--color-warning);
   border-radius: 12px;
   padding: 14px;
   display: flex;
@@ -1566,33 +1566,44 @@
 }
 
 .doctor-obs-timer-pill {
-  background-color: var(--color-ai-bg);
-  color: var(--color-ai);
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
   font-weight: 700;
   font-size: 0.78rem;
   padding: 3px 8px;
   border-radius: 6px;
-  border: 1px solid var(--color-ai-border);
+  border: 1px solid var(--color-warning-border);
 }
 
 .doctor-obs-btn-discharge {
   border: none;
   background: transparent;
-  color: var(--color-ai);
+  color: var(--color-warning);
   font-size: 0.76rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 2px 6px;
+  margin-right: -6px;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color var(--transition-fast, 0.15s ease);
 }
 
 .doctor-obs-btn-discharge:hover:not(:disabled) {
-  text-decoration: underline;
-  color: var(--color-ai);
+  background-color: var(--color-surface);
+  text-decoration: none;
+}
+
+.doctor-obs-btn-discharge:focus-visible {
+  outline: 2px solid var(--color-warning);
+  outline-offset: 2px;
+  background-color: var(--color-surface);
 }
 
 .doctor-obs-btn-discharge:disabled {
   color: var(--color-text-placeholder);
   cursor: not-allowed;
+  background: transparent;
 }
 
 /* Station Cold Box Stock */
@@ -3752,7 +3763,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
@@ -3763,6 +3774,8 @@
 
 .staff-cover-lane {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--color-border-card);
   border-top: 3px solid var(--lane);
   border-radius: 14px;
@@ -3823,7 +3836,12 @@
 
 .staff-cover-quiet {
   margin: 0;
-  padding: 14px 4px;
+  flex: 1;
+  /* Match the footprint of a single cover-request card */
+  min-height: 4.75rem;
+  display: flex;
+  align-items: center;
+  padding: 10px 4px;
   font-size: 0.86rem;
   color: var(--color-text-muted);
 }
@@ -3832,6 +3850,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
