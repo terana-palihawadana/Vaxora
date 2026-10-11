@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inventory agents evaluation — run 1</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    margin: 0;
+    padding: 28px 36px;
+    color: #1f2937;
+    background: #ffffff;
+  }
+  h1 { font-size: 22px; margin: 0 0 14px; }
+  h2 { font-size: 18px; margin: 24px 0 10px; }
+  .meta { font-size: 13px; color: #475569; line-height: 1.7; margin-bottom: 20px; }
+  .meta b { color: #1f2937; }
+  .status-row {
+    display: flex; gap: 10px; margin-bottom: 22px; align-items: center;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.03em;
+  }
+  .badge {
+    padding: 5px 12px; border-radius: 12px; text-transform: uppercase;
+    font-size: 11px; letter-spacing: 0.06em;
+  }
+  .badge.passed { background: #d1fae5; color: #065f46; }
+  .badge.neutral { background: #f1f5f9; color: #334155; }
+  .badge.failed { background: #fee2e2; color: #991b1b; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+  th { background: #f8fafc; font-weight: 700; font-size: 12px; color: #475569; }
+  td.num { width: 40px; color: #64748b; }
+  td.result { text-align: right; width: 100px; }
+  .pass { color: #047857; font-weight: 600; }
+  .fail { color: #b91c1c; font-weight: 600; }
+  tr:nth-child(even) td { background: #fafbfc; }
+</style>
+</head>
+<body>
+
+<h1>Inventory agents evaluation — run 1</h1>
+
+<div class="meta">
+  <b>Scope.</b> RestockAgent and ExpiryAgent deterministic validators (inventory module).<br>
+  <b>Tooling.</b> pytest &mdash; <code>agent/tests/test_inventory_validators.py</code> &mdash; scripted inputs, no live LLM calls.<br>
+  <b>Note.</b> All rules enforced in Python; LLM never performs arithmetic or decides thresholds.
+</div>
+
+<div class="status-row">
+  <span class="badge passed">Passed</span>
+  <span>Total</span> <span class="badge neutral">27</span>
+  <span>Passed</span> <span class="badge neutral">27</span>
+  <span>Failed</span> <span class="badge neutral">0</span>
+</div>
+
+<table>
+  <thead>
+    <tr><th>#</th><th>Test</th><th class="result">Result</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="num">1</td><td>valid restock proposal passes validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">2</td><td>missing required fields fails restock validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">3</td><td>zero recommended quantity fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">4</td><td>quantity above sanity limit (100000) fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">5</td><td>invalid urgency value fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">6</td><td>refuses restock when stock above 1.5x safety threshold</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">7</td><td>valid expiry action passes validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">8</td><td>missing fields fails expiry validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">9</td><td>invalid priority fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">10</td><td>invalid recommended action fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">11</td><td>negative days until expiry fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">12</td><td>days until expiry above 60 fails validation</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">13</td><td>refuses disposal when more than 14 days remain</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">14</td><td>compute_reorder_quantity returns 0 when stock above target</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">15</td><td>compute_reorder_quantity returns 0 when stock equals target</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">16</td><td>compute_reorder_quantity rounds up to nearest 50</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">17</td><td>compute_reorder_quantity small deficit rounds up</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">18</td><td>compute_reorder_quantity with threshold 0 returns 0</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">19</td><td>compute_urgency high at or below threshold</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">20</td><td>compute_urgency medium up to 150 percent of threshold</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">21</td><td>compute_urgency low above 150 percent of threshold</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">22</td><td>compute_urgency threshold 0 returns low</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">23</td><td>compute_expiry_priority critical at 14 days or less</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">24</td><td>compute_expiry_priority critical at quantity above 500</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">25</td><td>compute_expiry_priority high at 30 days or less</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">26</td><td>compute_expiry_priority medium at 60 days or less</td><td class="result pass">Passed</td></tr>
+    <tr><td class="num">27</td><td>compute_expiry_priority low above 60 days</td><td class="result pass">Passed</td></tr>
+  </tbody>
+</table>
+
+</body>
+</html>
