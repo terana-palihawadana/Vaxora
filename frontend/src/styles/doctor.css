@@ -1291,6 +1291,48 @@
   display: inline-block;
 }
 
+/* Fixed layout ignores min-width, so Status and Actions get real widths that fit
+   "Awaiting payment" and two icon buttons; Patient and Vaccine share what is left. */
+.doctor-queue-card .hospital-queue-table th:nth-child(2),
+.doctor-queue-card .hospital-queue-table td:nth-child(2),
+.doctor-queue-card .hospital-queue-table col.col-patient,
+.doctor-queue-card .hospital-queue-table th:nth-child(3),
+.doctor-queue-card .hospital-queue-table td:nth-child(3),
+.doctor-queue-card .hospital-queue-table col.col-vaccine {
+  width: auto;
+}
+
+.doctor-queue-card .hospital-queue-table th:nth-child(5),
+.doctor-queue-card .hospital-queue-table td:nth-child(5),
+.doctor-queue-card .hospital-queue-table col.col-status {
+  width: 8.75rem;
+}
+
+.doctor-queue-card .hospital-queue-table th:nth-child(6),
+.doctor-queue-card .hospital-queue-table td:nth-child(6),
+.doctor-queue-card .hospital-queue-table col.col-actions {
+  width: 7rem;
+}
+
+.doctor-queue-card .hospital-queue-table thead tr th:nth-child(n + 5),
+.doctor-queue-card .hospital-queue-table tbody tr td:nth-child(n + 5) {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Colleague's session: owner chip above Take over, so neither is clipped */
+.doctor-queue-card .queue-action-btns--stacked {
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doctor-queue-card .queue-action-btns--stacked .queue-session-owner,
+.doctor-queue-card .queue-action-btns--stacked .btn-queue-action {
+  max-width: 100%;
+  padding: 3px 8px;
+  box-sizing: border-box;
+}
+
 .doctor-queue-card .hospital-queue-table tbody tr.is-current-patient td {
   background: var(--color-bg);
 }

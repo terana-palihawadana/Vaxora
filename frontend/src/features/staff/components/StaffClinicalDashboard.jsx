@@ -1330,7 +1330,7 @@ export default function StaffClinicalDashboard({
                         </td>
                         <td>
                           {isInSession(p) && !canWorkSession(p) ? (
-                            <div className="queue-action-btns">
+                            <div className="queue-action-btns queue-action-btns--stacked">
                               <span className="queue-session-owner" title={`With ${sessionOwnerLabel(p)}`}>
                                 With {sessionOwnerLabel(p)}
                               </span>
