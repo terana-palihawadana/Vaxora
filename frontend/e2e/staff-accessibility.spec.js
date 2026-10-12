@@ -1,13 +1,11 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
 // Accessibility (WCAG 2.1 A/AA) checks for the hospital Staff Management pages,
 // using axe-core on the real React app against the local API.
 
-const TEST_HOSPITAL = {
-  email: 'hospital@vaxora.local',
-  password: 'Hospital@123',
-};
+const TEST_HOSPITAL = TEST_ACCOUNTS.hospital;
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 

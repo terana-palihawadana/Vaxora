@@ -33,7 +33,7 @@ function appt(id, startTime, patientName, status, extra = {}) {
 }
 
 const day = [
-  appt('a3', '10:40', 'Chamari', 'Cancelled'),
+  appt('a3', '10:40', 'Chamari', 'Administering'),
   appt('a1', '09:00', 'Anne', 'Completed'),
   appt('a2', '10:00', 'Bimal', 'Confirmed', { checkedInAt: '2026-10-11T04:00:00Z' }),
   appt('a4', '11:00', 'Dilan', 'PendingPayment'),
@@ -76,11 +76,14 @@ describe('Staff Management - Appointments page', () => {
   it('filters by status and shows a count on each filter (normal)', async () => {
     await renderPage();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Upcoming (2)' }));
-    expect(patientNames()).toEqual(['Bimal', 'Dilan']);
+    fireEvent.click(screen.getByRole('button', { name: 'Upcoming (3)' }));
+    expect(patientNames()).toEqual(['Bimal', 'Chamari', 'Dilan']);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancelled (1)' }));
-    expect(patientNames()).toEqual(['Chamari']);
+    fireEvent.click(screen.getByRole('button', { name: 'Completed (1)' }));
+    expect(patientNames()).toEqual(['Anne']);
+
+    // The API never returns cancelled bookings, so there is no filter for them.
+    expect(screen.queryByRole('button', { name: /cancelled/i })).toBeNull();
   });
 
   it('searches by patient name (normal)', async () => {
@@ -90,15 +93,27 @@ describe('Staff Management - Appointments page', () => {
     expect(patientNames()).toEqual(['Anne']);
   });
 
-  it('opens the day from ?date and steps to the next day (boundary)', async () => {
+  it('opens the day from ?date and stops at tomorrow (boundary)', async () => {
     await renderPage('/nurse/appointments?date=2026-10-12');
     expect(staffAppointmentService.getHospitalAppointments).toHaveBeenCalledWith('h1', '2026-10-12');
     expect(screen.getByText(/^Tomorrow ·/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Next day' })).toBeDisabled();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Next day' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Previous day' }));
     await waitFor(() =>
-      expect(staffAppointmentService.getHospitalAppointments).toHaveBeenCalledWith('h1', '2026-10-13')
+      expect(staffAppointmentService.getHospitalAppointments).toHaveBeenCalledWith('h1', '2026-10-11')
     );
+  });
+
+  it('stops at yesterday (boundary)', async () => {
+    await renderPage('/nurse/appointments?date=2026-10-10');
+    expect(staffAppointmentService.getHospitalAppointments).toHaveBeenCalledWith('h1', '2026-10-10');
+    expect(screen.getByRole('button', { name: 'Previous day' })).toBeDisabled();
+  });
+
+  it('falls back to today for a ?date outside the session window (invalid)', async () => {
+    await renderPage('/nurse/appointments?date=2026-10-14');
+    expect(staffAppointmentService.getHospitalAppointments).toHaveBeenCalledWith('h1', '2026-10-11');
   });
 
   it('falls back to today for a malformed ?date (invalid)', async () => {

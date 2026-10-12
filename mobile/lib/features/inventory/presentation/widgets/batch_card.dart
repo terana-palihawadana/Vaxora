@@ -10,12 +10,14 @@ class BatchCard extends StatelessWidget {
   const BatchCard({super.key, required this.batch, required this.onTap});
 
   StaffChipTone get _tone {
+    if (batch.isOnOrder) return StaffChipTone.warning;
     if (batch.isExpired || batch.isLowStock) return StaffChipTone.danger;
     if (batch.isExpiringSoon) return StaffChipTone.warning;
     return StaffChipTone.success;
   }
 
   String get _label {
+    if (batch.isOnOrder) return 'On order';
     if (batch.isExpired) return 'Expired';
     if (batch.isLowStock) return 'Low stock';
     if (batch.isExpiringSoon) return 'Expiring';

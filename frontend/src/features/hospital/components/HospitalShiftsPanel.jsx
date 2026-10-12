@@ -4,11 +4,22 @@ import staffService from '../services/staffService';
 import agentService from '../../patient/services/agentService';
 import StaffSchedulingAgentChat from './StaffSchedulingAgentChat';
 import SuggestWeekCalendarModal from './SuggestWeekCalendarModal';
+import AddSessionShiftForm from './AddSessionShiftForm';
 import { proposalIdentity } from './proposalIdentity';
 import { hospitalMinutesNow, hospitalToday } from '../utils/hospitalDate';
 import { IconCalendar, IconDoctor, IconNurse, IconShield, RoleAvatarIcon } from './HospitalIcons';
 import { IconBot } from '../../../shared/icons/AppIcons';
 import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+import { describeAvailability, isOfferedFor } from '../../staff/utils/availability';
+
+/** Shown with suggestions that were not chosen by the AI model. */
+const NOTICE_MODEL_DOWN =
+  'AI model unavailable right now. These were planned by rules from your posted sessions. Session hours, booths and staff availability still apply.';
+const NOTICE_AGENT_DOWN =
+  'Scheduling agent could not be reached. These were planned by rules from your posted sessions. Session hours, booths and staff availability still apply.';
+
+/** API prefix for a shift outside the hours a doctor offers this hospital. */
+const OUTSIDE_AVAILABILITY = 'Outside availability:';
 
 function toDateInputValue(date = new Date()) {
   const y = date.getFullYear();
@@ -100,7 +111,7 @@ function validateShiftForm({ shiftDate, startTime, endTime }, { isEdit = false, 
 
 const emptyForm = {
   affiliationId: '',
-  shiftDate: hospitalToday(),
+  shiftDate: '',
   startTime: '08:00',
   endTime: '16:00',
   boothId: '',
@@ -154,6 +165,8 @@ export default function HospitalShiftsPanel() {
   const formPanelRef = useRef(null);
   const [form, setForm] = useState(emptyForm);
   const [editingShiftId, setEditingShiftId] = useState(null);
+  // 'session' staffs a posted session; 'other' is duty with its own date, hours and booth.
+  const [shiftKind, setShiftKind] = useState('session');
   /** Original date/start of the shift being edited — allows saving booth/notes on an already-started today slot. */
   const [editingOriginal, setEditingOriginal] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -166,6 +179,7 @@ export default function HospitalShiftsPanel() {
   const [suggestRerollSeed, setSuggestRerollSeed] = useState(0);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [suggestModalError, setSuggestModalError] = useState('');
+  const [suggestNotice, setSuggestNotice] = useState('');
   const [proposalActionId, setProposalActionId] = useState(null);
   const [actionId, setActionId] = useState(null);
   const [error, setError] = useState('');
@@ -254,15 +268,20 @@ export default function HospitalShiftsPanel() {
         value: s.affiliationId,
         label: `${s.staffName} · ${s.staffRole === 'DOCTOR' ? 'Doctor' : 'Nurse'} · ${s.staffRegistrationNumber}`,
         search: `${s.staffName} ${s.staffRole} ${s.staffRegistrationNumber}`.toLowerCase(),
+        staff: s,
       })),
     [activeStaff]
   );
 
+  // Staff on a day off, or outside the hours they offer, are not listed for the chosen slot.
   const filteredStaff = useMemo(() => {
     const query = staffQuery.trim().toLowerCase();
-    if (!query) return staffOptions;
-    return staffOptions.filter((opt) => opt.search.includes(query));
-  }, [staffOptions, staffQuery]);
+    return staffOptions.filter(
+      (opt) =>
+        isOfferedFor(opt.staff, form.shiftDate, form.startTime, form.endTime) &&
+        (!query || opt.search.includes(query))
+    );
+  }, [staffOptions, staffQuery, form.shiftDate, form.startTime, form.endTime]);
 
   const lowCoverageDays = coverage?.daysWithLowCoverage ?? 0;
 
@@ -297,15 +316,40 @@ export default function HospitalShiftsPanel() {
     const list = Array.isArray(proposals) ? proposals.filter(Boolean) : [];
     if (list.length === 0) return;
     setSuggestModalError('');
-    setPendingProposals(list.map((p) => ({ ...p, _status: undefined, _selected: true })));
+    setSuggestNotice(meta.notice || '');
+    // The review window shows one week. If nothing falls in the week on screen, jump to the
+    // week the suggestions are for; anything outside the shown week stays unselected so a
+    // shift the manager cannot see is never approved.
+    const proposalDay = (p) => String(p.shiftDate).slice(0, 10);
+    const days = list.map(proposalDay).sort();
+    let shownStart = weekStart;
+    if (!days.some((day) => day >= weekStart && day <= weekEnd)) {
+      shownStart = startOfWeek(days[0]);
+      setWeekStart(shownStart);
+    }
+    const shownEnd = addDays(shownStart, 6);
+    setPendingProposals(
+      list.map((p) => ({
+        ...p,
+        _status: undefined,
+        _selected: proposalDay(p) >= shownStart && proposalDay(p) <= shownEnd,
+      }))
+    );
     setProposalWorkflowId(meta.workflowId || null);
     setShowSuggestModal(true);
     showToast(`${list.length} suggested shift${list.length === 1 ? '' : 's'} — select which to keep in the calendar window.`);
-  }, []);
+  }, [weekStart, weekEnd]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const next = { ...form, [name]: value };
+    // A new date or time can rule out the chosen person (day off, or outside their hours).
+    const chosen = activeStaff.find((s) => s.affiliationId === next.affiliationId);
+    if (!editingShiftId && chosen && !isOfferedFor(chosen, next.shiftDate, next.startTime, next.endTime)) {
+      next.affiliationId = '';
+      setStaffQuery('');
+    }
+    setForm(next);
   };
 
   const resetForm = (keepDate = true) => {
@@ -336,8 +380,16 @@ export default function HospitalShiftsPanel() {
     requestAnimationFrame(() => formPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   };
 
+  const selectedStaff = activeStaff.find((s) => s.affiliationId === form.affiliationId);
+  const selectedStaffHours =
+    selectedStaff?.staffRole === 'DOCTOR' ? describeAvailability(selectedStaff) : '';
+
   const handleSaveShift = async (e) => {
     e.preventDefault();
+    if (!form.shiftDate) {
+      setError('Pick a date.');
+      return;
+    }
     if (!form.affiliationId) {
       setError('Select an active staff member.');
       return;
@@ -367,19 +419,17 @@ export default function HospitalShiftsPanel() {
     try {
       if (editingShiftId) {
         await staffService.updateShift(editingShiftId, payload);
-        showToast('Shift updated.');
       } else {
-        await staffService.createShift({
-          affiliationId: form.affiliationId,
-          ...payload,
-        });
-        showToast('Shift created.');
+        await staffService.createShift({ affiliationId: form.affiliationId, ...payload });
       }
+      showToast(editingShiftId ? 'Shift updated.' : 'Shift created.');
       if (editingShiftId) setFormOpen(false);
       resetForm();
       await refreshRosterQuietly();
     } catch (err) {
-      setError(err.message || (editingShiftId ? 'Failed to update shift.' : 'Failed to create shift.'));
+      // A day off or hours the doctor does not offer is a hard stop, not a prompt.
+      const message = (err.message || '').replace(OUTSIDE_AVAILABILITY, '').trim();
+      setError(message || (editingShiftId ? 'Failed to update shift.' : 'Failed to create shift.'));
     } finally {
       setSaving(false);
     }
@@ -420,6 +470,7 @@ export default function HospitalShiftsPanel() {
     setPendingProposals([]);
     setSuggestModalError('');
     setSuggestRerollSeed(0);
+    let modelDown = false;
     try {
       const res = await agentService.sendMessage(
         [
@@ -435,6 +486,11 @@ export default function HospitalShiftsPanel() {
         : res.proposal
           ? [res.proposal]
           : [];
+      // The agent answered but its model was down: use the rules-based suggestions below.
+      if (proposals.length === 0 && res.modelUnavailable) {
+        modelDown = true;
+        throw new Error(res.content || 'The scheduling assistant is unavailable.');
+      }
       if (proposals.length === 0) {
         setSuggestModalError(
           res.content ||
@@ -444,6 +500,7 @@ export default function HospitalShiftsPanel() {
       }
       applyAgentProposals(proposals, {
         workflowId: res.workflowId || res.WorkflowId || null,
+        notice: res.modelUnavailable ? NOTICE_MODEL_DOWN : '',
       });
     } catch (err) {
       // AI agent unavailable: fall back to the rules-based backend suggestions.
@@ -451,9 +508,12 @@ export default function HospitalShiftsPanel() {
         const fallback = await staffService.suggestWeek({ from: weekStart, to: weekEnd });
         const list = Array.isArray(fallback?.proposals) ? fallback.proposals : [];
         if (list.length === 0) {
-          setSuggestModalError(fallback?.message || 'No new shifts to propose for this week.');
+          // Say which part was down: the AI model, or the whole agent service.
+          setSuggestModalError(
+            `${modelDown ? 'AI model unavailable right now' : 'Scheduling agent could not be reached'}. Checked by rules: ${fallback?.message || 'no new shifts to propose for this week.'}`
+          );
         } else {
-          applyAgentProposals(list, {});
+          applyAgentProposals(list, { notice: modelDown ? NOTICE_MODEL_DOWN : NOTICE_AGENT_DOWN });
         }
       } catch (fallbackErr) {
         setSuggestModalError(fallbackErr.message || err.message || 'Failed to suggest week shifts.');
@@ -505,6 +565,7 @@ export default function HospitalShiftsPanel() {
       }
       applyAgentProposals(proposals, {
         workflowId: res.workflowId || res.WorkflowId || null,
+        notice: res.modelUnavailable ? NOTICE_MODEL_DOWN : '',
       });
     } catch (err) {
       setSuggestModalError(err.message || 'Failed to reroll week suggestions.');
@@ -528,11 +589,12 @@ export default function HospitalShiftsPanel() {
 
   const handleSelectAllProposals = () => {
     setPendingProposals((prev) =>
-      prev.map((p) =>
-        p._status === 'approved' || p._status === 'declined'
+      prev.map((p) => {
+        const day = String(p.shiftDate).slice(0, 10);
+        return p._status === 'approved' || p._status === 'declined' || day < weekStart || day > weekEnd
           ? p
-          : { ...p, _selected: true }
-      )
+          : { ...p, _selected: true };
+      })
     );
   };
 
@@ -667,7 +729,7 @@ export default function HospitalShiftsPanel() {
           {toast}
         </div>
       )}
-      {error && (
+      {error && !formOpen && (
         <div
           className="appointment-alert-pill"
           role="alert"
@@ -763,6 +825,7 @@ export default function HospitalShiftsPanel() {
               className="btn-hospital-primary"
               onClick={() => {
                 resetForm();
+                setShiftKind('session');
                 setFormOpen(true);
               }}
               disabled={staffOptions.length === 0}
@@ -820,86 +883,54 @@ export default function HospitalShiftsPanel() {
         {formOpen && (
         <div className="roster-form-panel" ref={formPanelRef}>
           <h3 className="roster-form-title">{editingShiftId ? 'Edit shift' : 'Add a shift'}</h3>
-          <form onSubmit={handleSaveShift} style={{ display: 'grid', gap: '12px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-            <div className="modal-form-group" style={{ margin: 0, position: 'relative' }}>
-              <label className="modal-label" htmlFor="shift-staff-search">Staff *</label>
-              <input
-                id="shift-staff-search"
-                type="text"
-                className="modal-input"
-                value={staffQuery}
-                placeholder="Search name or ID"
-                autoComplete="off"
-                disabled={Boolean(editingShiftId)}
-                onFocus={() => {
-                  if (!editingShiftId) setStaffMenuOpen(true);
-                }}
-                onBlur={() => {
-                  setTimeout(() => setStaffMenuOpen(false), 150);
-                }}
-                onChange={(e) => {
-                  setStaffQuery(e.target.value);
-                  setStaffMenuOpen(true);
-                  setForm((prev) => ({ ...prev, affiliationId: '' }));
-                }}
-              />
-              {staffMenuOpen && !editingShiftId && (
-                <div
-                  role="listbox"
-                  aria-label="Active staff"
-                  style={{
-                    position: 'absolute',
-                    zIndex: 20,
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: 4,
-                    maxHeight: 220,
-                    overflowY: 'auto',
-                    background: 'var(--color-surface)',
-                    border: '1px solid var(--color-border-card)',
-                    borderRadius: 8,
-                    boxShadow: '0 8px 20px rgba(var(--rgb-primary-dark), 0.08)',
+          {!editingShiftId && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', margin: '-4px 0 14px' }}>
+              <div className="view-mode-toggles" role="group" aria-label="Shift type">
+                <button
+                  type="button"
+                  className={`btn-view-toggle${shiftKind === 'session' ? ' active' : ''}`}
+                  onClick={() => {
+                    setShiftKind('session');
+                    setError('');
                   }}
                 >
-                  {filteredStaff.length === 0 ? (
-                    <div style={{ padding: '10px 12px', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-                      No matching staff
-                    </div>
-                  ) : (
-                    filteredStaff.map((opt) => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        role="option"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => {
-                          setForm((prev) => ({ ...prev, affiliationId: opt.value }));
-                          setStaffQuery(opt.label);
-                          setStaffMenuOpen(false);
-                        }}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          textAlign: 'left',
-                          padding: '8px 12px',
-                          border: 'none',
-                          borderBottom: '1px solid var(--color-border-light)',
-                          background: form.affiliationId === opt.value ? 'var(--color-info-bg)' : 'var(--color-surface)',
-                          color: 'var(--color-text-title)',
-                          fontSize: '0.875rem',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {opt.label}
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
+                  Session
+                </button>
+                <button
+                  type="button"
+                  className={`btn-view-toggle${shiftKind === 'other' ? ' active' : ''}`}
+                  onClick={() => {
+                    setShiftKind('other');
+                    setError('');
+                  }}
+                >
+                  Other duty
+                </button>
+              </div>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                {shiftKind === 'session'
+                  ? 'Staff a posted vaccine session.'
+                  : 'Duty outside a session, such as walk-in cover. Set the date, hours and booth yourself.'}
+              </span>
             </div>
-
+          )}
+          {/* Session shifts take everything from the session; other duty and edits use the full form. */}
+          {!editingShiftId && shiftKind === 'session' ? (
+            <AddSessionShiftForm
+              weekStart={weekStart}
+              onCreated={async ({ count, close }) => {
+                showToast(count === 1 ? 'Shift created.' : `${count} shifts created.`);
+                if (close) setFormOpen(false);
+                await refreshRosterQuietly();
+              }}
+              onClose={() => {
+                resetForm();
+                setFormOpen(false);
+              }}
+            />
+          ) : (
+          <form onSubmit={handleSaveShift} style={{ display: 'grid', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <div className="modal-form-group" style={{ margin: 0 }}>
               <label className="modal-label" htmlFor="shift-date">Date *</label>
               <input
@@ -940,6 +971,89 @@ export default function HospitalShiftsPanel() {
               />
             </div>
 
+            <div className="modal-form-group" style={{ margin: 0, position: 'relative' }}>
+              <label className="modal-label" htmlFor="shift-staff-search">Staff *</label>
+              <input
+                id="shift-staff-search"
+                type="text"
+                className="modal-input"
+                value={staffQuery}
+                placeholder={form.shiftDate ? 'Search name or ID' : 'Pick a date first'}
+                autoComplete="off"
+                disabled={Boolean(editingShiftId) || !form.shiftDate}
+                onFocus={() => {
+                  if (!editingShiftId) setStaffMenuOpen(true);
+                }}
+                onBlur={() => {
+                  setTimeout(() => setStaffMenuOpen(false), 150);
+                }}
+                onChange={(e) => {
+                  setStaffQuery(e.target.value);
+                  setStaffMenuOpen(true);
+                  setForm((prev) => ({ ...prev, affiliationId: '' }));
+                }}
+              />
+              {selectedStaffHours ? (
+                <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', overflowWrap: 'anywhere' }}>
+                  {selectedStaffHours}
+                </span>
+              ) : null}
+              {staffMenuOpen && !editingShiftId && (
+                <div
+                  role="listbox"
+                  aria-label="Active staff"
+                  style={{
+                    position: 'absolute',
+                    zIndex: 20,
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: 4,
+                    maxHeight: 220,
+                    overflowY: 'auto',
+                    background: 'var(--color-surface)',
+                    border: '1px solid var(--color-border-card)',
+                    borderRadius: 8,
+                    boxShadow: '0 8px 20px rgba(var(--rgb-primary-dark), 0.08)',
+                  }}
+                >
+                  {filteredStaff.length === 0 ? (
+                    <div style={{ padding: '10px 12px', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                      No matching staff available for this date and time
+                    </div>
+                  ) : (
+                    filteredStaff.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        role="option"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, affiliationId: opt.value }));
+                          setStaffQuery(opt.label);
+                          setStaffMenuOpen(false);
+                        }}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          padding: '8px 12px',
+                          border: 'none',
+                          borderBottom: '1px solid var(--color-border-light)',
+                          background: form.affiliationId === opt.value ? 'var(--color-info-bg)' : 'var(--color-surface)',
+                          color: 'var(--color-text-title)',
+                          fontSize: '0.875rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="modal-form-group" style={{ margin: 0 }}>
               <label className="modal-label" htmlFor="shift-booth">Booth</label>
               <select
@@ -958,7 +1072,7 @@ export default function HospitalShiftsPanel() {
               </select>
               {booths.length === 0 && (
                 <p style={{ margin: '6px 0 0', fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                  Add booths under Booths to assign stations here.
+                  Add booths under Sessions, Booths to assign stations here.
                 </p>
               )}
             </div>
@@ -1001,10 +1115,11 @@ export default function HospitalShiftsPanel() {
 
           {staffOptions.length === 0 && !loading && (
             <p style={{ color: 'var(--color-text-muted)', margin: 0 }}>
-              No active staff yet. Invite and accept affiliations in the Directory tab first.
+              No active staff yet. Invite doctors and nurses under Staff, then add shifts once they accept.
             </p>
           )}
         </form>
+          )}
         </div>
         )}
       </div>
@@ -1017,7 +1132,7 @@ export default function HospitalShiftsPanel() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(var(--rgb-primary-dark), 0.65)',
+            backgroundColor: 'var(--color-overlay)',
             backdropFilter: 'blur(5px)',
             display: 'flex',
             alignItems: 'center',
@@ -1064,6 +1179,7 @@ export default function HospitalShiftsPanel() {
           actionId={proposalActionId}
           loading={suggestingWeek}
           error={suggestModalError}
+          notice={suggestNotice}
           onToggleSelect={handleToggleProposalSelect}
           onSelectAll={handleSelectAllProposals}
           onClearSelection={handleClearProposalSelection}
@@ -1190,14 +1306,17 @@ export default function HospitalShiftsPanel() {
                                       {editingShiftId === shift.shiftId ? 'Editing' : 'Edit'}
                                     </button>
                                   )}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDelete(shift.shiftId)}
-                                    disabled={actionId === shift.shiftId}
-                                    className="shift-week-card-action shift-week-card-action-delete"
-                                  >
-                                    {actionId === shift.shiftId ? 'Deleting...' : 'Delete'}
-                                  </button>
+                                  {/* Past shifts are history: the API refuses to delete them. */}
+                                  {String(shift.shiftDate).slice(0, 10) >= today && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(shift.shiftId)}
+                                      disabled={actionId === shift.shiftId}
+                                      className="shift-week-card-action shift-week-card-action-delete"
+                                    >
+                                      {actionId === shift.shiftId ? 'Deleting...' : 'Delete'}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             ))

@@ -17,6 +17,7 @@ public interface IInventoryService
     Task<InventoryItemDto> RestockBatchAsync(Guid userId, RestockBatchDto dto);
     Task<InventoryItemDto> LogWastageAsync(Guid userId, Guid batchId, WastageDto dto);
     Task<InventoryItemDto> AdjustStockAsync(Guid userId, Guid batchId, AdjustStockDto dto);
+    Task<InventoryItemDto> ReceiveOrderedBatchAsync(Guid userId, Guid batchId, ReceiveBatchDto dto);
     Task<InventoryItemDto> IssueStockAsync(Guid userId, Guid batchId, IssueStockDto dto);
     Task<BatchAuditDto> GetBatchAuditAsync(Guid userId, Guid batchId);
     Task<List<ColdVaultDto>> GetColdVaultsAsync(Guid userId);
@@ -143,7 +144,29 @@ public class InventoryService : IInventoryService
         _ => WastageReason.VialBreakage
     };
 
-    private static InventoryItemDto MapToItemDto(Batch b, Vaccine v)
+    // Low stock is judged per vaccine, not per batch: a nearly empty lot is not
+    // a shortage while other unexpired lots of the same vaccine still hold stock.
+    // Stock already ordered from the supplier counts as covered, so a vaccine with a
+    // purchase order in transit is not flagged (or re-ordered) while the delivery is awaited.
+    private readonly record struct VaccineStock(int Available, int OnOrder)
+    {
+        public int Covered => Available + OnOrder;
+    }
+
+    private static Dictionary<Guid, VaccineStock> StockByVaccine(IEnumerable<Batch> batches) =>
+        batches
+            .GroupBy(b => b.VaccineId)
+            .ToDictionary(g => g.Key, g => new VaccineStock(
+                g.Where(b => b.Status != BatchStatus.Ordered && b.ExpiryDate >= DateTime.UtcNow)
+                    .Sum(b => b.QuantityAvailable),
+                g.Where(b => b.Status == BatchStatus.Ordered).Sum(b => b.QuantityReceived)));
+
+    private async Task<VaccineStock> GetVaccineStockAsync(Guid hospitalProfileId, Guid vaccineId) =>
+        StockByVaccine(await _context.Batches
+            .Where(b => b.HospitalProfileId == hospitalProfileId && b.VaccineId == vaccineId)
+            .ToListAsync()).GetValueOrDefault(vaccineId);
+
+    private static InventoryItemDto MapToItemDto(Batch b, Vaccine v, VaccineStock stock)
     {
         var minThreshold = v.DefaultMinThreshold;
         var lastRestock = b.LastRestockedAt ?? b.CreatedAt;
@@ -159,6 +182,10 @@ public class InventoryService : IInventoryService
             Available = b.QuantityAvailable,
             Capacity = b.QuantityReceived,
             MinThreshold = minThreshold,
+            Status = b.Status.ToString().ToLowerInvariant(),
+            VaccineAvailable = stock.Available,
+            VaccineOnOrder = stock.OnOrder,
+            IsLowStock = stock.Covered <= minThreshold,
             DosesPerVial = v.DosesPerVial,
             OpenVialDosesRemaining = openDoses,
             AvailableDoses = InventoryDoseHelper.AvailableDoseCount(b, v),
@@ -166,7 +193,7 @@ public class InventoryService : IInventoryService
             ExpiryStatus = ComputeExpiryStatus(b.ExpiryDate),
             Temp = v.RequiredTemp,
             StorageUnit = b.StorageUnit ?? "Chiller Unit B (2-8°C)",
-            StatusColor = ComputeStatusColor(b.QuantityAvailable, minThreshold),
+            StatusColor = ComputeStatusColor(stock.Covered, minThreshold),
             LastRestocked = lastRestock.ToString("yyyy-MM-dd")
         };
     }
@@ -255,20 +282,13 @@ public class InventoryService : IInventoryService
         var hospital = await GetHospitalAsync(userId);
         if (hospital == null) return new List<FormularyEntryDto>();
 
-        return await _context.HospitalFormularies
+        var entries = await _context.HospitalFormularies
             .Where(f => f.HospitalProfileId == hospital.Id)
             .Include(f => f.Vaccine)
             .OrderBy(f => f.Vaccine.Name)
-            .Select(f => new FormularyEntryDto
-            {
-                Id = f.Id,
-                VaccineId = f.VaccineId,
-                VaccineName = f.Vaccine.Name,
-                Manufacturer = f.Vaccine.Manufacturer,
-                Price = f.Price,
-                RegisteredAt = f.RegisteredAt
-            })
             .ToListAsync();
+
+        return entries.Select(f => MapFormularyDto(f, f.Vaccine)).ToList();
     }
 
     public async Task<FormularyEntryDto> RegisterFormularyAsync(Guid userId, RegisterFormularyDto dto)
@@ -310,6 +330,9 @@ public class InventoryService : IInventoryService
         if (existing != null)
         {
             existing.Price = price;
+            if (dto.SupplierCost.HasValue)
+                existing.SupplierCost = Math.Max(0.00m, dto.SupplierCost.Value);
+            ApplySupplierContact(existing, dto.SupplierName, dto.SupplierEmail);
             await SyncActiveSchedulePricesAsync(hospital.UserId, hospital.Id, vaccine.Id, price);
             await _context.SaveChangesAsync();
             return MapFormularyDto(existing, vaccine);
@@ -319,8 +342,10 @@ public class InventoryService : IInventoryService
         {
             HospitalProfileId = hospital.Id,
             VaccineId = vaccine.Id,
-            Price = price
+            Price = price,
+            SupplierCost = Math.Max(0.00m, dto.SupplierCost ?? 0.00m)
         };
+        ApplySupplierContact(entry, dto.SupplierName, dto.SupplierEmail);
         _context.HospitalFormularies.Add(entry);
 
         _context.AuditLogs.Add(new AuditLog
@@ -350,6 +375,9 @@ public class InventoryService : IInventoryService
 
         var price = Math.Max(0.00m, dto.Price);
         entry.Price = price;
+        if (dto.SupplierCost.HasValue)
+            entry.SupplierCost = Math.Max(0.00m, dto.SupplierCost.Value);
+        ApplySupplierContact(entry, dto.SupplierName, dto.SupplierEmail);
         if (!string.IsNullOrWhiteSpace(dto.Category) && entry.Vaccine != null)
             entry.Vaccine.Category = ParseCategory(dto.Category);
         await SyncActiveSchedulePricesAsync(hospital.UserId, hospital.Id, entry.VaccineId, price);
@@ -375,6 +403,30 @@ public class InventoryService : IInventoryService
             schedule.Price = price;
     }
 
+    // Used for vaccines whose formulary entry has no supplier contact saved
+    private const string DefaultSupplierName = "State Pharmaceuticals Corporation";
+
+    private static string DefaultSupplierEmail =>
+        Environment.GetEnvironmentVariable("Supplier__Email") ?? "supplier@spc.gov.lk";
+
+    private static string? CleanOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>Applies supplier contact fields that were sent (null = leave as is, empty = clear).</summary>
+    private static void ApplySupplierContact(HospitalFormulary entry, string? supplierName, string? supplierEmail)
+    {
+        if (supplierName != null)
+            entry.SupplierName = CleanOptional(supplierName);
+
+        if (supplierEmail != null)
+        {
+            var email = CleanOptional(supplierEmail);
+            if (email != null && !new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(email))
+                throw new InvalidOperationException("Enter a valid supplier email address.");
+            entry.SupplierEmail = email;
+        }
+    }
+
     private static FormularyEntryDto MapFormularyDto(HospitalFormulary entry, Vaccine vaccine) => new()
     {
         Id = entry.Id,
@@ -383,6 +435,9 @@ public class InventoryService : IInventoryService
         Manufacturer = vaccine.Manufacturer,
         Category = ComputeCategory(vaccine.Category),
         Price = entry.Price,
+        SupplierCost = entry.SupplierCost,
+        SupplierName = entry.SupplierName,
+        SupplierEmail = entry.SupplierEmail,
         RegisteredAt = entry.RegisteredAt
     };
 
@@ -430,7 +485,8 @@ public class InventoryService : IInventoryService
             .OrderBy(b => b.Vaccine.Name)
             .ToListAsync();
 
-        return batches.Select(b => MapToItemDto(b, b.Vaccine)).ToList();
+        var stock = StockByVaccine(batches);
+        return batches.Select(b => MapToItemDto(b, b.Vaccine, stock.GetValueOrDefault(b.VaccineId))).ToList();
     }
 
     public async Task<InventoryItemDto> RestockBatchAsync(Guid userId, RestockBatchDto dto)
@@ -459,9 +515,9 @@ public class InventoryService : IInventoryService
             await _context.SaveChangesAsync();
         }
 
-        var inFormulary = await _context.HospitalFormularies
-            .AnyAsync(f => f.HospitalProfileId == hospital.Id && f.VaccineId == vaccine.Id);
-        if (!inFormulary)
+        var formularyEntry = await _context.HospitalFormularies
+            .FirstOrDefaultAsync(f => f.HospitalProfileId == hospital.Id && f.VaccineId == vaccine.Id);
+        if (formularyEntry == null)
         {
             _context.HospitalFormularies.Add(new HospitalFormulary
             {
@@ -483,7 +539,7 @@ public class InventoryService : IInventoryService
             QuantityReceived = dto.Quantity,
             QuantityAvailable = dto.Quantity,
             StorageUnit = dto.StorageUnit,
-            Supplier = dto.Supplier,
+            Supplier = CleanOptional(dto.Supplier) ?? formularyEntry?.SupplierName,
             Status = BatchStatus.Active,
             LastRestockedAt = DateTime.UtcNow
         };
@@ -511,7 +567,7 @@ public class InventoryService : IInventoryService
         });
 
         await _context.SaveChangesAsync();
-        return MapToItemDto(batch, vaccine);
+        return MapToItemDto(batch, vaccine, await GetVaccineStockAsync(hospital.Id, vaccine.Id));
     }
 
     public async Task<InventoryItemDto> LogWastageAsync(Guid userId, Guid batchId, WastageDto dto)
@@ -563,7 +619,7 @@ public class InventoryService : IInventoryService
         });
 
         await _context.SaveChangesAsync();
-        return MapToItemDto(batch, batch.Vaccine);
+        return MapToItemDto(batch, batch.Vaccine, await GetVaccineStockAsync(batch.HospitalProfileId, batch.VaccineId));
     }
 
     // ==================== DAMAGE REPORT (NEW) ====================
@@ -620,14 +676,17 @@ public class InventoryService : IInventoryService
         await _context.SaveChangesAsync();
 
         bool emailSent = false;
-        string supplierEmail = Environment.GetEnvironmentVariable("Supplier__Email")
-            ?? "supplier@spc.gov.lk";
+        var damagedProduct = batch == null
+            ? null
+            : await _context.HospitalFormularies.FirstOrDefaultAsync(f =>
+                f.HospitalProfileId == hospital.Id && f.VaccineId == batch.VaccineId);
+        string supplierEmail = CleanOptional(damagedProduct?.SupplierEmail) ?? DefaultSupplierEmail;
 
         try
         {
             emailSent = await _emailService.SendDamageReportToSupplierAsync(
                 toEmail: supplierEmail,
-                supplierName: "State Pharmaceuticals Corporation",
+                supplierName: CleanOptional(damagedProduct?.SupplierName) ?? DefaultSupplierName,
                 hospitalName: hospital.HospitalName,
                 vaccineName: dto.VaccineName,
                 lotNumber: dto.LotNumber,
@@ -666,6 +725,9 @@ public class InventoryService : IInventoryService
             .FirstOrDefaultAsync(b => b.Id == batchId && b.HospitalProfileId == hospital.Id)
             ?? throw new InvalidOperationException("Batch not found.");
 
+        if (batch.Status == BatchStatus.Ordered)
+            throw new InvalidOperationException("This stock is still on order. Receive the delivery before adjusting it.");
+
         var newQty = batch.QuantityAvailable + dto.Delta;
         if (newQty < 0)
             throw new InvalidOperationException($"Cannot adjust — result would be negative ({newQty}).");
@@ -703,7 +765,68 @@ public class InventoryService : IInventoryService
         });
 
         await _context.SaveChangesAsync();
-        return MapToItemDto(batch, batch.Vaccine);
+        return MapToItemDto(batch, batch.Vaccine, await GetVaccineStockAsync(batch.HospitalProfileId, batch.VaccineId));
+    }
+
+    public async Task<InventoryItemDto> ReceiveOrderedBatchAsync(Guid userId, Guid batchId, ReceiveBatchDto dto)
+    {
+        var hospital = await GetHospitalAsync(userId)
+            ?? throw new InvalidOperationException("Only hospital accounts can receive stock.");
+
+        var (userName, userEmail) = await GetUserInfoAsync(userId);
+
+        var batch = await _context.Batches
+            .Include(b => b.Vaccine)
+            .FirstOrDefaultAsync(b => b.Id == batchId && b.HospitalProfileId == hospital.Id)
+            ?? throw new InvalidOperationException("Batch not found.");
+
+        if (batch.Status != BatchStatus.Ordered)
+            throw new InvalidOperationException("This batch is not on order.");
+
+        var lotNumber = dto.LotNumber.Trim();
+        if (lotNumber.Length == 0)
+            throw new InvalidOperationException("Enter the lot number printed on the delivery.");
+
+        var expiryDate = EnsureUtc(dto.ExpiryDate);
+        if (expiryDate <= DateTime.UtcNow)
+            throw new InvalidOperationException("The expiry date must be in the future.");
+
+        if (await _context.Batches.AnyAsync(b =>
+                b.HospitalProfileId == hospital.Id && b.Id != batch.Id && b.BatchNumber == lotNumber))
+            throw new InvalidOperationException($"Lot {lotNumber} is already in inventory. Use a different lot number.");
+
+        var orderReference = batch.BatchNumber;
+        batch.BatchNumber = lotNumber;
+        batch.ExpiryDate = expiryDate;
+        batch.QuantityReceived = dto.Quantity;
+        batch.QuantityAvailable = dto.Quantity;
+        batch.StorageUnit = string.IsNullOrWhiteSpace(dto.StorageUnit) ? "Chiller Unit B (2-8°C)" : dto.StorageUnit.Trim();
+        batch.Status = BatchStatus.Active;
+        batch.LastRestockedAt = DateTime.UtcNow;
+        batch.UpdatedAt = DateTime.UtcNow;
+
+        _context.InventoryTransactions.Add(new InventoryTransaction
+        {
+            BatchId = batch.Id,
+            Type = TransactionType.Restock,
+            Quantity = dto.Quantity,
+            Reason = $"Received against order {orderReference}",
+            PerformedByUserId = userId,
+            PerformedByName = userName
+        });
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = userId,
+            UserEmail = userEmail,
+            Role = "HOSPITAL",
+            Action = "INVENTORY_RECEIVED",
+            Details = $"Received {dto.Quantity} vials of {batch.Vaccine.Name} (Lot {lotNumber}) against order {orderReference}",
+            Timestamp = DateTime.UtcNow
+        });
+
+        await _context.SaveChangesAsync();
+        return MapToItemDto(batch, batch.Vaccine, await GetVaccineStockAsync(batch.HospitalProfileId, batch.VaccineId));
     }
 
     public async Task<InventoryItemDto> IssueStockAsync(Guid userId, Guid batchId, IssueStockDto dto)
@@ -747,7 +870,7 @@ public class InventoryService : IInventoryService
         });
 
         await _context.SaveChangesAsync();
-        return MapToItemDto(batch, batch.Vaccine);
+        return MapToItemDto(batch, batch.Vaccine, await GetVaccineStockAsync(batch.HospitalProfileId, batch.VaccineId));
     }
 
     public async Task<BatchAuditDto> GetBatchAuditAsync(Guid userId, Guid batchId)
@@ -771,6 +894,7 @@ public class InventoryService : IInventoryService
             Type = t.Type switch
             {
                 TransactionType.Restock => "restock",
+                TransactionType.Order => "restock",
                 TransactionType.Issue => "dispense",
                 TransactionType.Wastage => "qa",
                 TransactionType.Adjustment => "sensor",
@@ -780,7 +904,7 @@ public class InventoryService : IInventoryService
 
         return new BatchAuditDto
         {
-            Vaccine = MapToItemDto(batch, batch.Vaccine),
+            Vaccine = MapToItemDto(batch, batch.Vaccine, await GetVaccineStockAsync(batch.HospitalProfileId, batch.VaccineId)),
             Entries = entries
         };
     }
@@ -788,6 +912,7 @@ public class InventoryService : IInventoryService
     private static string BuildEventText(InventoryTransaction t, Batch b) => t.Type switch
     {
         TransactionType.Restock => $"Batch Shipment {b.BatchNumber} Logged into Inventory (+{t.Quantity} vials)",
+        TransactionType.Order => $"{t.Reason} ({t.Quantity} vials on order)",
         TransactionType.Issue => $"Dispensed {t.Quantity} vials — {t.Reason}",
         TransactionType.Wastage => $"Wastage logged: {t.Quantity} vials ({t.WastageReason})",
         TransactionType.Adjustment => $"Stock adjustment: {t.Quantity} vials — {t.Reason}",
@@ -898,7 +1023,10 @@ public class InventoryService : IInventoryService
 
         var totalVials = batches.Sum(b => b.QuantityAvailable);
         var totalDoses = batches.Sum(b => InventoryDoseHelper.AvailableDoseCount(b, b.Vaccine));
-        var lowStock = batches.Count(b => b.QuantityAvailable <= b.Vaccine.DefaultMinThreshold);
+        var stock = StockByVaccine(batches);
+        var lowStock = batches
+            .GroupBy(b => b.VaccineId)
+            .Count(g => stock.GetValueOrDefault(g.Key).Covered <= g.First().Vaccine.DefaultMinThreshold);
         var expiring = batches.Count(b => b.ExpiryDate <= DateTime.UtcNow.AddDays(60) && b.ExpiryDate >= DateTime.UtcNow);
         var formulations = batches.Select(b => b.VaccineId).Distinct().Count();
 
@@ -930,7 +1058,11 @@ public class InventoryService : IInventoryService
             .OrderBy(b => b.ExpiryDate)
             .ToListAsync();
 
-        return batches.Select(b => MapToItemDto(b, b.Vaccine)).ToList();
+        var vaccineIds = batches.Select(b => b.VaccineId).Distinct().ToList();
+        var stock = StockByVaccine(await _context.Batches
+            .Where(b => b.HospitalProfileId == hospital.Id && vaccineIds.Contains(b.VaccineId))
+            .ToListAsync());
+        return batches.Select(b => MapToItemDto(b, b.Vaccine, stock.GetValueOrDefault(b.VaccineId))).ToList();
     }
 
     // ==================== AGENT DRAFT EXECUTION ====================
@@ -963,6 +1095,20 @@ public class InventoryService : IInventoryService
         if (!dto.Payload.TryGetValue("line_items", out var liRaw) || liRaw is not System.Text.Json.JsonElement lineItems)
             throw new InvalidOperationException("Invalid payload: missing line_items.");
 
+        var poNumber = dto.Payload.TryGetValue("po_number", out var po) ? po?.ToString() ?? "AI-PO" : "AI-PO";
+        var hasOwnNumber = poNumber != "AI-PO";
+
+        if (hasOwnNumber && await _context.Batches.AnyAsync(b =>
+                b.HospitalProfileId == hospital.Id && b.BatchNumber.StartsWith(poNumber)))
+            throw new InvalidOperationException($"Purchase order {poNumber} has already been sent.");
+
+        var orderLines = new List<(string SupplierEmail, string SupplierName, string VaccineName, int Quantity, decimal UnitPrice, decimal LineTotal)>();
+
+        static decimal ReadAmount(System.Text.Json.JsonElement item, string name) =>
+            item.TryGetProperty(name, out var value) && value.ValueKind == System.Text.Json.JsonValueKind.Number
+                ? value.GetDecimal()
+                : 0m;
+
         foreach (var item in lineItems.EnumerateArray())
         {
             var vaccineIdStr = item.TryGetProperty("vaccine_id", out var vIdProp) ? vIdProp.GetString() : null;
@@ -973,9 +1119,9 @@ public class InventoryService : IInventoryService
             var vaccine = await _context.Vaccines.FindAsync(vaccineId);
             if (vaccine == null) continue;
 
-            var inFormulary = await _context.HospitalFormularies
-                .AnyAsync(f => f.HospitalProfileId == hospital.Id && f.VaccineId == vaccineId);
-            if (!inFormulary)
+            var formularyEntry = await _context.HospitalFormularies
+                .FirstOrDefaultAsync(f => f.HospitalProfileId == hospital.Id && f.VaccineId == vaccineId);
+            if (formularyEntry == null)
             {
                 _context.HospitalFormularies.Add(new HospitalFormulary
                 {
@@ -984,7 +1130,16 @@ public class InventoryService : IInventoryService
                 });
             }
 
-            var lotNumber = $"PO-{DateTime.UtcNow:yyyyMMdd}-{new Random().Next(1000, 9999)}";
+            // Each line goes to the supplier saved on the product; products without one use the default.
+            var supplierEmail = CleanOptional(formularyEntry?.SupplierEmail) ?? DefaultSupplierEmail;
+            var supplierName = CleanOptional(formularyEntry?.SupplierName) ?? DefaultSupplierName;
+
+            // Approving a purchase order only places the order. The row holds no usable
+            // stock until the delivery is received with its real lot number and expiry;
+            // until then the order reference stands in for the lot and the expiry is a placeholder.
+            var lotNumber = !hasOwnNumber
+                ? $"PO-{DateTime.UtcNow:yyyyMMdd}-{new Random().Next(1000, 9999)}"
+                : createdBatches.Count == 0 ? poNumber : $"{poNumber}-{createdBatches.Count + 1}";
             var batch = new Batch
             {
                 HospitalProfileId = hospital.Id,
@@ -992,11 +1147,9 @@ public class InventoryService : IInventoryService
                 BatchNumber = lotNumber,
                 ExpiryDate = DateTime.UtcNow.AddYears(2),
                 QuantityReceived = quantity,
-                QuantityAvailable = quantity,
-                StorageUnit = "Chiller Unit B (2-8°C)",
-                Supplier = "AI-Approved PO",
-                Status = BatchStatus.Active,
-                LastRestockedAt = DateTime.UtcNow
+                QuantityAvailable = 0,
+                Supplier = supplierName,
+                Status = BatchStatus.Ordered
             };
             _context.Batches.Add(batch);
             await _context.SaveChangesAsync();
@@ -1004,17 +1157,20 @@ public class InventoryService : IInventoryService
             _context.InventoryTransactions.Add(new InventoryTransaction
             {
                 BatchId = batch.Id,
-                Type = TransactionType.Restock,
+                Type = TransactionType.Order,
                 Quantity = quantity,
-                Reason = $"AI PO executed — {dto.WorkflowId}",
+                Reason = $"Purchase order {poNumber} sent to {supplierName}",
                 PerformedByUserId = userId,
                 PerformedByName = $"{userName} (AI Agent)"
             });
 
             createdBatches.Add(new { batchId = batch.Id, lotNumber, vaccineName = vaccine.Name, quantity });
+            orderLines.Add((supplierEmail, supplierName, vaccine.Name, quantity,
+                ReadAmount(item, "unit_price_lkr"), ReadAmount(item, "total_lkr")));
         }
 
-        var poNumber = dto.Payload.TryGetValue("po_number", out var po) ? po?.ToString() ?? "AI-PO" : "AI-PO";
+        if (createdBatches.Count == 0)
+            throw new InvalidOperationException("This purchase order has no valid lines to send.");
 
         _context.AuditLogs.Add(new AuditLog
         {
@@ -1022,57 +1178,55 @@ public class InventoryService : IInventoryService
             UserEmail = userEmail,
             Role = "HOSPITAL",
             Action = "AI_PO_EXECUTED",
-            Details = $"Executed AI purchase order {poNumber} — {createdBatches.Count} batch(es) created (workflow {dto.WorkflowId})",
+            Details = $"Executed AI purchase order {poNumber} — {createdBatches.Count} line(s) placed on order (workflow {dto.WorkflowId})",
             Timestamp = DateTime.UtcNow
         });
 
         await _context.SaveChangesAsync();
 
-        // ========== SEND EMAIL TO SUPPLIER ==========
-        bool emailSent = false;
-        string supplierEmail = Environment.GetEnvironmentVariable("Supplier__Email") ?? "supplier@spc.gov.lk";
+        // ========== EMAIL EACH SUPPLIER THEIR OWN LINES ==========
+        var sentTo = new List<string>();
+        var failedTo = new List<string>();
 
-        try
+        foreach (var supplierLines in orderLines.GroupBy(l => l.SupplierEmail, StringComparer.OrdinalIgnoreCase))
         {
-            List<(string VaccineName, int Quantity, decimal UnitPrice, decimal LineTotal)> poLines =
-                (dto.Payload.TryGetValue("line_items", out var rawLines) && rawLines is System.Text.Json.JsonElement linesElem)
-                ? linesElem.EnumerateArray().Select(li => (
-                    VaccineName: li.TryGetProperty("vaccine_name", out var v) ? v.GetString() ?? "" : "",
-                    Quantity: li.TryGetProperty("quantity", out var q) ? q.GetInt32() : 0,
-                    UnitPrice: li.TryGetProperty("unit_price_lkr", out var u) ? u.GetDecimal() : 0m,
-                    LineTotal: li.TryGetProperty("total_lkr", out var t) ? t.GetDecimal() : 0m
-                  )).ToList()
-                : new List<(string VaccineName, int Quantity, decimal UnitPrice, decimal LineTotal)>();
+            var sent = false;
+            try
+            {
+                var poLines = supplierLines
+                    .Select(l => (l.VaccineName, l.Quantity, l.UnitPrice, l.LineTotal))
+                    .ToList();
 
-            var totalLkr = dto.Payload.TryGetValue("total_lkr", out var tot) && tot is System.Text.Json.JsonElement tEl
-                ? tEl.GetDecimal()
-                : poLines.Sum(l => l.LineTotal);
+                sent = await _emailService.SendPurchaseOrderToSupplierAsync(
+                    toEmail: supplierLines.Key,
+                    supplierName: supplierLines.First().SupplierName,
+                    poNumber: poNumber,
+                    hospitalName: hospital.HospitalName,
+                    orderDate: DateTime.UtcNow.ToString("yyyy-MM-dd"),
+                    deliveryDate: DateTime.UtcNow.AddDays(14).ToString("yyyy-MM-dd"),
+                    lineItems: poLines,
+                    totalLkr: poLines.Sum(l => l.LineTotal),
+                    approvalNotes: $"Approved by {userName} via Vaxora AI Agent"
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send supplier email for PO {PoNumber} to {Supplier}", poNumber, supplierLines.Key);
+            }
 
-            emailSent = await _emailService.SendPurchaseOrderToSupplierAsync(
-                toEmail: supplierEmail,
-                supplierName: "State Pharmaceuticals Corporation",
-                poNumber: poNumber,
-                hospitalName: hospital.HospitalName,
-                orderDate: DateTime.UtcNow.ToString("yyyy-MM-dd"),
-                deliveryDate: DateTime.UtcNow.AddDays(14).ToString("yyyy-MM-dd"),
-                lineItems: poLines,
-                totalLkr: totalLkr,
-                approvalNotes: $"Approved by {userName} via Vaxora AI Agent"
-            );
+            (sent ? sentTo : failedTo).Add(supplierLines.Key);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to send supplier email for PO {PoNumber}", poNumber);
-        }
+
+        var emailSent = failedTo.Count == 0;
 
         return new
         {
             success = true,
             message = emailSent
-                ? $"Purchase Order {poNumber} executed + email sent to {supplierEmail}"
-                : $"Purchase Order {poNumber} executed. {createdBatches.Count} batch(es) added. (Email delivery failed — check logs.)",
+                ? $"Purchase order {poNumber} sent to {string.Join(", ", sentTo)}. {createdBatches.Count} line(s) on order: receive them in Inventory when the delivery arrives."
+                : $"Purchase order {poNumber} recorded with {createdBatches.Count} line(s) on order, but the email to {string.Join(", ", failedTo)} failed (check logs).",
             emailSent = emailSent,
-            supplierEmail = supplierEmail,
+            supplierEmail = string.Join(", ", sentTo.Concat(failedTo)),
             batches = createdBatches
         };
     }

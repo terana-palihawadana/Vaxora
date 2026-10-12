@@ -1,4 +1,5 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
+import { hospitalToday } from '../../hospital/utils/hospitalDate';
 import { useCallback, useEffect, useState } from 'react';
 import clinicalPatientService from '../services/clinicalPatientService';
 import staffAppointmentService from '../../staff/services/staffAppointmentService';
@@ -6,14 +7,10 @@ import { IconClose, IconSearch } from '../../../shared/icons/AppIcons';
 import StaffSubpageHeader from '../../staff/components/StaffSubpageHeader';
 import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
 
+/** Compared against the hospital's calendar day, like the API does. */
 function isPastDate(dateStr) {
   if (!dateStr) return false;
-  const day = String(dateStr).slice(0, 10);
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, '0');
-  const d = String(today.getDate()).padStart(2, '0');
-  return day < `${y}-${m}-${d}`;
+  return String(dateStr).slice(0, 10) < hospitalToday();
 }
 
 function statusPill(status, { overdue = false } = {}) {

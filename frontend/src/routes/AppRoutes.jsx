@@ -25,6 +25,8 @@ import {
   FeedbackTab as HospitalFeedbackTab,
 } from '../features/hospital';
 
+import { DeskLayout } from '../features/desk';
+
 import {
   DoctorLayout,
   DoctorDashboardOverview,
@@ -104,6 +106,18 @@ export default function AppRoutes() {
         <Route path="staff" element={<HospitalStaffTab />} />
         <Route path="feedback" element={<HospitalFeedbackTab />} />
         <Route path="profile" element={<HospitalProfileTab />} />
+      </Route>
+
+      {/* Protected Front Desk Portal Routes */}
+      <Route
+        path="/desk"
+        element={
+          <ProtectedRoute allowedRoles={['FRONT_DESK']}>
+            <DeskLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<HospitalAppointmentsPage />} />
       </Route>
 
       {/* Protected Doctor Portal Routes */}

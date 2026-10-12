@@ -1,6 +1,7 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AddStaffRequestModal from './AddStaffRequestModal';
+import DeskAccountsPanel from '../../desk/components/DeskAccountsPanel';
 import staffService from '../services/staffService';
 import PortalHero from '../../../components/PortalHero';
 import HeroTabs from '../../../components/HeroTabs';
@@ -12,6 +13,7 @@ import {
   RoleAvatarIcon,
 } from './HospitalIcons';
 import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+import { describeAvailability } from '../../staff/utils/availability';
 
 function mapAffiliationToCard(item) {
   const isPending = item.status === 'Pending';
@@ -38,6 +40,8 @@ function mapAffiliationToCard(item) {
     status: isPending ? 'Pending Request' : liveDuty,
     photoUrl: item.staffProfilePhotoUrl || null,
     invitedAt: item.invitedAt,
+    // Only doctors split their week between hospitals.
+    availability: !isPending && item.staffRole === 'DOCTOR' ? describeAvailability(item) : '',
   };
 }
 
@@ -93,9 +97,6 @@ export default function HospitalStaffTab() {
       const invited = await staffService.inviteStaff(registrationNumber);
       showToast(`Invitation sent to ${invited.staffName} (${invited.staffRegistrationNumber}).`);
       await loadStaff();
-    } catch (err) {
-      setError(err.message || 'Failed to send staff invitation.');
-      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -224,19 +225,28 @@ export default function HospitalStaffTab() {
       <PortalHero
         eyebrow="Staff management"
         title="Medical staff"
-        subtitle="Manage affiliated doctors and nurses, and invite verified practitioners by their Vaxora ID."
+        subtitle={
+          activeTab === 'desk'
+            ? 'Create and remove the logins your reception staff use at the front desk.'
+            : 'Manage affiliated doctors and nurses, and invite verified practitioners by their Vaxora ID.'
+        }
       >
         <HeroTabs
           label="Staff sections"
-          active={activeTab === 'pending' ? 'pending' : 'directory'}
-          onChange={(key) => setActiveTab(key === 'pending' ? 'pending' : 'all')}
+          active={activeTab === 'pending' || activeTab === 'desk' ? activeTab : 'directory'}
+          onChange={(key) => setActiveTab(key === 'directory' ? 'all' : key)}
           tabs={[
             { key: 'directory', label: 'Directory' },
             { key: 'pending', label: 'Pending invites', badge: pendingCount },
+            { key: 'desk', label: 'Front desk' },
           ]}
         />
       </PortalHero>
 
+      {activeTab === 'desk' ? (
+        <DeskAccountsPanel />
+      ) : (
+      <>
       <div className="hospital-staff-toolbar">
         <button
           type="button"
@@ -470,6 +480,11 @@ export default function HospitalStaffTab() {
                   <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                     {staff.email}
                   </span>
+                  {staff.availability ? (
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-text-body)', overflowWrap: 'anywhere' }}>
+                      {staff.availability}
+                    </span>
+                  ) : null}
                 </div>
               </div>
 
@@ -541,6 +556,9 @@ export default function HospitalStaffTab() {
             Next
           </button>
         </div>
+      )}
+      </>
+
       )}
 
       <AddStaffRequestModal

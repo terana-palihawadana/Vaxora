@@ -1861,9 +1861,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 6.25rem;
-  padding: 2px 8px;
+  /* Sized to the label: a fixed cap let "Awaiting payment" spill out of the pill. */
+  width: auto;
+  max-width: 100%;
+  padding: 3px 10px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -1879,10 +1880,31 @@
   display: none;
 }
 
-.status-waiting,
-.status-administering,
-.status-observation,
-.status-completed,
+/* Same stage colours as the clinical queue (doctor.css): red is for cancelled only. */
+.status-waiting {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-border);
+}
+
+.status-administering {
+  background: var(--color-info-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--color-info-border);
+}
+
+.status-observation {
+  background: var(--color-soft-panel-deep);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-accent-frost);
+}
+
+.status-completed {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success-border);
+}
+
 .status-cancelled {
   background: var(--color-error-bg);
   color: var(--color-error);
@@ -2541,7 +2563,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(var(--rgb-primary-dark), 0.6);
+  background-color: var(--color-overlay);
   backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
@@ -3653,11 +3675,22 @@ select.schedule-input-field {
   gap: 18px;
 }
 
+.formulary-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .formulary-input-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(120px, 0.55fr) minmax(110px, 0.5fr) auto;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(120px, 0.55fr) minmax(110px, 0.5fr) minmax(110px, 0.5fr);
   gap: 12px;
   align-items: end;
+}
+
+/* Second row: supplier contact, then the submit button */
+.formulary-input-row--supplier {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
 }
 
 .formulary-input-group--fee .formulary-text-input {
@@ -3843,6 +3876,18 @@ select.schedule-input-field {
 .pill-remove-btn:hover {
   background: var(--color-error-bg);
   color: var(--color-error);
+}
+
+.pill-remove-btn.pill-edit-btn:hover {
+  background: var(--color-surface-subtle);
+  color: var(--color-primary);
+}
+
+.formulary-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 @media (max-width: 900px) {
@@ -5623,12 +5668,25 @@ select.schedule-input-field {
   color: var(--color-text-title);
 }
 
+/* Says when suggestions were planned by rules instead of the AI model. */
+.suggest-week-modal-notice {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-warning-border);
+  border-radius: 10px;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+}
+
 /* —— Suggest Week selection modal (separate from live roster calendar) —— */
 .suggest-week-modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(var(--rgb-primary-dark), 0.72);
+  background: var(--color-overlay);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: stretch;
@@ -6749,21 +6807,41 @@ select.schedule-input-field {
 
 
 /* Front-desk queue: Status badge + separate Action column */
+/* On a narrow screen the table scrolls sideways inside its wrapper instead of
+   squeezing the patient and vaccine columns to nothing. */
+.hospital-queue-table.has-desk-actions {
+  min-width: 58rem;
+}
+
 .hospital-queue-table.has-desk-actions th:nth-child(5),
 .hospital-queue-table.has-desk-actions td:nth-child(5),
 .hospital-queue-table.has-desk-actions col.col-status {
-  width: 7.5rem;
+  width: 9rem;
   text-align: center;
 }
 
+/* The table uses a fixed layout, which ignores min-width, so the column needs a real
+   width that fits three buttons (Check in, Mark paid, Decline) on one line. */
 .hospital-queue-table.has-desk-actions th:nth-child(6),
 .hospital-queue-table.has-desk-actions td:nth-child(6),
 .hospital-queue-table.has-desk-actions col.col-actions {
-  width: 1%;
-  min-width: 12.5rem;
+  width: 16rem;
   white-space: nowrap;
   text-align: right;
   overflow: visible;
+}
+
+/* Give that room back from the two flexible text columns. */
+.hospital-queue-table.has-desk-actions th:nth-child(2),
+.hospital-queue-table.has-desk-actions td:nth-child(2),
+.hospital-queue-table.has-desk-actions col.col-patient {
+  width: 19%;
+}
+
+.hospital-queue-table.has-desk-actions th:nth-child(3),
+.hospital-queue-table.has-desk-actions td:nth-child(3),
+.hospital-queue-table.has-desk-actions col.col-vaccine {
+  width: 17%;
 }
 
 .queue-actions-cell {
@@ -6789,9 +6867,8 @@ select.schedule-input-field {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 76px;
   height: 30px;
-  padding: 0 12px;
+  padding: 0 10px;
   font-family: var(--btn-font);
   font-size: 0.8125rem;
   font-weight: var(--btn-weight);

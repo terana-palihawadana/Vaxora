@@ -6,7 +6,8 @@ public enum UserRole
     DOCTOR,
     NURSE,
     HOSPITAL,
-    ADMIN
+    ADMIN,
+    FRONT_DESK
 }
 
 public enum UserStatus

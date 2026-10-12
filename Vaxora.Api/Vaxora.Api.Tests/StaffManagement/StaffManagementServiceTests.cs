@@ -193,7 +193,10 @@ public class StaffManagementServiceTests
         var externalAffiliation = AddActiveAffiliation(context, otherHospital, doctor);
         var date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
         AddSession(context, hospital, date);
-        // Busy elsewhere in the morning slot only.
+        var afternoon = AddSession(context, hospital, date);
+        afternoon.StartTime = "14:00";
+        afternoon.EndTime = "16:00";
+        // Busy elsewhere through the morning session only.
         AddShift(context, otherHospital, externalAffiliation, date);
         await context.SaveChangesAsync();
         var service = CreateService(context);
@@ -239,7 +242,7 @@ public class StaffManagementServiceTests
                 IsActive = true,
                 VaccineIds = new List<Guid> { flu.Id }
             }));
-        Assert.Contains("Cancel them in Schedules", removeHepB.Message);
+        Assert.Contains("Cancel them under Sessions", removeHepB.Message);
 
         // Removing a vaccine with no sessions is still fine.
         var updated = await service.UpdateHospitalBoothAsync(hospital.Id, booth.Id, new UpdateHospitalBoothDto
@@ -305,6 +308,53 @@ public class StaffManagementServiceTests
             }));
 
         Assert.Contains("already runs", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Editing_a_session_does_not_count_its_own_reserved_doses_against_it()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var hepB = new Vaccine { Name = "Hepatitis B", Manufacturer = "Test" };
+        context.Vaccines.Add(hepB);
+        var day = StaffDutyHelper.HospitalToday().AddDays(4);
+        // 09:00-11:00 is 6 slots of 3 patients = 18 doses; 20 on the shelf leaves the 2-dose buffer.
+        var session = AddSession(context, hospital, day);
+        session.HospitalProfileId = hospital.HospitalProfile!.Id;
+        session.VaccineId = hepB.Id;
+        session.StartTime = "09:00";
+        session.EndTime = "11:00";
+        context.Batches.Add(new Batch
+        {
+            HospitalProfileId = hospital.HospitalProfile.Id,
+            VaccineId = hepB.Id,
+            BatchNumber = "HB-EDIT-1",
+            ExpiryDate = DateTime.UtcNow.AddMonths(6),
+            QuantityReceived = 20,
+            QuantityAvailable = 20,
+            Status = BatchStatus.Active
+        });
+        await context.SaveChangesAsync();
+        var schedules = new ScheduleService(context, NullLogger<ScheduleService>.Instance);
+        var request = new ScheduleStockHorizonRequestDto
+        {
+            VaccineId = hepB.Id,
+            VaccineName = "Hepatitis B",
+            ScheduleType = "OneTime",
+            SpecificDate = day,
+            StartTime = "09:00",
+            EndTime = "11:00"
+        };
+
+        // A second identical session would not fit...
+        var asNew = await schedules.GetStockHorizonAsync(hospital.Id, request);
+        Assert.False(asNew.CanCreate);
+
+        // ...but editing the existing one must, because the doses are already its own.
+        request.ExcludeScheduleId = session.Id;
+        var asEdit = await schedules.GetStockHorizonAsync(hospital.Id, request);
+        Assert.True(asEdit.CanCreate, asEdit.Message);
+        Assert.Equal(0, asEdit.CommittedDoses);
     }
 
     [Fact]

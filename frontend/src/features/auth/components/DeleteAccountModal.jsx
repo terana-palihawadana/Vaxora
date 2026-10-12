@@ -36,7 +36,7 @@ export default function DeleteAccountModal({ isOpen, onClose, userName, roleName
         left: 0,
         width: '100vw',
         height: '100vh',
-        backgroundColor: 'rgba(var(--rgb-primary-dark), 0.8)',
+        backgroundColor: 'var(--color-overlay)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         display: 'flex',

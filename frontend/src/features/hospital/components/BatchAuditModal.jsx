@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import inventoryService from '../services/inventoryService';
 import { IconFile, IconPackage } from './HospitalIcons';
+import { downloadCsv } from '../../../shared/utils/downloadCsv';
 
 export default function BatchAuditModal({ isOpen, onClose, vaccine }) {
   const [auditEntries, setAuditEntries] = useState([]);
@@ -28,6 +29,13 @@ export default function BatchAuditModal({ isOpen, onClose, vaccine }) {
   }, [isOpen, vaccine?.id]);
 
   if (!isOpen || !vaccine) return null;
+
+  const handleExport = () => {
+    downloadCsv(`Vaxora_Lot_Audit_${vaccine.lotNumber}.csv`, [
+      ['Lot', 'Vaccine', 'Time', 'Event', 'Authorized by'],
+      ...auditEntries.map((entry) => [vaccine.lotNumber, vaccine.name, entry.timestamp, entry.event, entry.actor]),
+    ]);
+  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -90,7 +98,7 @@ export default function BatchAuditModal({ isOpen, onClose, vaccine }) {
           <div className="audit-timeline">
             {auditEntries.map((entry) => (
               <div key={entry.id} style={{ position: 'relative', paddingLeft: '28px', paddingBottom: '18px', borderLeft: '2px solid var(--color-border-card)', marginLeft: '8px' }}>
-                <div style={{ position: 'absolute', left: '-7px', top: '0px', width: '12px', height: '12px', borderRadius: '50%', background: entry.type === 'restock' ? 'var(--color-primary)' : entry.type === 'sensor' ? 'var(--color-success)' : entry.type === 'dispense' ? 'var(--color-ai)' : 'var(--color-info)', border: '2px solid var(--color-surface)', boxShadow: '0 0 0 2px var(--color-border-light)' }} />
+                <div style={{ position: 'absolute', left: '-7px', top: '0px', width: '12px', height: '12px', borderRadius: '50%', background: entry.type === 'restock' ? 'var(--color-primary)' : entry.type === 'sensor' ? 'var(--color-success)' : entry.type === 'dispense' ? 'var(--color-brand-blue)' : 'var(--color-info)', border: '2px solid var(--color-surface)', boxShadow: '0 0 0 2px var(--color-border-light)' }} />
                 <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>{entry.timestamp}</div>
                 <div style={{ fontSize: '0.875rem', color: 'var(--color-text-title)', fontWeight: 600, margin: '2px 0 3px' }}>{entry.event}</div>
                 <div style={{ fontSize: '0.8125rem', color: 'var(--color-text-body)' }}>Authorized: <em>{entry.actor}</em></div>
@@ -100,9 +108,16 @@ export default function BatchAuditModal({ isOpen, onClose, vaccine }) {
         </div>
 
         <div className="modal-footer" style={{ borderTop: '1px solid var(--color-border-light)', paddingTop: '14px' }}>
-          <button type="button" className="btn-modal-cancel" onClick={() => alert(`Exporting audit log for Lot ${vaccine.lotNumber}...`)} style={{ marginRight: 'auto', background: 'var(--color-surface-subtle)', color: 'var(--color-text-title)' }}>
+          <button
+            type="button"
+            className="btn-modal-cancel"
+            onClick={handleExport}
+            disabled={loading || auditEntries.length === 0}
+            title={auditEntries.length === 0 ? 'No audit entries to export yet' : undefined}
+            style={{ marginRight: 'auto', background: 'var(--color-surface-subtle)', color: 'var(--color-text-title)' }}
+          >
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              <IconFile size={16} /> Export Lot Audit PDF
+              <IconFile size={16} /> Export lot audit (CSV)
             </span>
           </button>
           <button type="button" className="btn-modal-cancel" onClick={onClose}>Close</button>

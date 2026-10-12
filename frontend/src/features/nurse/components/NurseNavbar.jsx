@@ -67,7 +67,13 @@ export default function NurseNavbar() {
     { path: '/nurse/appointments', label: 'Appointments' },
     { path: '/nurse/patients', label: 'Patients' },
     { path: '/nurse/shifts', label: 'My shifts' },
-    { path: '/nurse/hospitals', label: 'Hospitals', badge: pendingInvites },
+    // With invites waiting, open straight on them.
+    {
+      path: '/nurse/hospitals',
+      to: pendingInvites > 0 ? '/nurse/hospitals?view=invitations' : undefined,
+      label: 'Hospitals',
+      badge: pendingInvites,
+    },
     { path: '/nurse/feedback', label: 'Feedback' },
   ];
 
@@ -100,7 +106,7 @@ export default function NurseNavbar() {
                 key={item.path}
                 type="button"
                 className={`doctor-nav-btn ${active ? 'active' : ''}`}
-                onClick={() => handleNavigate(item.path)}
+                onClick={() => handleNavigate(item.to || item.path)}
               >
                 {item.label}
                 {item.badge > 0 ? <span className="nav-count-badge">{item.badge}</span> : null}
@@ -148,7 +154,7 @@ export default function NurseNavbar() {
               <div className="doctor-profile-dropdown">
                 <div className="doctor-dropdown-header">
                   <div className="doctor-dropdown-name">{withStaffTitle(user?.name, 'Nurse', 'Nurse Profile')}</div>
-                  <div className="doctor-dropdown-meta">Senior Immunization Nurse</div>
+                  <div className="doctor-dropdown-meta">{user?.profileDetails?.specialization || 'Nurse'}</div>
                   {user?.registrationNumber && (
                     <div className="doctor-dropdown-meta" style={{ color: 'var(--color-accent)', fontWeight: 600 }}>
                       Reg: {user.registrationNumber}
@@ -219,7 +225,7 @@ export default function NurseNavbar() {
                   key={item.path}
                   type="button"
                   className={`portal-mobile-nav-btn ${active ? 'active' : ''}`}
-                  onClick={() => handleNavigate(item.path)}
+                  onClick={() => handleNavigate(item.to || item.path)}
                 >
                   {item.label}
                   {item.badge > 0 ? <span className="nav-count-badge">{item.badge}</span> : null}

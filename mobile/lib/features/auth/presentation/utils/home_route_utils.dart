@@ -10,6 +10,9 @@ Widget homeScreenForRole(String rawRole) {
   final role = rawRole.toUpperCase().trim();
 
   if (role == 'ADMIN') return const UnsupportedRoleScreen();
+  if (role == 'FRONT_DESK') {
+    return const UnsupportedRoleScreen(roleLabel: 'Front desk');
+  }
   if (role == 'HOSPITAL') return const HospitalMainScreen();
 
   if (role == 'DOCTOR' || role == 'NURSE') {

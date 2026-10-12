@@ -28,18 +28,6 @@ except ImportError:
         staff_scheduling_agent = None
         STAFF_AGENT_AVAILABLE = False
 
-# Staff-facing shift swap agent (mobile-first)
-try:
-    from .shift_swap_agent import shift_swap_agent
-    SHIFT_SWAP_AGENT_AVAILABLE = True
-except ImportError:
-    try:
-        from shift_swap_agent import shift_swap_agent
-        SHIFT_SWAP_AGENT_AVAILABLE = True
-    except ImportError:
-        shift_swap_agent = None
-        SHIFT_SWAP_AGENT_AVAILABLE = False
-
 logger = logging.getLogger("vaxora-orchestrator")
 
 ORCHESTRATOR_SYSTEM_PROMPT = """You are the Vaxora Master Multi-Agent Orchestrator.
@@ -81,10 +69,6 @@ class MultiAgentOrchestrator:
         # Staff scheduling agent (main branch)
         if STAFF_AGENT_AVAILABLE and staff_scheduling_agent is not None:
             self.register_agent(staff_scheduling_agent)
-
-        # Staff-facing shift swap agent
-        if SHIFT_SWAP_AGENT_AVAILABLE and shift_swap_agent is not None:
-            self.register_agent(shift_swap_agent)
 
     def register_agent(self, agent_instance: Any):
         """Allows team members to register their specialized agents into the orchestrator."""
@@ -132,23 +116,6 @@ class MultiAgentOrchestrator:
         ]
         if any(kw in msg_lower for kw in inventory_restock_keywords) and permitted("RestockAgent"):
             return "RestockAgent"
-
-        # === STAFF SHIFT SWAP (staff-side, DOCTOR/NURSE only) ===
-        # Must run BEFORE hospital-scoped staff routing so "cover my shift"
-        # doesn't get sent to the scheduling agent that a staff member is not
-        # allowed to drive.
-        swap_keywords = [
-            "swap", "cover me", "cover my shift", "cover for me",
-            "can't make", "cant make", "can not make",
-            "someone to cover", "shift swap", "replace me",
-            "trade shift", "trade my shift",
-        ]
-        if (
-            SHIFT_SWAP_AGENT_AVAILABLE
-            and permitted("ShiftSwapAgent")
-            and any(kw in msg_lower for kw in swap_keywords)
-        ):
-            return "ShiftSwapAgent"
 
         # === STAFF ROUTING ===
         # Unambiguous hospital-roster vocabulary — a patient would not use these.

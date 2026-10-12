@@ -46,23 +46,16 @@ describe('RestockVaccineModal', () => {
     expect(screen.getByText(/Assigned cold vault/i)).toBeInTheDocument();
   });
 
-  it('alerts when vaccine product name is empty on submit', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows an error when vaccine product name is empty on submit', async () => {
     render(<RestockVaccineModal {...defaultProps} />);
 
     const form = document.querySelector('form');
     fireEvent.submit(form);
 
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/vaccine product name/i)
-      );
-    });
-    alertSpy.mockRestore();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/vaccine product name/i);
   });
 
-  it('alerts when lot number is empty on submit', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows an error when lot number is empty on submit', async () => {
     render(<RestockVaccineModal {...defaultProps} />);
 
     // Set the vaccine name via the select
@@ -72,16 +65,10 @@ describe('RestockVaccineModal', () => {
     const form = document.querySelector('form');
     fireEvent.submit(form);
 
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/Lot Number and Quantity/i)
-      );
-    });
-    alertSpy.mockRestore();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Lot Number and Quantity/i);
   });
 
-  it('alerts when storage unit is empty on submit', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+  it('shows an error when storage unit is empty on submit', async () => {
     render(<RestockVaccineModal {...defaultProps} />);
 
     const select = document.querySelector('select[name="vaccineName"]');
@@ -96,12 +83,7 @@ describe('RestockVaccineModal', () => {
     const form = document.querySelector('form');
     fireEvent.submit(form);
 
-    await waitFor(() => {
-      expect(alertSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/cold vault/i)
-      );
-    });
-    alertSpy.mockRestore();
+    expect(await screen.findByRole('alert')).toHaveTextContent(/cold vault/i);
   });
 
   it('calls onAddStock with parsed quantity when the form is valid', async () => {

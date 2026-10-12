@@ -22,6 +22,7 @@ export default function HospitalBoothsPanel() {
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const toastTimerRef = useRef(null);
+  const formCardRef = useRef(null);
 
   const showToast = (message) => {
     setToast(message);
@@ -97,6 +98,7 @@ export default function HospitalBoothsPanel() {
       vaccineIds: Array.isArray(booth.vaccineIds) ? booth.vaccineIds : [],
     });
     setError('');
+    formCardRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
 
   const handleSave = async (e) => {
@@ -191,13 +193,15 @@ export default function HospitalBoothsPanel() {
         </div>
       )}
 
-      <div className="hospital-section-card" style={{ marginBottom: '20px' }}>
+      <div className="hospital-section-card" style={{ marginBottom: '20px', scrollMarginTop: '90px' }} ref={formCardRef}>
         <div className="section-title-group" style={{ marginBottom: '14px' }}>
           <h2 style={{ margin: 0 }}>
             <span className="section-title-icon"><IconDoor size={22} /></span> Vaccination Booths
           </h2>
           <p className="section-title-desc">
-            Each booth lists the vaccines it gives. Bookings for those vaccines open that booth.
+            {editingId
+              ? `Editing ${form.code || 'booth'}. Save your changes or cancel.`
+              : 'Each booth lists the vaccines it gives. Bookings for those vaccines open that booth.'}
           </p>
         </div>
 

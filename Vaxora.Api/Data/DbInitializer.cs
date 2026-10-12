@@ -12,7 +12,11 @@ public static class DbInitializer
     /// defaults must be written as '{{}}'.
     /// </summary>
     public const string SchemaSafetySql = @"
+                    ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FullName"" VARCHAR(150) NULL;
                     ALTER TABLE ""VaccineSchedules"" ADD COLUMN IF NOT EXISTS ""Price"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
+                    ALTER TABLE ""HospitalFormularies"" ADD COLUMN IF NOT EXISTS ""SupplierCost"" NUMERIC NOT NULL DEFAULT 0;
+                    ALTER TABLE ""HospitalFormularies"" ADD COLUMN IF NOT EXISTS ""SupplierName"" VARCHAR(200) NULL;
+                    ALTER TABLE ""HospitalFormularies"" ADD COLUMN IF NOT EXISTS ""SupplierEmail"" VARCHAR(200) NULL;
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""Fee"" NUMERIC(18,2) NOT NULL DEFAULT 0.00;
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentMethod"" VARCHAR(50) NOT NULL DEFAULT 'Free';
                     ALTER TABLE ""Appointments"" ADD COLUMN IF NOT EXISTS ""PaymentStatus"" VARCHAR(50) NOT NULL DEFAULT 'Paid';
@@ -157,7 +161,9 @@ public static class DbInitializer
                     ("20261001120000_AddAgentWorkflowExecutionEvidence", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'AgentWorkflows' AND column_name = 'CompletedStepsJson');"),
                     ("20261002120000_AddBatchOpenVialDosesRemaining", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Batches' AND column_name = 'OpenVialDosesRemaining');"),
                     ("20261002130000_AllowGuestWalkInAppointments", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Appointments' AND column_name = 'GuestWalkInPatientName');"),
-                    ("20261005120000_AddHospitalFormularyPrice", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'HospitalFormularies' AND column_name = 'Price');")
+                    ("20261005120000_AddHospitalFormularyPrice", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'HospitalFormularies' AND column_name = 'Price');"),
+                    ("20261012120000_AddHospitalFormularySupplierCost", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'HospitalFormularies' AND column_name = 'SupplierCost');"),
+                    ("20261012130000_AddHospitalFormularySupplierContact", "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'HospitalFormularies' AND column_name = 'SupplierEmail');")
                 };
 
                 foreach (var (migrationId, sqlCheck) in subsequentChecks)
@@ -224,10 +230,14 @@ public static class DbInitializer
             // ============ SEED ADMIN ============
             // Seed Admin if not exists
             var adminEmail = configuration["AdminSeed:Email"] ?? "admin@vaxora.health.gov.lk";
-            var adminPassword = configuration["AdminSeed:Password"] ?? "Admin@Vaxora2026";
+            // No built-in password: without AdminSeed__Password no admin is created.
+            var adminPassword = configuration["AdminSeed:Password"];
 
             var existingAdmin = await context.Users.FirstOrDefaultAsync(u => u.Email.ToLower() == adminEmail.ToLower());
-            if (existingAdmin == null)
+            if (existingAdmin == null && string.IsNullOrWhiteSpace(adminPassword))
+                logger.LogWarning("Administrator account not seeded: set AdminSeed__Password.");
+
+            if (existingAdmin == null && !string.IsNullOrWhiteSpace(adminPassword))
             {
                 var admin = new User
                 {
@@ -257,14 +267,14 @@ public static class DbInitializer
             }
 
             // ============ SEED TEST HOSPITAL (DEV ONLY) ============
-            // TODO(revert): remove before merging to main
+            // Created only when TestSeed__HospitalPassword is set, so no password lives in the code.
             const string testHospitalEmail = "hospital@vaxora.local";
-            const string testHospitalPassword = "Hospital@123";
+            var testHospitalPassword = configuration["TestSeed:HospitalPassword"];
 
             var existingHospital = await context.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == testHospitalEmail.ToLower());
 
-            if (existingHospital == null)
+            if (existingHospital == null && !string.IsNullOrWhiteSpace(testHospitalPassword))
             {
                 var hospitalUser = new User
                 {
@@ -306,18 +316,18 @@ public static class DbInitializer
                 });
 
                 await context.SaveChangesAsync();
-                logger.LogInformation("Test hospital account seeded: {Email} / {Password}",
-                    testHospitalEmail, testHospitalPassword);
+                logger.LogInformation("Test hospital account seeded: {Email}", testHospitalEmail);
             }
 
             // ============ SEED TEST PATIENT (DEV ONLY) ============
+            // Created only when TestSeed__PatientPassword is set.
             const string testPatientEmail = "patient1@vaxora.lk";
-            const string testPatientPassword = "Password123!";
+            var testPatientPassword = configuration["TestSeed:PatientPassword"];
 
             var existingPatient = await context.Users
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == testPatientEmail.ToLower());
 
-            if (existingPatient == null)
+            if (existingPatient == null && !string.IsNullOrWhiteSpace(testPatientPassword))
             {
                 var patientUser = new User
                 {
@@ -355,8 +365,7 @@ public static class DbInitializer
                 });
 
                 await context.SaveChangesAsync();
-                logger.LogInformation("Test patient account seeded: {Email} / {Password}",
-                    testPatientEmail, testPatientPassword);
+                logger.LogInformation("Test patient account seeded: {Email}", testPatientEmail);
             }
             // ============ END DEV-ONLY ============
             // Seed National Vaccines if not exists

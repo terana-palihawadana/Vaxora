@@ -103,14 +103,8 @@ public class AppointmentService : IAppointmentService
                         s.VaccineName.ToLower().Contains(vName))
             .ToListAsync();
 
-        if (schedules.Count == 0)
-        {
-            // Fallback: check all active schedules for this hospital if vaccine matching is broad
-            schedules = await _context.VaccineSchedules
-                .AsNoTracking()
-                .Where(s => (s.HospitalUserId == resolvedHospitalUserId || (resolvedProfileId != null && s.HospitalProfileId == resolvedProfileId)) && s.Status == "Active")
-                .ToListAsync();
-        }
+        // No fallback to the hospital's other vaccines: those dates have no slots for this
+        // vaccine, so a patient would pick a date and find nothing to book.
 
         var today = StaffDutyHelper.HospitalToday();
         var now = TimeOnly.FromDateTime(StaffDutyHelper.HospitalNow());
@@ -477,6 +471,13 @@ public class AppointmentService : IAppointmentService
             paymentMethod = "Free";
             paymentStatus = "Paid";
         }
+        else if (string.Equals(dto.PaymentMethod, "Hospital", StringComparison.OrdinalIgnoreCase))
+        {
+            // Patient pays at the hospital desk on the day; the desk marks the booking paid.
+            appointmentStatus = "PendingPayment";
+            paymentMethod = "Hospital";
+            paymentStatus = "Pending";
+        }
         else
         {
             // Paid appointments require portal card payment (PayHere)
@@ -517,7 +518,9 @@ public class AppointmentService : IAppointmentService
 
         // Send booking confirmation email immediately ONLY if appointment is Confirmed (Free)
         // If PayHere, confirmation email is sent ONLY upon successful payment!
-        if (appointment.Status == "Confirmed" && !string.IsNullOrWhiteSpace(patient.Email))
+        // Pay-at-desk bookings hold the slot now, so the patient gets the details straight away.
+        if ((appointment.Status == "Confirmed" || appointment.PaymentMethod == "Hospital") &&
+            !string.IsNullOrWhiteSpace(patient.Email))
         {
             _ = Task.Run(async () =>
             {
@@ -647,22 +650,7 @@ public class AppointmentService : IAppointmentService
 
         var hospitalNow = DateTime.UtcNow.AddHours(5.5);
         var today = DateOnly.FromDateTime(hospitalNow);
-        var start = new TimeOnly(hospitalNow.Hour, hospitalNow.Minute);
-        var end = start.AddMinutes(20);
-        var timeSlot = $"{FormatTime12h(start)} - {FormatTime12h(end)}";
-
-        // Avoid exact slot collisions for concurrent walk-ins.
-        while (await _context.Appointments.AnyAsync(a =>
-                   a.HospitalUserId == hospital.Id &&
-                   a.AppointmentDate == today &&
-                   a.TimeSlot == timeSlot &&
-                   a.Status != "Cancelled" &&
-                   a.Status != "Rejected"))
-        {
-            start = start.AddMinutes(1);
-            end = start.AddMinutes(20);
-            timeSlot = $"{FormatTime12h(start)} - {FormatTime12h(end)}";
-        }
+        var arrival = new TimeOnly(hospitalNow.Hour, hospitalNow.Minute);
 
         var (boothId, boothLabel) = await ResolveWalkInBoothAsync(hospital.Id, vaccineName, dto.BoothLabel);
 
@@ -674,11 +662,19 @@ public class AppointmentService : IAppointmentService
                 (s.HospitalUserId == hospital.Id ||
                  (hospitalProfileId != null && s.HospitalProfileId == hospitalProfileId)) &&
                 (s.VaccineName.ToLower() == vName || s.VaccineName.ToLower().Contains(vName)));
-        // Prefer the session running at the assigned booth so vaccine and booth agree.
-        var schedule = (boothId.HasValue
-                ? await scheduleQuery.FirstOrDefaultAsync(s => s.BoothId == boothId)
-                : null)
-            ?? await scheduleQuery.FirstOrDefaultAsync();
+        // Prefer the session running right now, then the one at the assigned booth so
+        // vaccine and booth agree.
+        var vaccineSchedules = await scheduleQuery.ToListAsync();
+        var schedule = vaccineSchedules
+            .OrderByDescending(s => IsSessionRunning(s, today, arrival))
+            .ThenByDescending(s => boothId.HasValue && s.BoothId == boothId)
+            .FirstOrDefault();
+
+        // Walk-ins share the session's 20-minute bands (three seats each) with booked
+        // patients. With no session running there are no bands, so the slot is simply
+        // the arrival time.
+        var (start, end) = await ResolveWalkInBandAsync(hospital.Id, schedule, today, arrival);
+        var timeSlot = $"{FormatTime12h(start)} - {FormatTime12h(end)}";
 
         // Walk-ins pay the same hospital price as booked patients (formulary price,
         // falling back to the session price). Priced walk-ins wait for desk payment.
@@ -1797,6 +1793,72 @@ public class AppointmentService : IAppointmentService
         return MapToDto(appointment);
     }
 
+    /// <summary>True when the session runs on this date and the time falls inside its hours.</summary>
+    private static bool IsSessionRunning(VaccineSchedule schedule, DateOnly date, TimeOnly time)
+    {
+        if (!TryParseTime(schedule.StartTime, out var start) || !TryParseTime(schedule.EndTime, out var end))
+            return false;
+        if (time < start || time >= end) return false;
+
+        if (!string.Equals(schedule.ScheduleType, "Weekly", StringComparison.OrdinalIgnoreCase))
+            return schedule.SpecificDate == date;
+
+        if (schedule.StartDate.HasValue && date < schedule.StartDate.Value) return false;
+        if (schedule.EndDate.HasValue && date > schedule.EndDate.Value) return false;
+        var dayName = date.DayOfWeek.ToString();
+        return (schedule.DaysOfWeek ?? string.Empty)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(d =>
+                string.Equals(d, dayName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(d, dayName[..3], StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    /// The 20-minute band a walk-in joins: the session band they arrived in, or the next
+    /// one with a free seat when it already holds <see cref="ScheduleStockPlanner.PatientsPerSlot"/>.
+    /// A walk-in is never turned away: if every remaining band is full they join the
+    /// band they arrived in. Outside a running session the slot starts at the arrival time.
+    /// </summary>
+    private async Task<(TimeOnly Start, TimeOnly End)> ResolveWalkInBandAsync(
+        Guid hospitalUserId,
+        VaccineSchedule? schedule,
+        DateOnly today,
+        TimeOnly arrival)
+    {
+        var bandMinutes = ScheduleStockPlanner.SlotBandMinutes;
+        if (schedule == null || !IsSessionRunning(schedule, today, arrival))
+            return (arrival, arrival.AddMinutes(bandMinutes));
+
+        var bands = Generate20MinSlots(schedule.StartTime, schedule.EndTime)
+            .Select(slot => (
+                Start: TimeOnly.ParseExact(slot.StartTime, "HH:mm"),
+                End: TimeOnly.ParseExact(slot.EndTime, "HH:mm"),
+                slot.Slot))
+            .ToList();
+        var arrivedIn = bands.FindIndex(b => arrival >= b.Start && arrival < b.End);
+        // Arrived in a leftover stretch shorter than a full band at the end of the session.
+        if (arrivedIn < 0)
+            return (arrival, arrival.AddMinutes(bandMinutes));
+
+        var booked = await _context.Appointments
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.VaccineScheduleId == schedule.Id &&
+                a.AppointmentDate == today &&
+                a.Status != "Cancelled" &&
+                a.Status != "Rejected")
+            .Select(a => a.TimeSlot)
+            .ToListAsync();
+
+        for (var i = arrivedIn; i < bands.Count; i++)
+        {
+            if (booked.Count(slot => slot == bands[i].Slot) < ScheduleStockPlanner.PatientsPerSlot)
+                return (bands[i].Start, bands[i].End);
+        }
+
+        return (bands[arrivedIn].Start, bands[arrivedIn].End);
+    }
+
     private static List<TimeSlotDto> Generate20MinSlots(string startTimeStr, string endTimeStr)
     {
         var result = new List<TimeSlotDto>();
@@ -1814,7 +1876,9 @@ public class AppointmentService : IAppointmentService
         }
 
         var current = startTime;
-        while (current.AddMinutes(20) <= endTime)
+        // Compared in minutes: TimeOnly wraps past midnight, so a session ending after
+        // 23:40 would otherwise never leave this loop.
+        while (current.ToTimeSpan().TotalMinutes + 20 <= endTime.ToTimeSpan().TotalMinutes)
         {
             var next = current.AddMinutes(20);
             var slotStr = $"{FormatTime12h(current)} - {FormatTime12h(next)}";

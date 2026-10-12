@@ -48,6 +48,11 @@ public class FormularyEntryDto
     public decimal Price { get; set; }
     public bool IsFree => Price <= 0;
     public string FormattedPrice => Price <= 0 ? "Free" : $"LKR {Price:N2}";
+    /// <summary>Supplier cost per vial in LKR (0 = not set).</summary>
+    public decimal SupplierCost { get; set; }
+    public string? SupplierName { get; set; }
+    /// <summary>Where purchase orders for this vaccine are emailed.</summary>
+    public string? SupplierEmail { get; set; }
     public DateTime RegisteredAt { get; set; }
 }
 
@@ -62,6 +67,14 @@ public class InventoryItemDto
     public int Available { get; set; }
     public int Capacity { get; set; }
     public int MinThreshold { get; set; }
+    /// <summary>active | ordered | depleted | expired. An ordered row is a purchase order awaiting delivery.</summary>
+    public string Status { get; set; } = "active";
+    /// <summary>Unexpired vials of this vaccine across all of the hospital's batches.</summary>
+    public int VaccineAvailable { get; set; }
+    /// <summary>Vials of this vaccine ordered from the supplier and not delivered yet.</summary>
+    public int VaccineOnOrder { get; set; }
+    /// <summary>True when the vaccine as a whole (stock on hand plus on order) is at or below its threshold.</summary>
+    public bool IsLowStock { get; set; }
     public int DosesPerVial { get; set; }
     /// <summary>Doses left in the currently opened vial (0 if sealed-only stock).</summary>
     public int OpenVialDosesRemaining { get; set; }
@@ -132,12 +145,34 @@ public class RegisterFormularyDto
     /// <summary>Hospital fee per person in LKR (0 = Free).</summary>
     [Range(0, 1000000)]
     public decimal Price { get; set; } = 0.00m;
+
+    /// <summary>Supplier cost per vial in LKR. Omit to leave an existing cost unchanged.</summary>
+    [Range(0, 1000000)]
+    public decimal? SupplierCost { get; set; }
+
+    /// <summary>Supplier contact. Omit to leave unchanged; send an empty string to clear.</summary>
+    [MaxLength(200)]
+    public string? SupplierName { get; set; }
+
+    [MaxLength(200)]
+    public string? SupplierEmail { get; set; }
 }
 
 public class UpdateFormularyPriceDto
 {
     [Range(0, 1000000)]
     public decimal Price { get; set; }
+
+    /// <summary>Supplier cost per vial in LKR. Omit to leave it unchanged.</summary>
+    [Range(0, 1000000)]
+    public decimal? SupplierCost { get; set; }
+
+    /// <summary>Supplier contact. Omit to leave unchanged; send an empty string to clear.</summary>
+    [MaxLength(200)]
+    public string? SupplierName { get; set; }
+
+    [MaxLength(200)]
+    public string? SupplierEmail { get; set; }
 
     /// <summary>Optional catalog category update: routine | mrna | seasonal | pediatric.</summary>
     [MaxLength(40)]
@@ -196,6 +231,23 @@ public class AdjustStockDto
 
     [MaxLength(500)]
     public string? Reason { get; set; }
+}
+
+public class ReceiveBatchDto
+{
+    [Required]
+    [MaxLength(100)]
+    public string LotNumber { get; set; } = string.Empty;
+
+    [Required]
+    public DateTime ExpiryDate { get; set; }
+
+    [Required]
+    [Range(1, int.MaxValue)]
+    public int Quantity { get; set; }
+
+    [MaxLength(200)]
+    public string? StorageUnit { get; set; }
 }
 
 public class IssueStockDto

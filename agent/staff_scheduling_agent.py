@@ -273,6 +273,7 @@ class StaffSchedulingAgent:
         briefing: Optional[Dict[str, Any]] = None,
         fairness_summary: Optional[Dict[str, Any]] = None,
         validation: Optional[Dict[str, Any]] = None,
+        model_unavailable: bool = False,
     ) -> Dict[str, Any]:
         return {
             "agent": self.name,
@@ -283,6 +284,8 @@ class StaffSchedulingAgent:
             "validation": validation,
             "proposals": proposals or None,
             "suggestedFollowUps": _build_follow_ups(messages, proposals),
+            # Lets the client fall back to the rules-based roster suggestions.
+            "modelUnavailable": model_unavailable,
         }
 
     async def _rank_cover_replacements(
@@ -397,6 +400,7 @@ class StaffSchedulingAgent:
                 booth_id=arguments.get("booth_id"),
                 notes=arguments.get("notes"),
                 reason=arguments.get("reason"),
+                token=token,
             )
         if tool_name in ("create_shift", "delete_shift", "suggest_week_coverage"):
             logger.warning(f"[{self.name}] Blocked tool attempt: {tool_name}")
@@ -522,13 +526,54 @@ class StaffSchedulingAgent:
                                 )
                         return self._reply(
                             messages,
-                            "The staffing plan is too large for the model context window. "
-                            "Try a shorter date range, or raise --max-model-len on the pod.",
+                            "That date range is too large to plan in one go. "
+                            "Try a shorter range, such as a single week.",
+                            model_unavailable=True,
                         )
                 else:
+                    # Suggest Week names its dates, so the plan can still be built from
+                    # the posted sessions in code. Only the model's staff preferences
+                    # are lost; session hours, booths and availability all still apply.
+                    suggest_range = _parse_suggest_dates_from_messages(messages, "", "")
+                    if suggest_range[0] and not proposals:
+                        try:
+                            tool_output = await tool_build_staffing_plan(
+                                from_date=suggest_range[0],
+                                to_date=suggest_range[1],
+                                token=token,
+                            )
+                        except Exception as build_err:
+                            logger.error("Build without model failed: %s", build_err)
+                            tool_output = {"success": False}
+                        if tool_output.get("success"):
+                            proposals = list(tool_output.get("proposals") or [])
+                            note = (
+                                "The AI model is unavailable right now, so I planned "
+                                f"{len(proposals)} shift(s) by rules from your posted sessions."
+                                if proposals
+                                else "The AI model is unavailable right now. Checked by rules: "
+                                + (
+                                    tool_output.get("message")
+                                    or "every posted session in this range is already staffed."
+                                )
+                            )
+                            # modelUnavailable stays true so the client can say so too.
+                            return self._reply(
+                                messages,
+                                note,
+                                proposals,
+                                _briefing(tool_output, proposals),
+                                {
+                                    "before": tool_output.get("workloadBefore"),
+                                    "after": tool_output.get("workloadAfter"),
+                                },
+                                tool_output.get("validation"),
+                                model_unavailable=True,
+                            )
                     return self._reply(
                         messages,
-                        "The model could not be reached, so no shifts were suggested.",
+                        "The scheduling assistant could not be reached, so no shifts were suggested.",
+                        model_unavailable=True,
                     )
 
             tool_calls = msg.get("tool_calls") or []

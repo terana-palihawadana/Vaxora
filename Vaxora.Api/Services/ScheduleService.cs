@@ -264,10 +264,13 @@ public class ScheduleService : IScheduleService
         resolvedVaccineId ??= pricedVaccineId;
 
         // Expanding the window still needs stock headroom; shrinking is always fine.
+        // The session's current reservation is excluded so it is not counted twice.
+        var horizonRequest = ToHorizonRequest(dto, isWeekly, resolvedVaccineId, vaccineName);
+        horizonRequest.ExcludeScheduleId = scheduleId;
         var horizon = await BuildStockHorizonAsync(
             hospitalUserId,
             hospital.HospitalProfile?.Id,
-            ToHorizonRequest(dto, isWeekly, resolvedVaccineId, vaccineName));
+            horizonRequest);
 
         if (!horizon.CanCreate)
         {
@@ -492,6 +495,7 @@ public class ScheduleService : IScheduleService
             .AsNoTracking()
             .Where(s =>
                 s.Status == "Active" &&
+                (!dto.ExcludeScheduleId.HasValue || s.Id != dto.ExcludeScheduleId.Value) &&
                 (s.HospitalUserId == hospitalUserId ||
                  (profileId.HasValue && s.HospitalProfileId == profileId.Value)))
             .ToListAsync();

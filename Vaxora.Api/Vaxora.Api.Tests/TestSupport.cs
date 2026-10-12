@@ -196,7 +196,12 @@ internal sealed class FakeEmailService : IEmailService
     public Task<bool> SendAppointmentBookingConfirmationEmailAsync(string toEmail, string patientName, string vaccineName, string hospitalName, string appointmentDate, string timeSlot, string? doctorName, string? nurseName, string? notes, decimal fee = 0, string paymentMethod = "Free", string paymentStatus = "Paid") => Task.FromResult(true);
     public Task<bool> SendPaymentReceiptEmailAsync(string toEmail, string patientName, string vaccineName, string hospitalName, string appointmentDate, string timeSlot, decimal amountPaid, string currency, string transactionId, string orderId, DateTime paymentTime) => Task.FromResult(true);
     public Task<bool> SendAppointmentCancellationEmailAsync(string toEmail, string patientName, string vaccineName, string hospitalName, string appointmentDate, string timeSlot, string cancelledBy) => Task.FromResult(true);
-    public Task<bool> SendPurchaseOrderToSupplierAsync(string toEmail, string supplierName, string poNumber, string hospitalName, string orderDate, string deliveryDate, List<(string VaccineName, int Quantity, decimal UnitPrice, decimal LineTotal)> lineItems, decimal totalLkr, string approvalNotes) => Task.FromResult(true);
+    public List<(string ToEmail, string SupplierName, int LineCount)> PurchaseOrdersSent { get; } = new();
+    public Task<bool> SendPurchaseOrderToSupplierAsync(string toEmail, string supplierName, string poNumber, string hospitalName, string orderDate, string deliveryDate, List<(string VaccineName, int Quantity, decimal UnitPrice, decimal LineTotal)> lineItems, decimal totalLkr, string approvalNotes)
+    {
+        PurchaseOrdersSent.Add((toEmail, supplierName, lineItems.Count));
+        return Task.FromResult(true);
+    }
     public Task<bool> SendExpiryMemoToOpsManagerAsync(string toEmail, string recipientName, string memoNumber, string hospitalName, List<(string VaccineName, string BatchNumber, int Quantity, string ExpiryDate, int DaysLeft, string Priority, string Action)> actions, string summary) => Task.FromResult(true);
     public Task<bool> SendAefiSurveillanceAlertAsync(string toEmail, string recipientName, string patientName, string vaccineName, string hospitalName, string appointmentDate, string timeSlot, string severity, string symptoms, string treatmentGiven, string reportedBy, string appointmentId) => Task.FromResult(true);
     public Task<bool> SendDamageReportToSupplierAsync(string toEmail, string supplierName, string hospitalName, string vaccineName, string lotNumber, int quantity, string damageType, string notes, byte[] photoBytes, string photoFileName, string photoContentType) => Task.FromResult(true);

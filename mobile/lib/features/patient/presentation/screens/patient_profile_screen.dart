@@ -435,14 +435,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'Exporting official citizen health dossier (.PDF)',
+                          'Your digital pass is on each dose under My vaccinations.',
                         ),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
-                  icon: const Icon(Icons.file_download_outlined, size: 20),
-                  label: const Text('Export health pass (PDF)'),
+                  icon: const Icon(Icons.verified_outlined, size: 20),
+                  label: const Text('Where is my health pass?'),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: StaffSurfaces.cardBorder),
                     foregroundColor: StaffSurfaces.textPrimary,

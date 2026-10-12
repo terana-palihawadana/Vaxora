@@ -266,10 +266,13 @@ export default function HospitalCoverRequestsPanel({ onPendingCountChange }) {
 
   const decide = async (request, { approved, replacementAffiliationId }) => {
     if (decidingId) return;
+    const replacementName = (request.suggestions || []).find(
+      (s) => s.affiliationId === replacementAffiliationId
+    )?.staffName;
     const ok = await confirm({
       title: approved ? 'Assign cover?' : 'Decline cover request?',
       message: approved
-        ? `Assign a replacement for ${request.requesterName || 'this staff member'}'s shift on ${request.shiftDate}? The original staff member will be covered.`
+        ? `Assign ${replacementName || 'the selected replacement'} to ${request.requesterName || 'this staff member'}'s shift on ${request.shiftDate}? The original staff member will be covered.`
         : `Decline cover for ${request.requesterName || 'this staff member'} on ${request.shiftDate}? They will need to make other arrangements.`,
       confirmLabel: approved ? 'Assign cover' : 'Decline',
       destructive: !approved,

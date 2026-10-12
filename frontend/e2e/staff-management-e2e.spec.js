@@ -1,9 +1,7 @@
 import { test, expect } from '@playwright/test';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
-const TEST_HOSPITAL = {
-  email: 'hospital@vaxora.local',
-  password: 'Hospital@123',
-};
+const TEST_HOSPITAL = TEST_ACCOUNTS.hospital;
 
 async function loginAsHospital(page) {
   await page.goto('/login');
@@ -127,7 +125,7 @@ test.describe('Staff Management E2E', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           online: true,
-          agents: ['StaffSchedulingAgent', 'ShiftSwapAgent'],
+          agents: ['StaffSchedulingAgent'],
         }),
       });
     });

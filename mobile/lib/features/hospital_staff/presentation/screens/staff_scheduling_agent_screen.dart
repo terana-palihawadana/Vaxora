@@ -218,55 +218,7 @@ class _StaffSchedulingAgentScreenState
       final proposals = _extractProposals(res);
       final content = res['content']?.toString() ?? '';
       if (proposals.isEmpty) {
-        // Fallback to rules-based suggest-week
-        try {
-          final fallback = await HospitalStaffRepository.suggestWeek(
-            from: widget.weekStart,
-            to: widget.weekEnd,
-          );
-          final list = (fallback['proposals'] is List)
-              ? (fallback['proposals'] as List)
-                  .whereType<Map>()
-                  .map((e) => Map<String, dynamic>.from(e))
-                  .toList()
-              : <Map<String, dynamic>>[];
-          if (list.isEmpty) {
-            setState(() {
-              _messages.add(
-                _ChatMsg(
-                  role: 'assistant',
-                  content: fallback['message']?.toString() ??
-                      content.ifEmpty(
-                        'No new shifts to propose — this week looks covered.',
-                      ),
-                ),
-              );
-              _proposals = [];
-            });
-          } else {
-            setState(() {
-              _messages.add(
-                _ChatMsg(
-                  role: 'assistant',
-                  content:
-                      '${list.length} suggested shift${list.length == 1 ? '' : 's'} (rules fallback). Review and approve below.',
-                ),
-              );
-            });
-            _applyProposals(list, fairness: _fairnessFrom(fallback));
-          }
-        } catch (_) {
-          setState(() {
-            _messages.add(
-              _ChatMsg(
-                role: 'assistant',
-                content: content.ifEmpty(
-                  'No new shifts to propose for this week.',
-                ),
-              ),
-            );
-          });
-        }
+        await _rulesFallback(content);
       } else {
         setState(() {
           _messages.add(
@@ -284,19 +236,64 @@ class _StaffSchedulingAgentScreenState
           fairness: _fairnessFrom(res),
         );
       }
-    } catch (e) {
+    } catch (_) {
+      // Agent service unreachable: the rules-based suggestions still work.
+      await _rulesFallback('The scheduling assistant is unavailable right now.');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+      _scrollToEnd();
+    }
+  }
+
+  /// Rules-based suggest-week, used when the agent has nothing or cannot be reached.
+  Future<void> _rulesFallback(String content) async {
+    try {
+      final fallback = await HospitalStaffRepository.suggestWeek(
+        from: widget.weekStart,
+        to: widget.weekEnd,
+      );
+      final list = (fallback['proposals'] is List)
+          ? (fallback['proposals'] as List)
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList()
+          : <Map<String, dynamic>>[];
+      if (list.isEmpty) {
+        setState(() {
+          _messages.add(
+            _ChatMsg(
+              role: 'assistant',
+              content: fallback['message']?.toString() ??
+                  content.ifEmpty(
+                    'No new shifts to propose — this week looks covered.',
+                  ),
+            ),
+          );
+          _proposals = [];
+        });
+      } else {
+        setState(() {
+          _messages.add(
+            _ChatMsg(
+              role: 'assistant',
+              content:
+                  '${list.length} suggested shift${list.length == 1 ? '' : 's'} (rules fallback). Review and approve below.',
+            ),
+          );
+        });
+        _applyProposals(list, fairness: _fairnessFrom(fallback));
+      }
+    } catch (_) {
       setState(() {
         _messages.add(
           _ChatMsg(
             role: 'assistant',
-            content: e is ApiException ? e.message : e.toString(),
-            isError: true,
+            content: content.ifEmpty(
+              'No new shifts to propose for this week.',
+            ),
           ),
         );
       });
-    } finally {
-      if (mounted) setState(() => _busy = false);
-      _scrollToEnd();
     }
   }
 

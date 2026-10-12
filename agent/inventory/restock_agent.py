@@ -32,6 +32,7 @@ try:
         tool_get_vaccines,
         tool_get_low_stock_items,
         tool_propose_restock_order,
+        get_formulary_pricing,
     )
 except ImportError:
     from config import settings
@@ -51,6 +52,7 @@ except ImportError:
         tool_get_vaccines,
         tool_get_low_stock_items,
         tool_propose_restock_order,
+        get_formulary_pricing,
     )
 
 logger = logging.getLogger("vaxora-restock-agent")
@@ -374,6 +376,7 @@ class RestockAdvisorAgent:
             draft = generate_purchase_order_draft(
                 restock_proposals=restock_proposals,
                 hospital_name=hospital_name,
+                formulary_pricing=await get_formulary_pricing(token=token),
             )
 
         state_store.set_outcome(

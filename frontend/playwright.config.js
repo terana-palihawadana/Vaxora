@@ -1,4 +1,10 @@
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
+
+// Test account passwords live in frontend/.env.e2e (git-ignored), not in the specs.
+const envFile = fileURLToPath(new URL('./.env.e2e', import.meta.url));
+if (existsSync(envFile)) process.loadEnvFile(envFile);
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5173';
 

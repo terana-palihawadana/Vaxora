@@ -16,6 +16,7 @@ try:
         tool_get_current_date_time,
         tool_autonomous_find_and_propose,
         tool_get_available_vaccines_and_hospitals,
+        tool_get_bookable_sessions,
         tool_get_available_dates,
         tool_get_available_slots,
         tool_book_appointment,
@@ -34,6 +35,7 @@ except ImportError:
         tool_get_current_date_time,
         tool_autonomous_find_and_propose,
         tool_get_available_vaccines_and_hospitals,
+        tool_get_bookable_sessions,
         tool_get_available_dates,
         tool_get_available_slots,
         tool_book_appointment,
@@ -41,6 +43,11 @@ except ImportError:
         tool_cancel_appointment,
         tool_propose_cancellation_for_approval
     )
+
+try:
+    from . import booking_fallback as fallback
+except ImportError:
+    import booking_fallback as fallback
 
 try:
     from .inventory.state_store import state_store
@@ -77,20 +84,22 @@ You are STRICTLY FORBIDDEN from executing permanent database changes (`book_appo
    DO NOT conduct a slow back-and-forth interrogation!
    IMMEDIATELY invoke `autonomous_find_and_propose` with their preferences:
    - `vaccine_name`: The requested vaccine name (e.g. 'AstraZeneca')
-   - `hospital_name_or_id`: Hospital name or GUID if specified (or leave empty for best match)
+   - `hospital_name_or_id`: Hospital name or GUID ONLY if the patient named one. Leave it empty otherwise so every hospital is searched; never guess a hospital.
+   If the tool reports no open slot and lists other hospitals running the vaccine, tell the patient and offer those hospitals. Never describe a slot the tool did not return.
    - `preferred_date`: Specific date ('YYYY-MM-DD'), day of week ('Wednesday', 'Friday'), 'next week', or 'earliest'
    - `time_of_day`: 'morning' (<12:00 PM), 'afternoon' (>=12:00 PM), 'earliest', or 'any'
-   
+
    This autonomously discovers the hospital, fetches upcoming clinic dates, locates open time slots, verifies schedule pricing, and prepares the review card in ONE single action!
    Then, provide a clear, helpful summary:
    "I have matched and prepared your optimal appointment slot: [Vaccine] at [Hospital] on [Date] at [Time Slot] (Fee: [Price]).
-   Please review the proposal card below and tap 'Confirm & Book' to finalize."
+   Please review the proposal card below and approve it to book."
    NEVER call `book_appointment` directly until the patient has approved the proposal!
 
 2. BOOKING APPROVAL & PAYMENT:
-   - The user must explicitly approve the proposal by tapping "Confirm & Book" (or sending "I approve and confirm booking...").
+   - The user must explicitly approve the proposal by pressing the approve button on the card (or sending "I approve and confirm booking...").
    - Once approved, IMMEDIATELY call `book_appointment` to register the booking in the national immunization registry.
    - For paid vaccines (e.g. AstraZeneca at LKR 1,000.00), inform the user that their booking is registered and they can complete payment using PayHere via the payment button on the booking confirmation card.
+   - If the approval says the patient will pay at the hospital desk on the day, call `book_appointment` with `payment_method` 'Hospital' and tell them the slot is reserved and the fee is paid at the hospital desk on the day. Do not mention PayHere in that case.
    - For free vaccines (0 LKR), the slot is confirmed immediately.
 
 3. MANDATORY CANCELLATION APPROVAL WORKFLOW:
@@ -163,6 +172,14 @@ CLINICAL_ADVICE_PATTERNS = [
 # in the web and mobile clients.
 BOOKING_APPROVAL_PATTERN = r"\bi\s+approve\s+and\s+confirm\s+(the\s+)?booking\b"
 CANCELLATION_APPROVAL_PATTERN = r"\bi\s+approve\s+and\s+confirm\s+(the\s+)?cancellation\b"
+# Added to the booking approval by the "Pay on the Day" button.
+PAY_AT_DESK_PATTERN = r"\bpay\s+(at\s+the\s+(hospital\s+)?desk|on\s+the\s+day)\b"
+# Wording the model uses when it presents a proposal for the patient to approve.
+PROPOSAL_CLAIM_PATTERN = (
+    r"review\s+the\s+(proposal\s+|cancellation\s+)?card|confirm\s*&\s*book|"
+    r"tapping\s+the\s+confirm|approve\s+and\s+confirm\s+(the\s+)?(booking|cancellation)|"
+    r"matched\s+and\s+prepared|approve\s+it\s+to\s+book"
+)
 
 # Write tools that may only run after the patient approved the matching proposal.
 APPROVAL_GATED_TOOLS = {
@@ -180,6 +197,16 @@ def detect_user_approval(text: str) -> Optional[str]:
     if re.search(CANCELLATION_APPROVAL_PATTERN, text, re.IGNORECASE):
         return "cancellation"
     return None
+
+
+def wants_pay_at_desk(text: str) -> bool:
+    """True when a booking approval says the patient will pay at the hospital on the day."""
+    return bool(text) and re.search(PAY_AT_DESK_PATTERN, text, re.IGNORECASE) is not None
+
+
+def claims_proposal(text: str) -> bool:
+    """True when the reply tells the patient there is a proposal to review or approve."""
+    return bool(text) and re.search(PROPOSAL_CLAIM_PATTERN, text, re.IGNORECASE) is not None
 
 
 def check_prompt_injection(text: str) -> Optional[str]:
@@ -355,6 +382,86 @@ class BookingAgent:
         else:
             return {"success": False, "error": f"Unknown tool: {tool_name}"}
 
+    async def _answer_without_model(
+        self,
+        user_texts: List[str],
+        token: Optional[str],
+        tools_called: set,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Works out an everyday request (book a vaccine, list appointments, list vaccines)
+        and calls the tools directly. Used when the model replied without calling one.
+        Returns {content, calls, proposal?} or None when the request is not one of these.
+        """
+        last = user_texts[-1] if user_texts else ""
+        if not last:
+            return None
+
+        if fallback.is_my_appointments_question(last):
+            if "get_my_appointments" in tools_called:
+                return None
+            out = await self.execute_tool("get_my_appointments", {}, token)
+            if not out.get("success"):
+                return None
+            return {
+                "content": fallback.appointments_message(out.get("appointments") or []),
+                "calls": [("get_my_appointments", {}, out)],
+            }
+
+        wants_list = fallback.is_vaccine_list_question(last)
+        wants_booking = not wants_list and fallback.is_booking_intent(last)
+        if wants_list and "get_available_vaccines_and_hospitals" in tools_called:
+            return None
+        if wants_booking and tools_called & {"autonomous_find_and_propose", "propose_booking_for_approval"}:
+            return None
+        if not (wants_list or wants_booking):
+            return None
+
+        catalogue = await self.execute_tool("get_available_vaccines_and_hospitals", {}, token)
+        vaccines = catalogue.get("vaccines") or []
+        sessions = await tool_get_bookable_sessions(token=token)
+        calls = [("get_available_vaccines_and_hospitals", {}, catalogue)]
+        vaccine_names = list(dict.fromkeys(
+            [v.get("name") for v in vaccines if v.get("name")]
+            + [s.get("vaccineName") for s in sessions if s.get("vaccineName")]
+        ))
+        hospital_names = list(dict.fromkeys(
+            [s.get("hospitalName") for s in sessions if s.get("hospitalName")]
+            + [h.get("name") for v in vaccines for h in (v.get("hospitals") or []) if h.get("name")]
+        ))
+
+        if wants_list:
+            asked_for = fallback.find_vaccine([last], vaccine_names)
+            return {"content": fallback.vaccines_message(vaccines, sessions, asked_for), "calls": calls}
+
+        vaccine = fallback.find_vaccine(user_texts, vaccine_names)
+        if not vaccine:
+            return {
+                "content": "Which vaccine would you like to book?\n\n"
+                + fallback.vaccines_message(vaccines, sessions, None),
+                "calls": calls,
+            }
+
+        args = {
+            "vaccine_name": vaccine,
+            "hospital_name_or_id": fallback.find_hospital(last, hospital_names),
+            "preferred_date": fallback.find_date_phrase(last),
+            "time_of_day": fallback.find_time_of_day(last),
+        }
+        out = await self.execute_tool("autonomous_find_and_propose", args, token)
+        calls.append(("autonomous_find_and_propose", args, out))
+        if out.get("proposal"):
+            return {
+                "content": fallback.proposal_message(out["proposal"]),
+                "calls": calls,
+                "proposal": out["proposal"],
+            }
+        return {
+            "content": f"{out.get('error') or 'I could not find an open slot.'} "
+            "Tell me another date, hospital or vaccine and I will check again.",
+            "calls": calls,
+        }
+
     async def run(
         self,
         messages: List[Dict[str, Any]],
@@ -379,6 +486,8 @@ class BookingAgent:
         # Only the latest user message can approve a write, and each approval
         # authorises a single successful booking/cancellation call.
         approval = detect_user_approval(last_user_message)
+        # Taken from the patient's own approval, not from the model's tool arguments.
+        pay_at_desk = approval == "booking" and wants_pay_at_desk(last_user_message)
 
         if is_cancellation:
             plan = [
@@ -511,14 +620,83 @@ class BookingAgent:
         rejected_validation = None
         completed_steps = []
         tool_results = []
+        last_tool_error = None
+        proposal_retried = False
 
-        while iteration < max_iterations:
+        def has_grounded_result() -> bool:
+            return bool(proposal_data or cancellation_proposal_data or booking_result or cancellation_result)
+
+        def record_call(fn_name: str, fn_args: Dict[str, Any], tool_output: Any) -> None:
+            completed_steps.append(f"{fn_name}")
+            tool_results.append({
+                "tool": fn_name,
+                "arguments": fn_args,
+                "success": tool_output.get("success", True) if isinstance(tool_output, dict) else True,
+            })
+            if state_store and workflow_id:
+                try:
+                    state_store.append_tool_call(workflow_id, fn_name, fn_args, tool_output)
+                    state_store.append_step(workflow_id, {"step": fn_name, "status": "completed"})
+                except Exception as se:
+                    logger.warning(f"Failed to record tool call to state store: {se}")
+
+        user_texts = [str(m.get("content") or "") for m in messages if m.get("role") == "user"]
+        # A reply composed from tool results without the model.
+        direct_content = None
+        msg: Dict[str, Any] = {}
+
+        async def answer_without_model() -> bool:
+            nonlocal proposal_data, direct_content
+            if is_cancellation:
+                return False
+            handled = await self._answer_without_model(
+                user_texts, token, {t["tool"] for t in tool_results}
+            )
+            if not handled:
+                return False
+            for fn_name, fn_args, tool_output in handled["calls"]:
+                record_call(fn_name, fn_args, tool_output)
+            if handled.get("proposal"):
+                proposal_data = handled["proposal"]
+                for step in plan[:3]:
+                    step["status"] = "completed"
+                plan[3]["status"] = "awaiting_user_approval"
+            direct_content = handled["content"]
+            return True
+
+        # The Approve buttons send every booking detail, so that approval is carried out
+        # directly instead of depending on the model to repeat it into a tool call.
+        approved = fallback.parse_booking_approval(last_user_message) if approval == "booking" else None
+        if approved:
+            book_args = {
+                "hospital_user_id": approved["hospital_name"],
+                "vaccine_name": approved["vaccine_name"],
+                "appointment_date": approved["appointment_date"],
+                "time_slot": approved["time_slot"],
+                "payment_method": "Hospital" if pay_at_desk else "Free",
+            }
+            tool_output = await self.execute_tool("book_appointment", book_args, token, approval=approval)
+            approval = None
+            record_call("book_appointment", book_args, tool_output)
+            if tool_output.get("success"):
+                booking_result = tool_output
+                direct_content = fallback.booking_message(tool_output, approved)
+            else:
+                direct_content = (
+                    f"I could not complete the booking: {tool_output.get('error') or 'the request failed'}. "
+                    "Please ask me for another slot."
+                )
+
+        while iteration < max_iterations and direct_content is None:
             iteration += 1
-            
+
             try:
                 msg = await self._call_llm(conversation, tools=TOOLS_SCHEMA)
             except Exception as e:
                 logger.error(f"LLM call failed: {e}")
+                # The model is down or rate limited: still serve the requests that need no model.
+                if not has_grounded_result() and await answer_without_model():
+                    break
                 err_msg = f"I encountered an issue connecting to the AI model service ({self.model}): {str(e)}. Please verify your OpenRouter configuration and API key."
                 if state_store and workflow_id:
                     try:
@@ -566,6 +744,13 @@ class BookingAgent:
                     else:
                         fn_args = fn_args_raw or {}
 
+                    if fn_name == "book_appointment" and isinstance(fn_args, dict):
+                        # Paying at the desk comes only from the patient's approval.
+                        if pay_at_desk:
+                            fn_args["payment_method"] = "Hospital"
+                        elif str(fn_args.get("payment_method") or "").lower() in ("hospital", "desk", "pay_on_the_day"):
+                            fn_args["payment_method"] = "PayHere"
+
                     tool_output = await self.execute_tool(fn_name, fn_args, token, approval=approval)
                     if fn_name in APPROVAL_GATED_TOOLS and isinstance(tool_output, dict) and tool_output.get("success"):
                         approval = None
@@ -593,19 +778,7 @@ class BookingAgent:
                             plan[2]["status"] = "completed"
                             plan[3]["status"] = "awaiting_user_approval"
 
-                    completed_steps.append(f"{fn_name}")
-                    tool_results.append({
-                        "tool": fn_name,
-                        "arguments": fn_args,
-                        "success": tool_output.get("success", True) if isinstance(tool_output, dict) else True,
-                    })
-
-                    if state_store and workflow_id:
-                        try:
-                            state_store.append_tool_call(workflow_id, fn_name, fn_args, tool_output)
-                            state_store.append_step(workflow_id, {"step": fn_name, "status": "completed"})
-                        except Exception as se:
-                            logger.warning(f"Failed to record tool call to state store: {se}")
+                    record_call(fn_name, fn_args, tool_output)
 
                     if fn_name == "propose_booking_for_approval":
                         if tool_output.get("success"):
@@ -622,15 +795,57 @@ class BookingAgent:
                     elif fn_name == "cancel_appointment" and tool_output.get("success"):
                         cancellation_result = tool_output
 
+                    if isinstance(tool_output, dict) and tool_output.get("success") is False and not tool_output.get("blocked"):
+                        last_tool_error = tool_output.get("error") or last_tool_error
+
                     conversation.append({
                         "role": "tool",
                         "tool_call_id": tc.get("id"),
                         "content": json.dumps(tool_output)
                     })
             else:
+                # The model answered without acting. Requests the agent can work out
+                # itself are served straight from the tools.
+                if not has_grounded_result() and await answer_without_model():
+                    break
+                # The approval card is built from a proposal tool result, never from the
+                # model's text. If it describes a proposal it did not look up, send it
+                # back once to call the tool.
+                if (
+                    not proposal_retried
+                    and not has_grounded_result()
+                    and claims_proposal(msg.get("content") or "")
+                ):
+                    proposal_retried = True
+                    conversation.append({"role": "assistant", "content": msg.get("content") or ""})
+                    conversation.append({
+                        "role": "system",
+                        "content": (
+                            "You described a proposal without calling a proposal tool, so the patient "
+                            "sees no approval card and the slot is unverified. Call "
+                            "`autonomous_find_and_propose` (or `propose_cancellation_for_approval`) now. "
+                            "If no slot is open, say so plainly and do not describe a proposal."
+                        ),
+                    })
+                    continue
                 break
 
-        final_content = msg.get("content") or msg.get("reasoning") or "I have processed your booking request."
+        final_content = direct_content or msg.get("content") or ""
+        # Never show the model's own reasoning, or an empty reply, to the patient.
+        if not final_content.strip() or fallback.looks_like_reasoning(final_content):
+            final_content = (
+                "I can find vaccines, check clinic dates and book a slot for you. "
+                "Tell me which vaccine you need, and a hospital or date if you have one in mind."
+            )
+
+        # Still no real proposal behind the text: tell the patient the truth instead of
+        # showing details of a slot nobody checked.
+        if not has_grounded_result() and not rejected_validation and claims_proposal(final_content):
+            logger.warning(f"[{self.name}] Dropped a proposal the model described without a tool result")
+            final_content = (
+                (f"{last_tool_error} " if last_tool_error else "I could not find an open slot to propose. ")
+                + "Tell me another date, hospital or vaccine and I will check again."
+            )
 
         # Deterministic validation: a proposal that fails validation is never
         # shown to the patient for approval.

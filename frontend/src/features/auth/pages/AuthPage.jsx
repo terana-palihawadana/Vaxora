@@ -58,6 +58,8 @@ export default function AuthPage({ onAuthSuccess }) {
         return '/nurse/dashboard';
       case 'HOSPITAL':
         return '/hospital/dashboard';
+      case 'FRONT_DESK':
+        return '/desk';
       case 'ADMIN':
         return '/admin/dashboard';
       default:
@@ -186,7 +188,7 @@ export default function AuthPage({ onAuthSuccess }) {
                   <div className="auth-success-alert" role="alert" style={{ textAlign: 'left' }}>
                     <h4 style={{ color: 'var(--color-accent)', fontSize: '1.125rem' }}>Application Under Review</h4>
                     <p style={{ marginTop: '8px', color: 'var(--color-text-body)' }}>
-                      Thank you, <strong>{signupPendingInfo.name}</strong>. Your <strong>{signupPendingInfo.role}</strong> registration documents have been securely submitted for administrative verification.
+                      Thank you, <strong>{signupPendingInfo.name}</strong>. Your <strong>{String(signupPendingInfo.role || '').toLowerCase()}</strong> registration documents have been securely submitted for administrative verification.
                     </p>
                     <p style={{ marginTop: '8px', color: 'var(--color-text-body)', fontSize: '0.875rem' }}>
                       Once approved, you will be able to log into your dashboard and access clinical features.

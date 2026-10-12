@@ -240,6 +240,27 @@ public class InventoryController : ControllerBase
         }
     }
 
+    [HttpPost("batches/{id}/receive")]
+    [Authorize(Roles = "HOSPITAL,ADMIN")]
+    public async Task<IActionResult> ReceiveOrderedBatch(Guid id, [FromBody] ReceiveBatchDto dto)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        try
+        {
+            var result = await _inventoryService.ReceiveOrderedBatchAsync(GetUserId(), id, dto);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error receiving ordered batch");
+            return StatusCode(500, new { message = "Failed to receive the delivery." });
+        }
+    }
+
     [HttpPost("batches/{id}/issue")]
     public async Task<IActionResult> IssueStock(Guid id, [FromBody] IssueStockDto dto)
     {

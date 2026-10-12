@@ -49,6 +49,7 @@ export default function SuggestWeekCalendarModal({
   actionId,
   loading,
   error,
+  notice,
   onToggleSelect,
   onSelectAll,
   onClearSelection,
@@ -67,6 +68,12 @@ export default function SuggestWeekCalendarModal({
   const selectedCount = useMemo(
     () => pending.filter((p) => p._selected).length,
     [pending]
+  );
+
+  // Suggestions for days outside the week on screen cannot be shown as cards.
+  const outsideWeekCount = useMemo(
+    () => pending.filter((p) => !weekDays.includes(String(p.shiftDate).slice(0, 10))).length,
+    [pending, weekDays]
   );
 
   const rows = useMemo(() => {
@@ -193,7 +200,7 @@ export default function SuggestWeekCalendarModal({
                 🤖
               </div>
               <h3>Agent is working…</h3>
-              <p>Suggest Week — agent is working</p>
+              <p>Checking bookings, booths and who is free</p>
               <div className="suggest-week-modal-waiting-track">
                 <div className="suggest-week-modal-waiting-bar" />
               </div>
@@ -209,6 +216,18 @@ export default function SuggestWeekCalendarModal({
           ) : rows.length === 0 ? (
             <div className="suggest-week-modal-empty">No suggestions match this filter.</div>
           ) : (
+            <>
+            {notice && (
+              <p className="suggest-week-modal-notice" role="status">
+                {notice}
+              </p>
+            )}
+            {outsideWeekCount > 0 && (
+              <p className="suggest-week-modal-empty" role="status" style={{ marginBottom: '12px' }}>
+                {outsideWeekCount} more suggestion{outsideWeekCount === 1 ? ' is' : 's are'} for days outside this week
+                and {outsideWeekCount === 1 ? 'is' : 'are'} not selected. Open that week and run Suggest week there.
+              </p>
+            )}
             <div className="suggest-week-calendar-scroll">
               <div className="suggest-week-calendar-grid">
                 <div className="suggest-week-calendar-corner">
@@ -333,6 +352,7 @@ export default function SuggestWeekCalendarModal({
                 })}
               </div>
             </div>
+            </>
           )}
         </div>
       </div>

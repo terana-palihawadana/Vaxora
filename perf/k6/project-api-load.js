@@ -10,7 +10,7 @@
 //
 // Run (API on the host at :5004, k6 in Docker):
 //   docker run --rm -v "$PWD/perf:/perf" -e BASE_URL=http://host.docker.internal:5004 \
-//     grafana/k6 run /perf/k6/project-api-load.js
+//     -e PATIENT_PASSWORD=... -e HOSPITAL_PASSWORD=... -e ADMIN_PASSWORD=... //     grafana/k6 run /perf/k6/project-api-load.js
 
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
@@ -20,9 +20,9 @@ const BASE_URL = __ENV.BASE_URL || 'http://localhost:5004';
 const OUT_DIR = __ENV.OUT_DIR || '/perf/results';
 
 const ACCOUNTS = {
-  patient: { email: __ENV.PATIENT_EMAIL || 'patient1@vaxora.lk', password: __ENV.PATIENT_PASSWORD || 'Password123!' },
-  hospital: { email: __ENV.HOSPITAL_EMAIL || 'hospital@vaxora.local', password: __ENV.HOSPITAL_PASSWORD || 'Hospital@123' },
-  admin: { email: __ENV.ADMIN_EMAIL || 'admin@vaxora.health.gov.lk', password: __ENV.ADMIN_PASSWORD || 'Admin@Vaxora2026' },
+  patient: { email: __ENV.PATIENT_EMAIL || 'patient1@vaxora.lk', password: __ENV.PATIENT_PASSWORD },
+  hospital: { email: __ENV.HOSPITAL_EMAIL || 'hospital@vaxora.local', password: __ENV.HOSPITAL_PASSWORD },
+  admin: { email: __ENV.ADMIN_EMAIL || 'admin@vaxora.health.gov.lk', password: __ENV.ADMIN_PASSWORD },
 };
 
 const endpointErrors = new Rate('endpoint_errors');

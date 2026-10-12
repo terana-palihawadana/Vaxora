@@ -17,6 +17,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<StaffAffiliation> StaffAffiliations => Set<StaffAffiliation>();
     public DbSet<StaffShift> StaffShifts => Set<StaffShift>();
+    public DbSet<StaffAvailabilityWindow> StaffAvailabilityWindows => Set<StaffAvailabilityWindow>();
+    public DbSet<StaffUnavailableDate> StaffUnavailableDates => Set<StaffUnavailableDate>();
     public DbSet<ShiftSwapRequest> ShiftSwapRequests => Set<ShiftSwapRequest>();
     public DbSet<HospitalBooth> HospitalBooths => Set<HospitalBooth>();
     public DbSet<HospitalBoothVaccine> HospitalBoothVaccines => Set<HospitalBoothVaccine>();
@@ -200,6 +202,24 @@ public class ApplicationDbContext : DbContext
 
         modelBuilder.Entity<StaffShift>()
             .HasIndex(s => new { s.AffiliationId, s.ShiftDate });
+
+        modelBuilder.Entity<StaffAvailabilityWindow>()
+            .HasOne(w => w.Affiliation)
+            .WithMany()
+            .HasForeignKey(w => w.AffiliationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StaffAvailabilityWindow>()
+            .HasIndex(w => new { w.AffiliationId, w.DayOfWeek });
+
+        modelBuilder.Entity<StaffUnavailableDate>()
+            .HasOne(d => d.Affiliation)
+            .WithMany()
+            .HasForeignKey(d => d.AffiliationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StaffUnavailableDate>()
+            .HasIndex(d => new { d.AffiliationId, d.Date });
 
         modelBuilder.Entity<ShiftSwapRequest>()
             .Property(r => r.Status)

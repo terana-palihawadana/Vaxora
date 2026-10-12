@@ -94,6 +94,45 @@ public class VaccinationBookingTests
     }
 
     [Fact]
+    public async Task BookAppointmentAsync_holds_a_paid_booking_for_desk_payment_when_patient_pays_on_the_day()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var patient = AddPatient(context, "patient-desk@example.com", "VAX-P-4012");
+        var scheduleDate = StaffDutyHelper.HospitalToday().AddDays(4);
+
+        var schedule = new VaccineSchedule
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Sinopharm",
+            ScheduleType = "OneTime",
+            SpecificDate = scheduleDate,
+            StartTime = "09:00",
+            EndTime = "11:00",
+            Status = "Active",
+            Price = 2500.00m
+        };
+        context.VaccineSchedules.Add(schedule);
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+        var result = await service.BookAppointmentAsync(patient.Id, new BookAppointmentRequestDto
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Sinopharm",
+            VaccineScheduleId = schedule.Id,
+            AppointmentDate = scheduleDate,
+            TimeSlot = "09:20 AM - 09:40 AM",
+            PaymentMethod = "Hospital"
+        });
+
+        Assert.Equal("PendingPayment", result.Status);
+        Assert.Equal("Hospital", result.PaymentMethod);
+        Assert.Equal("Pending", result.PaymentStatus);
+        Assert.Equal(2500.00m, result.Fee);
+    }
+
+    [Fact]
     public async Task BookAppointmentAsync_allows_up_to_three_patients_per_20min_slot_then_rejects()
     {
         await using var context = TestDb.CreateContext();
@@ -505,6 +544,89 @@ public class VaccinationBookingTests
         Assert.Equal(UserRole.PATIENT, user.Role);
         Assert.NotNull(user.PatientProfile);
         Assert.Equal("921234567V", user.PatientProfile.NicNumber);
+    }
+
+    [Fact]
+    public async Task CreateWalkInAppointmentAsync_shares_the_session_band_three_to_a_slot()
+    {
+        var hospitalNow = DateTime.UtcNow.AddHours(5.5);
+        // The last 20 minutes of the day have no full band left to join.
+        if (hospitalNow.Hour == 23 && hospitalNow.Minute >= 20) return;
+
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        context.VaccineSchedules.Add(new VaccineSchedule
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Tetanus Toxoid",
+            ScheduleType = "OneTime",
+            SpecificDate = DateOnly.FromDateTime(hospitalNow),
+            StartTime = "00:00",
+            EndTime = "23:40",
+            Status = "Active"
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+
+        var slots = new List<AppointmentResponseDto>();
+        for (var i = 0; i < 4; i++)
+        {
+            var dto = WalkIn("Tetanus Toxoid", boothLabel: null);
+            dto.PatientNic = $"94123456{i}V";
+            dto.PatientEmail = $"walkin{i}@example.com";
+            slots.Add(await service.CreateWalkInAppointmentAsync(hospital.Id, dto));
+        }
+
+        // The first three share one band that starts on a 20-minute boundary.
+        Assert.Equal(slots[0].TimeSlot, slots[1].TimeSlot);
+        Assert.Equal(slots[0].TimeSlot, slots[2].TimeSlot);
+        Assert.Equal(0, TimeOnly.Parse(slots[0].StartTime!).Minute % 20);
+
+        // The fourth takes the next band, unless the first three were already in the last one.
+        var lastBand = TimeOnly.Parse(slots[0].StartTime!) >= new TimeOnly(23, 20);
+        if (!lastBand)
+            Assert.Equal(TimeOnly.Parse(slots[0].StartTime!).AddMinutes(20), TimeOnly.Parse(slots[3].StartTime!));
+    }
+
+    [Fact]
+    public async Task GetAvailableSlotsAsync_handles_a_session_that_ends_just_before_midnight()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var date = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5)).AddDays(2);
+        var schedule = new VaccineSchedule
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Tetanus Toxoid",
+            ScheduleType = "OneTime",
+            SpecificDate = date,
+            StartTime = "23:00",
+            EndTime = "23:50",
+            Status = "Active"
+        };
+        context.VaccineSchedules.Add(schedule);
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+
+        // Used to loop forever: the slot clock wrapped past 00:00.
+        var slots = await service.GetAvailableTimeSlotsAsync(hospital.Id, "Tetanus Toxoid", date);
+
+        Assert.Equal(new[] { "23:00", "23:20" }, slots.Select(s => s.StartTime).ToArray());
+    }
+
+    [Fact]
+    public async Task CreateWalkInAppointmentAsync_uses_the_arrival_time_when_no_session_is_running()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+        var before = DateTime.UtcNow.AddHours(5.5);
+
+        var result = await service.CreateWalkInAppointmentAsync(hospital.Id, WalkIn("Tetanus Toxoid", boothLabel: null));
+
+        var start = TimeOnly.Parse(result.StartTime!);
+        Assert.InRange(start.Hour * 60 + start.Minute, before.Hour * 60 + before.Minute, before.Hour * 60 + before.Minute + 1);
     }
 
     [Fact]

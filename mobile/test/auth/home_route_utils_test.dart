@@ -11,6 +11,10 @@ void main() {
       expect(homeScreenForRole('ADMIN'), isA<UnsupportedRoleScreen>());
     });
 
+    test('routes front desk accounts away from the patient home', () {
+      expect(homeScreenForRole('FRONT_DESK'), isA<UnsupportedRoleScreen>());
+    });
+
     test('routes hospital users to the hospital home', () {
       expect(homeScreenForRole('HOSPITAL'), isA<HospitalMainScreen>());
     });

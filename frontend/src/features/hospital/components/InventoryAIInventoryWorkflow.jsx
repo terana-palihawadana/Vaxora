@@ -71,12 +71,17 @@ export default function InventoryAIInventoryWorkflow({ isOpen, onClose, onApprov
     if (!agentResponse?.draft) return;
     const draft = agentResponse.draft;
     const lineCount = Array.isArray(draft.line_items) ? draft.line_items.length : 0;
+    const isPurchaseOrder = draft.draft_type === 'purchase_order';
+    const batchCount = Array.isArray(draft.affected_batches) ? draft.affected_batches.length : 0;
     const ok = await confirm({
-      title: 'Approve AI purchase draft?',
-      message:
-        lineCount > 0
-          ? `Execute this draft with ${lineCount} line item${lineCount === 1 ? '' : 's'}? Stock changes will be applied.`
-          : 'Execute this draft? Stock changes will be applied.',
+      title: isPurchaseOrder ? 'Approve AI purchase draft?' : 'Approve AI expiry memo?',
+      message: isPurchaseOrder
+        ? lineCount > 0
+          ? `Send this order with ${lineCount} line item${lineCount === 1 ? '' : 's'} to the supplier? Stock is added when you receive the delivery.`
+          : 'Send this order to the supplier? Stock is added when you receive the delivery.'
+        : batchCount > 1
+          ? `Execute this memo? The recommended action is recorded for the first of the ${batchCount} listed batches.`
+          : 'Execute this memo? The recommended action will be recorded for the listed batch.',
       confirmLabel: 'Approve',
     });
     if (!ok) return;

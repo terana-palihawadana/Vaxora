@@ -557,6 +557,13 @@ public class AuthService : IAuthService
 
         if (user.Status == UserStatus.Suspended)
         {
+            if (user.Role == UserRole.FRONT_DESK &&
+                !await _context.StaffAffiliations.AnyAsync(a =>
+                    a.StaffUserId == user.Id && a.Status == AffiliationStatus.Active))
+            {
+                throw new InvalidOperationException("This front desk account has been removed by the hospital. Ask the hospital to add it again.");
+            }
+
             throw new InvalidOperationException("Your account has been suspended by the platform administrator. Please contact support.");
         }
 
@@ -1240,6 +1247,7 @@ public class AuthService : IAuthService
             UserRole.NURSE => StaffNameFormatter.WithRolePrefix(user.NurseProfile?.FullName ?? "Nurse", "Nurse"),
             UserRole.HOSPITAL => user.HospitalProfile?.HospitalName ?? "Hospital",
             UserRole.ADMIN => "System Administrator",
+            UserRole.FRONT_DESK => string.IsNullOrWhiteSpace(user.FullName) ? "Front Desk" : user.FullName,
             _ => "User"
         };
     }

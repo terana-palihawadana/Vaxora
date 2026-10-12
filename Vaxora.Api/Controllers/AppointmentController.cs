@@ -12,11 +12,54 @@ public class AppointmentsController : ControllerBase
 {
     private readonly IAppointmentService _appointmentService;
     private readonly ILogger<AppointmentsController> _logger;
+    private readonly IDeskAccessService? _deskAccess;
 
-    public AppointmentsController(IAppointmentService appointmentService, ILogger<AppointmentsController> logger)
+    public AppointmentsController(
+        IAppointmentService appointmentService,
+        ILogger<AppointmentsController> logger,
+        IDeskAccessService? deskAccess = null)
     {
         _appointmentService = appointmentService;
         _logger = logger;
+        _deskAccess = deskAccess;
+    }
+
+    private bool IsFrontDesk => User.IsInRole("FRONT_DESK");
+
+    /// <summary>
+    /// Front-desk accounts act for the hospital they are attached to; every other caller
+    /// acts as themselves. Returns a 403 result when a desk account has no active hospital.
+    /// </summary>
+    private async Task<(Guid ActingUserId, IActionResult? Denied)> ResolveActingUserAsync(Guid userId)
+    {
+        if (!IsFrontDesk)
+            return (userId, null);
+
+        try
+        {
+            if (_deskAccess == null)
+                throw new UnauthorizedAccessException("Front-desk access is not available.");
+            return (await _deskAccess.ResolveHospitalUserIdAsync(userId), null);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return (Guid.Empty, StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message }));
+        }
+    }
+
+    /// <summary>Keeps a trail of who at the desk acted, since the action itself runs as the hospital.</summary>
+    private async Task RecordDeskActionAsync(Guid userId, string action, string details)
+    {
+        if (!IsFrontDesk || _deskAccess == null) return;
+
+        try
+        {
+            await _deskAccess.RecordActionAsync(userId, action, details);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not record front-desk action {Action}", action);
+        }
     }
 
     /// <summary>
@@ -143,10 +186,13 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> GetHospitalAppointments([FromQuery] string? date = null, [FromQuery] string? status = null)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var hospitalUserId))
+        if (!Guid.TryParse(userIdStr, out var callerUserId))
         {
             return Unauthorized(new { message = "Invalid user token." });
         }
+
+        var (hospitalUserId, denied) = await ResolveActingUserAsync(callerUserId);
+        if (denied != null) return denied;
 
         DateOnly? parsedDate = null;
         if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
@@ -171,18 +217,22 @@ public class AppointmentsController : ControllerBase
     /// NIC matches; otherwise auto-creates a patient account so doses can be recorded.
     /// </summary>
     [HttpPost("hospital/walk-in")]
-    [Authorize(Roles = "HOSPITAL")]
+    [Authorize(Roles = "HOSPITAL,FRONT_DESK")]
     public async Task<IActionResult> CreateWalkInAppointment([FromBody] CreateWalkInAppointmentDto dto)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var hospitalUserId))
+        if (!Guid.TryParse(userIdStr, out var callerUserId))
         {
             return Unauthorized(new { message = "Invalid user token." });
         }
 
+        var (hospitalUserId, denied) = await ResolveActingUserAsync(callerUserId);
+        if (denied != null) return denied;
+
         try
         {
             var appointment = await _appointmentService.CreateWalkInAppointmentAsync(hospitalUserId, dto);
+            await RecordDeskActionAsync(callerUserId, "DESK_WALK_IN", $"Front desk registered walk-in appointment {appointment.Id}");
             return Ok(appointment);
         }
         catch (KeyNotFoundException ex)
@@ -293,14 +343,18 @@ public class AppointmentsController : ControllerBase
     public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateAppointmentStatusDto dto)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var actorUserId))
+        if (!Guid.TryParse(userIdStr, out var callerUserId))
         {
             return Unauthorized(new { message = "Invalid user token." });
         }
 
+        var (actorUserId, denied) = await ResolveActingUserAsync(callerUserId);
+        if (denied != null) return denied;
+
         try
         {
             var updated = await _appointmentService.UpdateAppointmentStatusAsync(actorUserId, id, dto);
+            await RecordDeskActionAsync(callerUserId, "DESK_STATUS_UPDATE", $"Front desk set appointment {id} to {updated.Status}");
             return Ok(updated);
         }
         catch (KeyNotFoundException ex)
@@ -326,18 +380,23 @@ public class AppointmentsController : ControllerBase
     /// Mark a patient as arrived (hospital desk or affiliated doctor/nurse), today only.
     /// </summary>
     [HttpPost("{id}/check-in")]
-    [Authorize(Roles = "HOSPITAL,DOCTOR,NURSE")]
+    [Authorize(Roles = "HOSPITAL,FRONT_DESK,DOCTOR,NURSE")]
     public async Task<IActionResult> CheckIn(Guid id)
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (!Guid.TryParse(userIdStr, out var actorUserId))
+        if (!Guid.TryParse(userIdStr, out var callerUserId))
         {
             return Unauthorized(new { message = "Invalid user token." });
         }
 
+        var (actorUserId, denied) = await ResolveActingUserAsync(callerUserId);
+        if (denied != null) return denied;
+
         try
         {
-            return Ok(await _appointmentService.CheckInAsync(actorUserId, id));
+            var checkedIn = await _appointmentService.CheckInAsync(actorUserId, id);
+            await RecordDeskActionAsync(callerUserId, "DESK_CHECK_IN", $"Front desk checked in appointment {id}");
+            return Ok(checkedIn);
         }
         catch (KeyNotFoundException ex)
         {
@@ -404,16 +463,20 @@ public class AppointmentsController : ControllerBase
     {
         var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var callerUserId))
         {
             return Unauthorized(new { message = "Invalid user token." });
         }
 
-        var isHospital = User.IsInRole("HOSPITAL");
+        var (userId, denied) = await ResolveActingUserAsync(callerUserId);
+        if (denied != null) return denied;
+
+        var isHospital = User.IsInRole("HOSPITAL") || IsFrontDesk;
 
         try
         {
             await _appointmentService.CancelAppointmentAsync(userId, id, isHospital);
+            await RecordDeskActionAsync(callerUserId, "DESK_CANCEL", $"Front desk cancelled appointment {id}");
             return Ok(new { message = "Appointment cancelled successfully." });
         }
         catch (InvalidOperationException ex)

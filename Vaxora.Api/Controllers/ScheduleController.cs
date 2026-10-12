@@ -12,11 +12,16 @@ public class ScheduleController : ControllerBase
 {
     private readonly IScheduleService _scheduleService;
     private readonly ILogger<ScheduleController> _logger;
+    private readonly IDeskAccessService? _deskAccess;
 
-    public ScheduleController(IScheduleService scheduleService, ILogger<ScheduleController> logger)
+    public ScheduleController(
+        IScheduleService scheduleService,
+        ILogger<ScheduleController> logger,
+        IDeskAccessService? deskAccess = null)
     {
         _scheduleService = scheduleService;
         _logger = logger;
+        _deskAccess = deskAccess;
     }
 
     [HttpPost]
@@ -102,7 +107,7 @@ public class ScheduleController : ControllerBase
     }
 
     [HttpGet("hospital")]
-    [Authorize(Roles = "HOSPITAL")]
+    [Authorize(Roles = "HOSPITAL,FRONT_DESK")]
     public async Task<IActionResult> GetHospitalSchedules()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value
@@ -111,6 +116,21 @@ public class ScheduleController : ControllerBase
         if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var hospitalUserId))
         {
             return Unauthorized(new { message = "Invalid authentication claims." });
+        }
+
+        // The front desk reads the sessions of the hospital it is attached to.
+        if (User.IsInRole("FRONT_DESK"))
+        {
+            try
+            {
+                if (_deskAccess == null)
+                    throw new UnauthorizedAccessException("Front-desk access is not available.");
+                hospitalUserId = await _deskAccess.ResolveHospitalUserIdAsync(hospitalUserId);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+            }
         }
 
         try

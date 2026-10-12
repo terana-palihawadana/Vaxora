@@ -13,7 +13,8 @@ public enum TransactionType
     Restock,
     Wastage,
     Adjustment,
-    Issue
+    Issue,
+    Order
 }
 
 public enum WastageReason
@@ -30,5 +31,7 @@ public enum BatchStatus
 {
     Active,
     Expired,
-    Depleted
+    Depleted,
+    /// <summary>Ordered from the supplier but not delivered yet. Holds no usable stock.</summary>
+    Ordered
 }

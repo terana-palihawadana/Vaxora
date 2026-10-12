@@ -210,7 +210,7 @@ class _StaffHomeScreenState extends State<StaffHomeScreen> {
                   icon: Icons.swap_horiz,
                   title: 'Cover requests',
                   detail:
-                      '$_pendingCovers request${_pendingCovers == 1 ? '' : 's'} need${_pendingCovers == 1 ? 's' : ''} a decision.',
+                      '$_pendingCovers request${_pendingCovers == 1 ? '' : 's'} waiting for the hospital to review.',
                   onTap: () => widget.onNavigateTab(1),
                 ),
               const SizedBox(height: 14),

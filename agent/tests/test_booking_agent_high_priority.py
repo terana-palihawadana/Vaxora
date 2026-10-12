@@ -47,6 +47,7 @@ class FakeApi:
         inventory: Optional[List[Dict[str, Any]]] = None,
         dates: Optional[List[Dict[str, Any]]] = None,
         slots_by_date: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        dates_by_hospital: Optional[Dict[str, List[Dict[str, Any]]]] = None,
         booking_response: Optional[Dict[str, Any]] = None,
         post_error: Optional[Exception] = None,
     ):
@@ -55,6 +56,7 @@ class FakeApi:
         self.inventory = inventory or []
         self.dates = dates or []
         self.slots_by_date = slots_by_date or {}
+        self.dates_by_hospital = dates_by_hospital or {}
         self.booking_response = booking_response or {"id": "apt-new", "status": "Confirmed", "fee": 0.0}
         self.post_error = post_error
         self.gets: List[tuple] = []
@@ -70,7 +72,7 @@ class FakeApi:
         if endpoint == "/inventory/vaccines-with-hospitals":
             return self.inventory
         if endpoint == "/appointments/available-dates":
-            return self.dates
+            return self.dates_by_hospital.get((params or {}).get("hospitalUserId"), self.dates)
         if endpoint == "/appointments/available-slots":
             return self.slots_by_date.get((params or {}).get("date"), [])
         return []
@@ -559,6 +561,55 @@ class TestBookAppointmentPayment:
         assert res["is_free"] is True
         assert res["payhere_payload"] is None
 
+    async def test_paid_schedule_paid_at_the_desk_skips_online_checkout(self, monkeypatch):
+        api = FakeApi(
+            schedules=[_schedule(price=1000.0)],
+            booking_response={
+                "id": "apt-desk", "status": "PendingPayment", "fee": 1000.0, "paymentMethod": "Hospital",
+            },
+        ).install(monkeypatch)
+
+        res = await tools.tool_book_appointment(
+            hospital_user_id=HOSPITAL_ID,
+            vaccine_name="AstraZeneca",
+            appointment_date=_days(4),
+            time_slot="09:00 AM - 09:20 AM",
+            payment_method="Hospital",
+            token="t",
+        )
+
+        _, payload = api.booking_posts[0]
+        assert payload["paymentMethod"] == "Hospital"
+        assert not any(endpoint == "/payment/payhere-init" for endpoint, _ in api.posts)
+        assert res["is_free"] is False
+        assert res["pay_at_desk"] is True
+        assert res["payhere_payload"] is None
+
+    async def test_pay_at_the_desk_comes_from_the_patient_approval(self, monkeypatch):
+        api = FakeApi(schedules=[_schedule(price=1000.0)]).install(monkeypatch)
+        agent = _agent_with(monkeypatch, _tool_call("book_appointment", _booking_args(payment_method="PayHere")))
+
+        await agent.run(
+            messages=[{
+                "role": "user",
+                "content": "I approve and confirm booking for AstraZeneca. I will pay at the hospital desk on the day.",
+            }],
+            token="patient-token",
+        )
+
+        assert api.booking_posts[0][1]["paymentMethod"] == "Hospital"
+
+    async def test_model_cannot_choose_pay_at_the_desk_by_itself(self, monkeypatch):
+        api = FakeApi(schedules=[_schedule(price=1000.0)]).install(monkeypatch)
+        agent = _agent_with(monkeypatch, _tool_call("book_appointment", _booking_args(payment_method="Hospital")))
+
+        await agent.run(
+            messages=[{"role": "user", "content": "I approve and confirm booking this appointment."}],
+            token="patient-token",
+        )
+
+        assert api.booking_posts[0][1]["paymentMethod"] == "PayHere"
+
     async def test_booking_payload_uses_cleaned_date_and_slot(self, monkeypatch):
         api = FakeApi(schedules=[_schedule()]).install(monkeypatch)
         target = _days(4)
@@ -665,7 +716,7 @@ class TestLlmFailure:
         monkeypatch.setattr(agent, "_call_llm", broken_llm)
 
         result = await agent.run(
-            messages=[{"role": "user", "content": "Book AstraZeneca next week"}],
+            messages=[{"role": "user", "content": "Hello, can you help me?"}],
             token="patient-token",
             user_id="user-123",
         )
@@ -685,3 +736,227 @@ class TestLlmFailure:
         assert persisted["final_outcome"] == "Failed"
         assert persisted["approval_status"] == "failed"
         assert "503 Service Unavailable" in json.loads(persisted["errors_json"])[0]
+
+
+# ---------------------------------------------------------------------------
+# 9. A proposal the model only describes in text is never shown as real
+# ---------------------------------------------------------------------------
+
+INVENTED_PROPOSAL = {
+    "role": "assistant",
+    "content": (
+        "I have matched and prepared your optimal appointment slot: BCG at General Hospital. "
+        "Please review the proposal card below and tap 'Confirm & Book' to finalize."
+    ),
+    "tool_calls": None,
+}
+
+
+class TestProposalMustComeFromATool:
+    async def test_model_is_sent_back_to_look_the_slot_up(self, monkeypatch):
+        d1 = _days(2)
+        FakeApi(schedules=[_schedule()], dates=[{"date": d1}], slots_by_date={d1: [MORNING]}).install(monkeypatch)
+        agent = _agent_with(
+            monkeypatch,
+            INVENTED_PROPOSAL,
+            _tool_call("autonomous_find_and_propose", {"vaccine_name": "AstraZeneca", "hospital_name_or_id": HOSPITAL_ID}),
+        )
+
+        result = await agent.run(messages=[{"role": "user", "content": "ok go ahead then"}], token="t")
+
+        assert result["proposal"] is not None
+        assert result["proposal"]["appointment_date"] == d1
+        assert result["approvalRequired"] is True
+
+    async def test_invented_proposal_text_is_replaced_when_no_slot_is_found(self, monkeypatch):
+        FakeApi().install(monkeypatch)
+        agent = _agent_with(monkeypatch, INVENTED_PROPOSAL, INVENTED_PROPOSAL)
+
+        result = await agent.run(messages=[{"role": "user", "content": "ok go ahead then"}], token="t")
+
+        assert result["proposal"] is None
+        assert result["approvalRequired"] is False
+        assert "Confirm & Book" not in result["content"]
+        assert "check again" in result["content"]
+
+
+class TestHospitalNameMatching:
+    async def test_closest_hospital_name_wins_over_the_first_listed(self, monkeypatch):
+        general = "11111111-1111-1111-1111-111111111111"
+        lakeside = "33333333-3333-3333-3333-333333333333"
+        FakeApi(
+            inventory=[{
+                "name": "BCG",
+                "hospitals": [
+                    {"userId": general, "name": "General Hospital"},
+                    {"userId": lakeside, "name": "Lakeside General"},
+                ],
+            }]
+        ).install(monkeypatch)
+
+        assert (await tools._resolve_hospital_and_vaccine("Lakeside General", "BCG", token="t"))[0] == lakeside
+        assert (await tools._resolve_hospital_and_vaccine("General Hospital", "BCG", token="t"))[0] == general
+        assert (await tools._resolve_hospital_and_vaccine("lakeside", "BCG", token="t"))[0] == lakeside
+
+
+class TestSearchAcrossHospitals:
+    GENERAL = "11111111-1111-1111-1111-111111111111"
+    LAKESIDE = "33333333-3333-3333-3333-333333333333"
+
+    def _api(self, monkeypatch, open_day: str) -> FakeApi:
+        general = {**_schedule(), "id": "sched-general", "hospitalUserId": self.GENERAL, "hospitalName": "General Hospital"}
+        lakeside = {**_schedule(price=100.0), "id": "sched-lakeside", "hospitalUserId": self.LAKESIDE, "hospitalName": "Lakeside General"}
+        return FakeApi(
+            schedules=[general, lakeside],
+            inventory=[{"name": "AstraZeneca", "hospitals": [
+                {"userId": self.GENERAL, "name": "General Hospital"},
+                {"userId": self.LAKESIDE, "name": "Lakeside General"},
+            ]}],
+            dates_by_hospital={self.GENERAL: [], self.LAKESIDE: [{"date": open_day}]},
+            slots_by_date={open_day: [MORNING]},
+        ).install(monkeypatch)
+
+    async def test_no_hospital_named_finds_the_one_with_an_open_slot(self, monkeypatch):
+        day = _days(1)
+        self._api(monkeypatch, day)
+
+        res = await tools.tool_autonomous_find_and_propose(vaccine_name="AstraZeneca", token="t")
+
+        assert res["success"] is True
+        assert res["proposal"]["hospital_user_id"] == self.LAKESIDE
+        assert res["proposal"]["hospital_name"] == "Lakeside General"
+        assert res["proposal"]["appointment_date"] == day
+        assert res["proposal"]["price"] == 100.0
+
+    async def test_named_hospital_with_no_session_points_to_the_others(self, monkeypatch):
+        self._api(monkeypatch, _days(1))
+
+        res = await tools.tool_autonomous_find_and_propose(
+            vaccine_name="AstraZeneca", hospital_name_or_id="General Hospital", token="t"
+        )
+
+        assert res["success"] is False
+        assert "Lakeside General" in res["error"]
+
+
+# ---------------------------------------------------------------------------
+# 10. Everyday requests still work when the model does not act
+# ---------------------------------------------------------------------------
+
+REASONING_ONLY = {
+    "role": "assistant",
+    "content": "Here's a thinking process: 1. **Analyze User Input:** User says book next available",
+    "tool_calls": None,
+}
+
+
+class TestWorksWithoutTheModel:
+    def _api(self, monkeypatch, **kwargs) -> FakeApi:
+        day = _days(1)
+        defaults = dict(
+            schedules=[_schedule(price=1000.0)],
+            inventory=[{"name": "AstraZeneca", "hospitals": [{"userId": HOSPITAL_ID, "name": "Royal Hospital"}]}],
+            dates=[{"date": day}],
+            slots_by_date={day: [MORNING, AFTERNOON]},
+        )
+        defaults.update(kwargs)
+        return FakeApi(**defaults).install(monkeypatch)
+
+    async def test_booking_request_gets_a_real_proposal_when_the_model_only_thinks_aloud(self, monkeypatch):
+        self._api(monkeypatch)
+        agent = _agent_with(monkeypatch, REASONING_ONLY)
+
+        result = await agent.run(messages=[{"role": "user", "content": "book next available astrazeneca"}], token="t")
+
+        assert result["proposal"]["vaccine_name"] == "AstraZeneca"
+        assert result["proposal"]["hospital_user_id"] == HOSPITAL_ID
+        assert result["approvalRequired"] is True
+        assert "thinking process" not in result["content"]
+
+    async def test_follow_up_without_the_vaccine_name_uses_the_earlier_message(self, monkeypatch):
+        self._api(monkeypatch)
+        agent = _agent_with(monkeypatch, REASONING_ONLY)
+
+        result = await agent.run(
+            messages=[
+                {"role": "user", "content": "book next available astrazeneca"},
+                {"role": "assistant", "content": "No slots today."},
+                {"role": "user", "content": "book for tmr then"},
+            ],
+            token="t",
+        )
+
+        assert result["proposal"]["appointment_date"] == _days(1)
+
+    async def test_booking_request_is_served_when_the_model_is_down(self, monkeypatch):
+        self._api(monkeypatch)
+        agent = BookingAgent()
+
+        async def broken_llm(conversation, tools=None):
+            raise RuntimeError("429 Too Many Requests")
+
+        monkeypatch.setattr(agent, "_call_llm", broken_llm)
+
+        result = await agent.run(messages=[{"role": "user", "content": "Book AstraZeneca tomorrow afternoon"}], token="t")
+
+        assert result["proposal"]["time_slot"] == AFTERNOON["slot"]
+        assert result["finalOutcome"] == "AwaitingApproval"
+
+    async def test_approve_button_books_without_the_model(self, monkeypatch):
+        api = self._api(monkeypatch, booking_response={
+            "id": "apt-desk", "status": "PendingPayment", "fee": 1000.0, "paymentMethod": "Hospital",
+        })
+        agent = BookingAgent()
+
+        async def must_not_be_called(conversation, tools=None):
+            raise AssertionError("the model is not needed to carry out an approval")
+
+        monkeypatch.setattr(agent, "_call_llm", must_not_be_called)
+
+        result = await agent.run(
+            messages=[{
+                "role": "user",
+                "content": f"I approve and confirm booking for AstraZeneca at Royal Hospital on {_days(1)} "
+                           "at 09:00 AM - 09:20 AM. I will pay at the hospital desk on the day. Please proceed with booking.",
+            }],
+            token="t",
+        )
+
+        _, payload = api.booking_posts[0]
+        assert payload["paymentMethod"] == "Hospital"
+        assert payload["hospitalUserId"] == HOSPITAL_ID
+        assert payload["timeSlot"] == "09:00 AM - 09:20 AM"
+        assert result["booking"]["pay_at_desk"] is True
+        assert "hospital desk" in result["content"]
+
+    async def test_a_booking_typed_without_the_approval_wording_is_not_carried_out(self, monkeypatch):
+        api = self._api(monkeypatch)
+        agent = _agent_with(monkeypatch, REASONING_ONLY)
+
+        result = await agent.run(
+            messages=[{"role": "user", "content": f"book AstraZeneca at Royal Hospital on {_days(1)} at 09:00 AM - 09:20 AM"}],
+            token="t",
+        )
+
+        assert api.booking_posts == []
+        assert result["booking"] is None
+        assert result["approvalRequired"] is True
+
+    async def test_my_appointments_are_listed_when_the_model_does_not_act(self, monkeypatch):
+        self._api(monkeypatch, appointments=[{
+            "id": "a1", "vaccineName": "AstraZeneca", "hospitalName": "Royal Hospital",
+            "appointmentDate": _days(3), "timeSlot": "09:00 AM - 09:20 AM", "status": "Confirmed",
+        }])
+        agent = _agent_with(monkeypatch, REASONING_ONLY)
+
+        result = await agent.run(messages=[{"role": "user", "content": "Show my booked appointments"}], token="t")
+
+        assert "AstraZeneca" in result["content"] and "Royal Hospital" in result["content"]
+
+    async def test_available_vaccines_are_listed_when_the_model_does_not_act(self, monkeypatch):
+        self._api(monkeypatch)
+        agent = _agent_with(monkeypatch, REASONING_ONLY)
+
+        result = await agent.run(messages=[{"role": "user", "content": "What vaccines are available right now?"}], token="t")
+
+        assert "AstraZeneca" in result["content"] and "Royal Hospital (LKR 1,000.00)" in result["content"]

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import agentService from '../services/agentService';
+import { IconBot, IconClose } from '../../../shared/icons/AppIcons';
 
 const formatMarkdownText = (text, isUser = false) => {
   if (!text) return '';
@@ -91,7 +92,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: 'Hello! 👋 I am your **Vaxora AI Booking Concierge** powered by Qwen 14B.\n\nI can help you:\n- 🔍 Find which hospitals have your required vaccine in stock\n- 📅 Discover clinic schedule dates & available 20-minute slots\n- 💉 Reserve your appointment with instant user confirmation\n- 💳 Handle PayHere checkout for private vaccines\n\nHow can I help you today?'
+      content: 'Hello! 👋 I am your **Vaxora AI Booking Concierge**.\n\nI can help you:\n- 🔍 Find which hospitals have your required vaccine in stock\n- 📅 Discover clinic schedule dates & available 20-minute slots\n- 💉 Reserve your appointment with instant user confirmation\n- 💳 Pay online with PayHere or at the hospital on the day\n\nHow can I help you today?'
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -175,8 +176,10 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
     }
   };
 
-  const handleApproveProposal = (proposal) => {
-    const prompt = `I approve and confirm booking for ${proposal.vaccine_name} at ${proposal.hospital_name} on ${proposal.appointment_date} at ${proposal.time_slot}. Please proceed with booking.`;
+  const handleApproveProposal = (proposal, payAtDesk = false) => {
+    // The agent reads "pay at the hospital desk on the day" to skip online checkout.
+    const payment = payAtDesk ? ' I will pay at the hospital desk on the day.' : '';
+    const prompt = `I approve and confirm booking for ${proposal.vaccine_name} at ${proposal.hospital_name} on ${proposal.appointment_date} at ${proposal.time_slot}.${payment} Please proceed with booking.`;
     handleSendMessage(prompt);
   };
 
@@ -203,9 +206,9 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
       overflow: 'hidden',
       fontFamily: 'inherit'
     }}>
-      {/* Header */}
+      {/* Header — same pattern as StaffSchedulingAgentChat */}
       <div style={{
-        background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+        background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
         color: 'var(--color-text-inverse)',
         padding: '16px 20px',
         display: 'flex',
@@ -221,15 +224,14 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
             background: 'rgba(255, 255, 255, 0.2)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '20px'
+            justifyContent: 'center'
           }}>
-            🤖
+            <IconBot size={20} />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Vaxora AI Booking Concierge</h3>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--color-text-inverse)' }}>Vaxora AI Booking Concierge</h3>
             <p style={{ margin: '2px 0 0', fontSize: '12px', opacity: 0.9 }}>
-              Multi-Step Reasoning Agent • Powered by Qwen 14B
+              Finds vaccines, dates and slots for you
             </p>
           </div>
         </div>
@@ -241,8 +243,8 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: agentHealth?.online ? 'rgba(var(--rgb-success), 0.2)' : 'rgba(var(--rgb-error), 0.2)',
-            border: `1px solid ${agentHealth?.online ? 'rgba(var(--rgb-success), 0.4)' : 'rgba(var(--rgb-error), 0.4)'}`,
+            background: 'var(--color-surface)',
+            color: agentHealth?.online ? 'var(--color-success)' : 'var(--color-error)',
             padding: '4px 10px',
             borderRadius: '20px',
             fontSize: '12px',
@@ -261,8 +263,10 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
 
           {onClose && (
             <button
+              type="button"
               onClick={onClose}
               title="Close Booking Agent"
+              aria-label="Close booking agent"
               style={{
                 background: 'rgba(255, 255, 255, 0.2)',
                 border: 'none',
@@ -281,7 +285,7 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
               onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.35)'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)'}
             >
-              ✕
+              <IconClose size={16} />
             </button>
           )}
         </div>
@@ -299,6 +303,8 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
       }}>
         {messages.map((msg, index) => {
           const isUser = msg.role === 'user';
+          // Only the newest proposal can be answered, so an old card cannot book twice.
+          const isLatest = index === messages.length - 1;
           return (
             <div
               key={index}
@@ -367,11 +373,12 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
                     <button
                       onClick={handleDeclineProposal}
-                      disabled={isLoading}
+                      disabled={isLoading || !isLatest}
                       style={{
+                        opacity: isLatest ? 1 : 0.5,
                         padding: '8px 14px',
                         borderRadius: '6px',
                         border: '1px solid var(--color-border-card)',
@@ -384,10 +391,32 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                     >
                       ✕ Decline / Change
                     </button>
+                    {!msg.proposal.is_free && (
+                      <button
+                        onClick={() => handleApproveProposal(msg.proposal, true)}
+                        disabled={isLoading || !isLatest}
+                        title={isLatest ? 'Book now and pay at the hospital desk on the day' : 'This proposal has already been answered'}
+                        style={{
+                          opacity: isLatest ? 1 : 0.5,
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--color-success)',
+                          background: 'var(--color-surface)',
+                          color: 'var(--color-success)',
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Pay on the Day
+                      </button>
+                    )}
                     <button
                       onClick={() => handleApproveProposal(msg.proposal)}
-                      disabled={isLoading}
+                      disabled={isLoading || !isLatest}
+                      title={isLatest ? undefined : 'This proposal has already been answered'}
                       style={{
+                        opacity: isLatest ? 1 : 0.5,
                         padding: '8px 18px',
                         borderRadius: '6px',
                         border: 'none',
@@ -420,7 +449,11 @@ export default function BookingAgentChat({ onAppointmentCreated, launchPayHere, 
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-success)', fontWeight: 700, fontSize: '13px' }}>
                     <span>🎉</span>
-                    {msg.booking.is_free ? 'Appointment Confirmed!' : 'Appointment Reserved (Pending Payment)'}
+                    {msg.booking.is_free
+                      ? 'Appointment Confirmed!'
+                      : (msg.booking.appointment?.paymentMethod || msg.booking.appointment?.PaymentMethod) === 'Hospital'
+                      ? 'Appointment Reserved (Pay on the Day)'
+                      : 'Appointment Reserved (Pending Payment)'}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--color-success)', marginTop: '6px', lineHeight: '1.5' }}>
                     Appointment ID: <code>{msg.booking.appointment?.id || msg.booking.appointment?.Id}</code>

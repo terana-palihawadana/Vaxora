@@ -1,5 +1,6 @@
 import { deferEffectCallback } from "../../../shared/utils/deferEffectCallback.js";
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
+import { hospitalToday } from "../../hospital/utils/hospitalDate";
 import clinicalPatientService from "../services/clinicalPatientService";
 import staffAppointmentService from "../../staff/services/staffAppointmentService";
 import {
@@ -45,14 +46,10 @@ function mapPatientDetail(detail) {
   };
 }
 
+/** Compared against the hospital's calendar day, like the API does. */
 function isPastDate(dateStr) {
   if (!dateStr) return false;
-  const day = String(dateStr).slice(0, 10);
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth() + 1).padStart(2, "0");
-  const d = String(today.getDate()).padStart(2, "0");
-  return day < `${y}-${m}-${d}`;
+  return String(dateStr).slice(0, 10) < hospitalToday();
 }
 
 function statusPill(status, { overdue = false } = {}) {
@@ -1003,14 +1000,12 @@ export default function DoctorPatientsTab() {
                             const rows = groupedHistory[group.key] || [];
                             if (rows.length === 0) return null;
                             return (
-                              <>
-                                <tr
-                                  key={`group-${group.key}`}
-                                  className="ph-record-row-missed"
-                                >
+                              <Fragment key={`group-${group.key}`}>
+                                <tr>
                                   <td
                                     colSpan={5}
                                     style={{
+                                      background: "var(--color-soft-panel)",
                                       fontWeight: 700,
                                       color: "var(--color-text-title)",
                                       fontSize: "0.8125rem",
@@ -1023,7 +1018,7 @@ export default function DoctorPatientsTab() {
                                 {rows.map((r) => (
                                   <MedicalHistoryRow key={r.id} record={r} />
                                 ))}
-                              </>
+                              </Fragment>
                             );
                           })}
                         </tbody>

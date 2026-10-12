@@ -7,33 +7,33 @@ import chartReviews from '../../../assets/icons/chart_reviews.svg';
 const statsData = [
   {
     icon: badgeExperience,
-    alt: 'Experience badge',
-    highlight: '5 years experience',
-    subtext: 'Since 2019',
+    alt: 'Verification badge',
+    highlight: 'Verified staff',
+    subtext: 'Ministry approved',
   },
   {
     icon: networkMembers,
-    alt: 'Connected members',
-    highlight: '10K plus',
-    subtext: 'members',
+    alt: 'Connected network',
+    highlight: 'AI booking',
+    subtext: 'Finds your slot',
   },
   {
     icon: hospitalDoctors,
     alt: 'Hospitals and doctors',
-    highlight: '20+ hospitals',
-    subtext: '60+ doctors',
+    highlight: 'Live booth queue',
+    subtext: 'Arrival to discharge',
   },
   {
     icon: chartReviews,
-    alt: 'Reviews growth chart',
-    highlight: '2K plus',
-    subtext: 'Reviews',
+    alt: 'Records chart',
+    highlight: 'Digital records',
+    subtext: 'Every dose on file',
   },
 ];
 
 export default function StatsSection() {
   return (
-    <section className="stats-section" aria-label="Portal Statistics">
+    <section className="stats-section" aria-label="Portal highlights">
       <div className="stats-grid">
         {statsData.map((stat, idx) => (
           <div key={idx} className="stat-card">

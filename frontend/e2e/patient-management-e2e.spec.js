@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
-const PATIENT_EMAIL = 'patient1@vaxora.lk';
-const PATIENT_PASSWORD = 'Patient@123'; // <- adjust to the seeded password
 
 async function loginAsPatient(page) {
   await page.goto('/login');
-  await page.getByLabel(/email/i).fill(PATIENT_EMAIL);
-  await page.getByLabel(/password/i).fill(PATIENT_PASSWORD);
+  await page.getByLabel(/email/i).fill(TEST_ACCOUNTS.patient.email);
+  await page.getByLabel(/password/i).fill(TEST_ACCOUNTS.patient.password);
   await page.getByRole('button', { name: /log in|sign in/i }).click();
   await page.waitForURL('**/patient/**', { timeout: 15000 });
 }

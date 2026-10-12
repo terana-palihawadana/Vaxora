@@ -7,7 +7,7 @@
 //
 // Run (API on the host at :5004, k6 in Docker):
 //   docker run --rm -v "$PWD/perf:/perf" -e BASE_URL=http://host.docker.internal:5004 \
-//     grafana/k6 run /perf/k6/staff-api-load.js
+//     -e HOSPITAL_PASSWORD=... //     grafana/k6 run /perf/k6/staff-api-load.js
 
 import http from 'k6/http';
 import { check, group, sleep } from 'k6';
@@ -15,7 +15,7 @@ import { Rate, Trend } from 'k6/metrics';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:5004';
 const EMAIL = __ENV.HOSPITAL_EMAIL || 'hospital@vaxora.local';
-const PASSWORD = __ENV.HOSPITAL_PASSWORD || 'Hospital@123';
+const PASSWORD = __ENV.HOSPITAL_PASSWORD;
 const OUT_DIR = __ENV.OUT_DIR || '/perf/results';
 
 const endpointErrors = new Rate('endpoint_errors');

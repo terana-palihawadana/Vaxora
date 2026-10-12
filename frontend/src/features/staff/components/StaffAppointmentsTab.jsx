@@ -11,7 +11,6 @@ const STATUS_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'upcoming', label: 'Upcoming' },
   { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
 ];
 
 /** Filter bucket, display label and colour tone for an appointment status. */
@@ -57,7 +56,9 @@ function pickHospitalId(affiliations) {
 }
 
 /**
- * Read-only booking list for doctors and nurses: any day at an affiliated hospital.
+ * Read-only booking list for doctors and nurses at an affiliated hospital.
+ * The API serves the clinical session window only (yesterday, today, tomorrow) and
+ * leaves out cancelled bookings, so the page offers exactly those days.
  * Treating patients stays on Home; this page is for checking and planning the day.
  * ?date=yyyy-MM-dd opens a specific day (Home links here with tomorrow's date).
  */
@@ -65,7 +66,12 @@ export default function StaffAppointmentsTab() {
   const today = hospitalToday();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedDate = searchParams.get('date');
-  const date = isDateKey(requestedDate) ? requestedDate : today;
+  const earliest = addHospitalDays(today, -1);
+  const latest = addHospitalDays(today, 1);
+  const date =
+    isDateKey(requestedDate) && requestedDate >= earliest && requestedDate <= latest
+      ? requestedDate
+      : today;
 
   const [affiliations, setAffiliations] = useState([]);
   const [hospitalUserId, setHospitalUserId] = useState('');
@@ -163,7 +169,7 @@ export default function StaffAppointmentsTab() {
       <PortalHero
         eyebrow="Schedule"
         title="Appointments"
-        subtitle={`Every booked slot at ${hospitalName}. Check any day and plan ahead.`}
+        subtitle={`Booked slots at ${hospitalName} for yesterday, today and tomorrow.`}
       />
 
       <div className="hospital-metrics-grid hospital-metrics-grid--3" aria-label="Day summary" style={{ marginBottom: '24px' }}>
@@ -213,6 +219,7 @@ export default function StaffAppointmentsTab() {
               type="button"
               className="staff-shift-week-nav-btn"
               onClick={() => setDate(addHospitalDays(date, -1))}
+              disabled={date <= earliest}
               aria-label="Previous day"
             >
               ‹ Prev
@@ -229,6 +236,7 @@ export default function StaffAppointmentsTab() {
               type="button"
               className="staff-shift-week-nav-btn"
               onClick={() => setDate(addHospitalDays(date, 1))}
+              disabled={date >= latest}
               aria-label="Next day"
             >
               Next ›

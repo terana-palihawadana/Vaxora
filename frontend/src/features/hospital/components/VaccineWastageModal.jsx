@@ -1,15 +1,33 @@
 import { useState } from 'react';
+import { hospitalToday } from '../utils/hospitalDate';
 
-export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, onLogWastage }) {
-  const [formData, setFormData] = useState({
-    vaccineId: inventoryItems && inventoryItems.length > 0 ? inventoryItems[0].id : '',
-    lotNumber: inventoryItems && inventoryItems.length > 0 ? inventoryItems[0].lotNumber : '',
+function initialForm(inventoryItems) {
+  const first = inventoryItems && inventoryItems.length > 0 ? inventoryItems[0] : null;
+  return {
+    vaccineId: first ? first.id : '',
+    lotNumber: first ? first.lotNumber : '',
     quantity: '5',
     reason: 'vial_breakage',
     reportedBy: 'Staff Pharmacist / Nurse Station 2',
     notes: '',
-    incidentDate: new Date().toISOString().split('T')[0],
-  });
+    incidentDate: hospitalToday(),
+  };
+}
+
+export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, onLogWastage }) {
+  const [formData, setFormData] = useState(() => initialForm(inventoryItems));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Start fresh each time the modal opens: stock loads after this component mounts,
+  // so the first batch can only be preselected at open time.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
+    setSubmitting(false);
+    setError('');
+    setFormData(initialForm(inventoryItems));
+  }
 
   if (!isOpen) return null;
 
@@ -28,25 +46,42 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const qty = parseInt(formData.quantity, 10);
     if (isNaN(qty) || qty <= 0) {
-      alert('Please enter a valid quantity of wasted/discarded doses.');
+      setError('Please enter a valid quantity of wasted/discarded doses.');
+      return;
+    }
+    const batch = inventoryItems.find((item) => item.id === formData.vaccineId);
+    if (!batch) {
+      setError('Select the batch the wasted vials came from.');
+      return;
+    }
+    if (qty > Number(batch.available ?? 0)) {
+      setError(`Only ${batch.available} vials of this lot are in stock.`);
       return;
     }
 
-    // FIX: pass vaccineId (batch GUID) as string, not parsed int
-    onLogWastage({
-      ...formData,
-      quantity: qty,
-    });
-
-    onClose();
+    setSubmitting(true);
+    setError('');
+    try {
+      // FIX: pass vaccineId (batch GUID) as string, not parsed int
+      await onLogWastage({
+        ...formData,
+        quantity: qty,
+      });
+      onClose();
+    } catch (err) {
+      // Keep the form open so the entry can be corrected and retried.
+      setError(err?.message || 'Failed to record wastage.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={submitting ? undefined : onClose}>
       <div className="hospital-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
         <div className="modal-header">
           <div>
@@ -55,7 +90,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
               Wasted or spoiled vials are deducted from stock and added to the MOH audit trail.
             </p>
           </div>
-          <button type="button" className="modal-close-btn" onClick={onClose}>
+          <button type="button" className="modal-close-btn" onClick={onClose} disabled={submitting}>
             &times;
           </button>
         </div>
@@ -69,6 +104,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                 value={formData.vaccineId}
                 onChange={handleChange}
                 className="modal-select"
+                disabled={submitting}
                 required
               >
                 {inventoryItems.map((item) => (
@@ -103,6 +139,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                   placeholder="e.g. 5"
                   required
                   className="modal-input"
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -115,6 +152,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                   value={formData.reason}
                   onChange={handleChange}
                   className="modal-select"
+                  disabled={submitting}
                 >
                   <option value="vial_breakage">Physical Damage / Vial Breakage</option>
                   <option value="cold_chain_excursion">Cold Chain / Temperature Excursion</option>
@@ -132,7 +170,9 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                   name="incidentDate"
                   value={formData.incidentDate}
                   onChange={handleChange}
+                  max={hospitalToday()}
                   className="modal-input"
+                  disabled={submitting}
                   required
                 />
               </div>
@@ -148,6 +188,7 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                 placeholder="e.g. Nurse K. Jayasinghe / Pharmacy Lead"
                 required
                 className="modal-input"
+                disabled={submitting}
               />
             </div>
 
@@ -161,16 +202,23 @@ export default function VaccineWastageModal({ isOpen, onClose, inventoryItems, o
                 className="modal-input"
                 rows="3"
                 style={{ resize: 'vertical' }}
+                disabled={submitting}
               />
             </div>
+
+            {error && (
+              <p role="alert" style={{ margin: '4px 0 0', color: 'var(--color-error)', fontSize: '0.875rem', fontWeight: 600 }}>
+                {error}
+              </p>
+            )}
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn-modal-cancel" onClick={onClose}>
+            <button type="button" className="btn-modal-cancel" onClick={onClose} disabled={submitting}>
               Cancel
             </button>
-            <button type="submit" className="btn-danger">
-              Deduct Wasted Stock
+            <button type="submit" className="btn-danger" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Deduct Wasted Stock'}
             </button>
           </div>
         </form>

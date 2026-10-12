@@ -102,6 +102,9 @@ public class CreateStaffShiftDto
 
     [MaxLength(500)]
     public string? Notes { get; set; }
+
+    /// <summary>Hospital confirmed a one-off shift outside the doctor's offered hours.</summary>
+    public bool OverrideAvailability { get; set; }
 }
 
 public class UpdateStaffShiftDto
@@ -122,6 +125,9 @@ public class UpdateStaffShiftDto
 
     [MaxLength(500)]
     public string? Notes { get; set; }
+
+    /// <summary>Hospital confirmed a one-off shift outside the doctor's offered hours.</summary>
+    public bool OverrideAvailability { get; set; }
 }
 
 public class StaffAffiliationDto
@@ -151,6 +157,33 @@ public class StaffAffiliationDto
     public bool IsClockedIn { get; set; }
     public DateTime InvitedAt { get; set; }
     public DateTime? RespondedAt { get; set; }
+    /// <summary>The doctor's main hospital, which rosters them without an hours limit.</summary>
+    public bool IsPrimary { get; set; }
+    /// <summary>Weekly hours the doctor offers this hospital. Empty means no limit set.</summary>
+    public List<AvailabilityWindowDto> AvailabilityWindows { get; set; } = new();
+    public List<DateOnly> UnavailableDates { get; set; } = new();
+}
+
+public class AvailabilityWindowDto
+{
+    /// <summary>0 = Sunday through 6 = Saturday.</summary>
+    [Range(0, 6)]
+    public int DayOfWeek { get; set; }
+
+    [Required]
+    public TimeOnly StartTime { get; set; }
+
+    [Required]
+    public TimeOnly EndTime { get; set; }
+}
+
+public class UpdateStaffAvailabilityDto
+{
+    public bool IsPrimary { get; set; }
+
+    public List<AvailabilityWindowDto> Windows { get; set; } = new();
+
+    public List<DateOnly> UnavailableDates { get; set; } = new();
 }
 
 public class StaffShiftDto
@@ -187,6 +220,63 @@ public class StaffBusyBlockDto
     public TimeOnly StartTime { get; set; }
     public TimeOnly EndTime { get; set; }
     public bool IsExternal { get; set; }
+    /// <summary>Not a shift: a day off or hours the doctor does not offer this hospital.</summary>
+    public bool IsUnavailable { get; set; }
+}
+
+/// <summary>One dated run of a posted vaccine session, with the staff rostered onto it.</summary>
+public class RosterSessionDto
+{
+    public Guid ScheduleId { get; set; }
+    public DateOnly Date { get; set; }
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
+    public Guid? BoothId { get; set; }
+    public string? BoothLabel { get; set; }
+    public string VaccineName { get; set; } = string.Empty;
+    public List<RosterSessionStaffDto> Doctors { get; set; } = new();
+    public List<RosterSessionStaffDto> Nurses { get; set; } = new();
+    /// <summary>False once the session has ended.</summary>
+    public bool CanAssign { get; set; }
+}
+
+public class RosterSessionStaffDto
+{
+    public Guid ShiftId { get; set; }
+    public Guid AffiliationId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
+    public TimeOnly StartTime { get; set; }
+    public TimeOnly EndTime { get; set; }
+}
+
+public class SessionCandidateDto
+{
+    public Guid AffiliationId { get; set; }
+    public string StaffName { get; set; } = string.Empty;
+    public string StaffRole { get; set; } = string.Empty;
+    public string? Specialization { get; set; }
+    public string? StaffPhotoUrl { get; set; }
+    public bool Available { get; set; }
+    /// <summary>Why this person cannot simply be picked, when not available.</summary>
+    public string? Reason { get; set; }
+    /// <summary>Only the doctor's own hours or day off are in the way, so the hospital may confirm a one-off.</summary>
+    public bool CanOverride { get; set; }
+    public int ShiftsThatDay { get; set; }
+}
+
+public class AssignSessionStaffDto
+{
+    [Required]
+    public Guid ScheduleId { get; set; }
+
+    [Required]
+    public DateOnly Date { get; set; }
+
+    [Required]
+    [MinLength(1)]
+    public List<Guid> AffiliationIds { get; set; } = new();
+
+    public bool OverrideAvailability { get; set; }
 }
 
 public class StaffDayCoverageDto

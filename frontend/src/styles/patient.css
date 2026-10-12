@@ -1102,7 +1102,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(var(--rgb-primary-dark), 0.6);
+  background: var(--color-overlay);
   backdrop-filter: blur(4px);
   z-index: 200;
   display: flex;
@@ -1505,7 +1505,22 @@
 .book-btn-wrap {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-top: 28px;
+}
+
+.btn-book-appointment.btn-book-pay-later:not(:disabled) {
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-text);
+  border: 1px solid var(--btn-secondary-border);
+  box-shadow: none;
+}
+
+.btn-book-appointment.btn-book-pay-later:hover:not(:disabled) {
+  background: var(--btn-secondary-bg-hover);
+  border-color: var(--color-primary);
+  box-shadow: none;
 }
 
 .btn-book-appointment {

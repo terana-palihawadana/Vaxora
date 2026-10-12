@@ -6,7 +6,9 @@ import '../../data/repositories/auth_repository.dart';
 import 'login_screen.dart';
 
 class UnsupportedRoleScreen extends StatefulWidget {
-  const UnsupportedRoleScreen({super.key});
+  const UnsupportedRoleScreen({super.key, this.roleLabel = 'Admin'});
+
+  final String roleLabel;
 
   @override
   State<UnsupportedRoleScreen> createState() => _UnsupportedRoleScreenState();
@@ -68,8 +70,8 @@ class _UnsupportedRoleScreenState extends State<UnsupportedRoleScreen> {
                   color: AppColors.primary,
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  'Admin access is available on the Vaxora web portal',
+                Text(
+                  '${widget.roleLabel} access is available on the Vaxora web portal',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textTitle,
@@ -78,9 +80,12 @@ class _UnsupportedRoleScreenState extends State<UnsupportedRoleScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'The mobile app does not support administrator workflows. '
-                  'This account cannot use hospital tools in the mobile app.',
+                Text(
+                  widget.roleLabel == 'Admin'
+                      ? 'The mobile app does not support administrator workflows. '
+                          'This account cannot use hospital tools in the mobile app.'
+                      : 'The mobile app does not support front desk workflows. '
+                          'Sign in on the web portal to run the queue.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: AppColors.textBody,

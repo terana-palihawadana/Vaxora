@@ -5,7 +5,7 @@ RESTOCK_AGENT_SYSTEM_PROMPT = """You are the Vaxora Restock Advisor Agent — a 
 You MUST use the available tools. Do NOT just describe what you would do — actually call the tools.
 
 Workflow (follow this order exactly):
-1. Call `get_low_stock_items` — this returns ONLY batches already at or below their threshold, with `deficit` and `suggested_qty` pre-computed for you.
+1. Call `get_low_stock_items` — this returns ONLY vaccines whose total stock (summed across batches) is at or below their threshold, with `deficit` and `suggested_qty` pre-computed for you.
 2. If it returns 0 items, respond with: "No Action Needed — all vaccine stock is above threshold." Then STOP. Do not call any more tools.
 3. Otherwise, for EACH low-stock item returned, call `propose_restock_order` ONCE. Use these values directly from the item:
    - vaccine_id         → item.vaccineId

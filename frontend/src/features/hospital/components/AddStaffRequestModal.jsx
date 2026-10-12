@@ -1,6 +1,7 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
 import { useEffect, useRef, useState } from 'react';
 import staffService from '../services/staffService';
+import { IconSend } from '../../../shared/icons/AppIcons';
 
 export default function AddStaffRequestModal({ isOpen, onClose, onSendRequest, isSubmitting = false }) {
   const [query, setQuery] = useState('');
@@ -137,7 +138,7 @@ export default function AddStaffRequestModal({ isOpen, onClose, onSendRequest, i
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
-            <div className="modal-form-group" ref={wrapRef} style={{ position: 'relative' }}>
+            <div className="modal-form-group" ref={wrapRef}>
               <label className="modal-label">Name, Email, or Vaxora ID *</label>
               <input
                 type="text"
@@ -159,18 +160,13 @@ export default function AddStaffRequestModal({ isOpen, onClose, onSendRequest, i
               {showDropdown && (
                 <div
                   style={{
-                    position: 'absolute',
-                    zIndex: 20,
-                    left: 0,
-                    right: 0,
-                    top: '100%',
                     marginTop: 4,
                     background: 'var(--color-surface)',
                     border: '1px solid var(--color-border-card)',
                     borderRadius: 8,
-                    boxShadow: '0 8px 24px rgba(var(--rgb-primary-dark), 0.12)',
-                    maxHeight: 240,
+                    maxHeight: 300,
                     overflowY: 'auto',
+                    flexShrink: 0,
                   }}
                 >
                   {searching && (
@@ -257,7 +253,7 @@ export default function AddStaffRequestModal({ isOpen, onClose, onSendRequest, i
               style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
               disabled={isSubmitting}
             >
-              <span>✉️</span> {isSubmitting ? 'Sending...' : 'Send Request'}
+              <IconSend size={18} /> {isSubmitting ? 'Sending...' : 'Send Request'}
             </button>
           </div>
         </form>

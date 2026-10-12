@@ -130,7 +130,17 @@ class _PatientAppointmentsScreenState extends State<PatientAppointmentsScreen> {
 
           widget.onAppointmentBooked?.call(data);
 
-          if (!newApt.isPaid && newApt.fee > 0) {
+          if (data['payAtDesk'] == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                backgroundColor: AppColors.success,
+                content: Text(
+                  'Reserved! Pay LKR ${newApt.fee.toStringAsFixed(0)} at the hospital desk on the day.',
+                ),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else if (!newApt.isPaid && newApt.fee > 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 backgroundColor: const Color(0xFF003366),

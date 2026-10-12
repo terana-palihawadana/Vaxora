@@ -21,15 +21,13 @@ public class AgentController : ControllerBase
     /// <summary>Every agent the gateway can dispatch to.</summary>
     private static readonly string[] KnownAgents =
     {
-        "BookingAgent", "RestockAgent", "ExpiryAgent", "StaffSchedulingAgent",
-        "ShiftSwapAgent"
+        "BookingAgent", "RestockAgent", "ExpiryAgent", "StaffSchedulingAgent"
     };
 
     /// <summary>Agents that may only be driven by specific account roles.</summary>
     private static readonly Dictionary<string, string[]> AgentRoleRequirements = new(StringComparer.OrdinalIgnoreCase)
     {
         ["StaffSchedulingAgent"] = new[] { "HOSPITAL" },
-        ["ShiftSwapAgent"] = new[] { "DOCTOR", "NURSE" },
     };
 
     private readonly IAgentGatewayService _agentGateway;

@@ -1,5 +1,5 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 const FALLBACK_VACCINES = [
   'Pfizer-BioNTech Bivalent',
@@ -62,14 +62,28 @@ export default function WalkInRegistrationModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  // Reset only when the modal opens: the queue page re-renders on a timer, and
+  // resetting on every render would wipe what the desk is typing.
+  const wasOpenRef = useRef(false);
   useEffect(() => deferEffectCallback(() => {
+    const opening = isOpen && !wasOpenRef.current;
+    wasOpenRef.current = isOpen;
     if (!isOpen) return;
-    setError('');
-    setFormData({
-      ...EMPTY_FORM,
-      vaccine: vaccineOptions[0] || '',
-      dose: DOSE_OPTIONS[0],
-    });
+    if (opening) {
+      setError('');
+      setFormData({
+        ...EMPTY_FORM,
+        vaccine: vaccineOptions[0] || '',
+        dose: DOSE_OPTIONS[0],
+      });
+      return;
+    }
+    // The vaccine list can arrive after opening: keep the choice valid.
+    setFormData((prev) =>
+      vaccineOptions.includes(prev.vaccine)
+        ? prev
+        : { ...prev, vaccine: vaccineOptions[0] || '', assignedBooth: '' }
+    );
   }), [isOpen, vaccineOptions]);
 
   if (!isOpen) return null;
@@ -178,6 +192,8 @@ export default function WalkInRegistrationModal({
                     value={formData.age}
                     onChange={handleChange}
                     placeholder="Age"
+                    min="0"
+                    max="120"
                     className="modal-input"
                   />
                   <select

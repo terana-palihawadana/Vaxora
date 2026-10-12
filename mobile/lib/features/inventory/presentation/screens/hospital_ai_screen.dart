@@ -90,8 +90,9 @@ class _HospitalAiScreenState extends State<HospitalAiScreen> {
       context,
       title: 'Approve AI purchase draft?',
       message:
-          'Execute this draft with ${lineItems.length} line item'
-          '${lineItems.length == 1 ? '' : 's'}? Stock changes will be applied.',
+          'Send this order with ${lineItems.length} line item'
+          '${lineItems.length == 1 ? '' : 's'} to the supplier? '
+          'Stock is added when the delivery is received.',
       confirmLabel: 'Approve',
     );
     if (!ok || !mounted) return;

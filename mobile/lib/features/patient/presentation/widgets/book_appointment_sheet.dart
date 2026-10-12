@@ -159,7 +159,7 @@ class _BookAppointmentSheetState extends State<BookAppointmentSheet> {
     }
   }
 
-  Future<void> _handleConfirm() async {
+  Future<void> _handleConfirm({bool payAtDesk = false}) async {
     if (_selectedVaccine == null || _selectedDate == null || _selectedSlot == null) {
       setState(() => _errorMessage = 'Please complete all required fields.');
       return;
@@ -180,9 +180,13 @@ class _BookAppointmentSheetState extends State<BookAppointmentSheet> {
         "${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}";
 
     try {
-      final paymentMethod = (_selectedSchedule != null && _selectedSchedule!.price > 0)
-          ? 'PayHere'
-          : 'Free';
+      final hasFee = _selectedSchedule != null && _selectedSchedule!.price > 0;
+      // 'Hospital' holds the slot and leaves payment to the hospital desk on the day.
+      final paymentMethod = !hasFee
+          ? 'Free'
+          : payAtDesk
+              ? 'Hospital'
+              : 'PayHere';
 
       final appt = await AppointmentRepository.bookAppointment(
         hospitalUserId: hospitalUserId,
@@ -207,6 +211,7 @@ class _BookAppointmentSheetState extends State<BookAppointmentSheet> {
           'status': appt.status,
           'fee': appt.fee ?? 0.0,
           'isPaid': appt.isPaid,
+          'payAtDesk': hasFee && payAtDesk,
         });
         Navigator.pop(context);
       }
@@ -563,6 +568,27 @@ class _BookAppointmentSheetState extends State<BookAppointmentSheet> {
                         )
                       : const Text('Confirm slot'),
                 ),
+                if (fee > 0) ...[
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => _handleConfirm(payAtDesk: true),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: StaffSurfaces.cta,
+                      side: BorderSide(color: StaffSurfaces.cta),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    child: const Text('Pay on the day'),
+                  ),
+                ],
               ],
             ),
           ),

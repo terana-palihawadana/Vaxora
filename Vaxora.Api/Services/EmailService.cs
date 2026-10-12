@@ -323,7 +323,9 @@ public class EmailService : IEmailService
         var subject = $"Appointment Confirmed • {vaccineName} at {hospitalName} ({appointmentDate})";
         var paymentSummaryHtml = fee <= 0
             ? "<span style='color:#16a34a;font-weight:700;'>✓ Free</span>"
-            : $"<span style='color:#0284c7;font-weight:700;'>LKR {fee:N2} Paid</span>";
+            : string.Equals(paymentStatus, "Paid", StringComparison.OrdinalIgnoreCase)
+                ? $"<span style='color:#0284c7;font-weight:700;'>LKR {fee:N2} Paid</span>"
+                : $"<span style='color:#0284c7;font-weight:700;'>LKR {fee:N2} due at the hospital desk</span>";
         var bodyHtml = $@"
 <!DOCTYPE html><html><body style='font-family: Arial, sans-serif; background:#f1f5f9; padding:24px;'>
   <div style='max-width:600px; margin:auto; background:#fff; border-radius:12px; padding:32px;'>

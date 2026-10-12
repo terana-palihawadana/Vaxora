@@ -38,6 +38,19 @@ public class BookingCoverageGapTests
     }
 
     [Fact]
+    public async Task GetAvailableDatesAsync_returns_no_dates_when_the_hospital_only_runs_other_vaccines()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        AddSchedule(context, hospital, "HPV", StaffDutyHelper.HospitalToday().AddDays(3));
+        await context.SaveChangesAsync();
+
+        var dates = await CreateService(context).GetAvailableDatesAsync(hospital.Id, "BCG");
+
+        Assert.Empty(dates);
+    }
+
+    [Fact]
     public async Task GetAvailableDatesAsync_weekly_schedule_only_returns_matching_weekdays_inside_range()
     {
         await using var context = TestDb.CreateContext();

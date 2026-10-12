@@ -4,6 +4,7 @@ import { authService, getUser } from "../../auth";
 import { agentService } from "../services/agentService";
 import { appointmentService } from "../services/appointmentService";
 import { patientVaccinationService } from "../services/patientVaccinationService";
+import { downloadAppointmentSlipPdf } from "../services/appointmentSlipPdfService";
 import CarePlanModal from "./CarePlanModal";
 import {
   IconBot,
@@ -159,6 +160,7 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
     lastVaccinatedAt: null,
   });
   const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [slipError, setSlipError] = useState("");
 
   // ---------- Fetch latest profile (existing behaviour) ----------
   useEffect(() => {
@@ -540,15 +542,23 @@ export default function DashboardOverview({ onNavigateTab, onOpenBookModal }) {
                     type="button"
                     className="btn-queue-walkin"
                     style={{ marginLeft: 0, flex: 1 }}
-                    onClick={() =>
-                      alert(
-                        `Appointment on ${formatShortDate(nextApptDate)} — a slip has been sent to your registered email.`,
-                      )
-                    }
+                    onClick={() => {
+                      try {
+                        setSlipError("");
+                        downloadAppointmentSlipPdf(nextAppointment, displayName);
+                      } catch {
+                        setSlipError("Could not create the slip. Please try again.");
+                      }
+                    }}
                   >
                     Download Appointment Slip
                   </button>
                 </div>
+                {slipError && (
+                  <p role="alert" style={{ margin: "10px 0 0", color: "var(--color-error)", fontSize: "0.8125rem", fontWeight: 600 }}>
+                    {slipError}
+                  </p>
+                )}
               </div>
             )}
           </div>

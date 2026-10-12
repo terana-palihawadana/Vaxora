@@ -37,18 +37,21 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   }
 
   Color get _statusColor {
+    if (batch.isOnOrder) return AppColors.warning;
     if (batch.isExpired || batch.isLowStock) return AppColors.error;
     if (batch.isExpiringSoon) return AppColors.warning;
     return AppColors.success;
   }
 
   StaffChipTone get _tone {
+    if (batch.isOnOrder) return StaffChipTone.warning;
     if (batch.isExpired || batch.isLowStock) return StaffChipTone.danger;
     if (batch.isExpiringSoon) return StaffChipTone.warning;
     return StaffChipTone.success;
   }
 
   String get _statusLabel {
+    if (batch.isOnOrder) return 'On order';
     if (batch.isExpired) return 'Expired';
     if (batch.isLowStock) return 'Low stock';
     if (batch.isExpiringSoon) return 'Expiring';

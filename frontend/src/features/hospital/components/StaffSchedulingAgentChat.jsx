@@ -281,6 +281,8 @@ export default function StaffSchedulingAgentChat({
   const [isLoading, setIsLoading] = useState(false);
   const [agentHealth, setAgentHealth] = useState(null);
   const [checkingHealth, setCheckingHealth] = useState(true);
+  // The agent service can be up while its AI model is refusing requests.
+  const [modelLimited, setModelLimited] = useState(false);
   const [approvingId, setApprovingId] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -336,6 +338,7 @@ export default function StaffSchedulingAgentChat({
       const res = await agentService.sendMessage(newMessages, {
         targetAgent: 'StaffSchedulingAgent',
       });
+      setModelLimited(Boolean(res.modelUnavailable));
 
       const proposals = Array.isArray(res.proposals)
         ? res.proposals
@@ -657,7 +660,7 @@ export default function StaffSchedulingAgentChat({
       {/* Header — same pattern as BookingAgentChat */}
       <div
         style={{
-          background: 'linear-gradient(135deg, var(--color-info) 0%, var(--color-accent) 100%)',
+          background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)',
           color: 'var(--color-text-inverse)',
           padding: '16px 20px',
           display: 'flex',
@@ -681,7 +684,7 @@ export default function StaffSchedulingAgentChat({
             <IconBot size={20} />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Vaxora Staff Scheduling Agent</h3>
+            <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--color-text-inverse)' }}>Vaxora Staff Scheduling Agent</h3>
             <p style={{ margin: '2px 0 0', fontSize: '12px', opacity: 0.9 }}>
               Coverage · Shift proposals · Human approval required
             </p>
@@ -694,8 +697,12 @@ export default function StaffSchedulingAgentChat({
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: agentHealth?.online ? 'rgba(var(--rgb-success), 0.2)' : 'rgba(var(--rgb-error), 0.2)',
-              border: `1px solid ${agentHealth?.online ? 'rgba(var(--rgb-success), 0.4)' : 'rgba(var(--rgb-error), 0.4)'}`,
+              background: 'var(--color-surface)',
+              color: !agentHealth?.online
+                ? 'var(--color-error)'
+                : modelLimited
+                  ? 'var(--color-warning)'
+                  : 'var(--color-success)',
               padding: '4px 10px',
               borderRadius: '20px',
               fontSize: '12px',
@@ -707,11 +714,21 @@ export default function StaffSchedulingAgentChat({
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                background: agentHealth?.online ? 'var(--color-success)' : 'var(--color-error)',
+                background: !agentHealth?.online
+                  ? 'var(--color-error)'
+                  : modelLimited
+                    ? 'var(--color-warning)'
+                    : 'var(--color-success)',
                 display: 'inline-block',
               }}
             />
-            {checkingHealth ? 'Checking Agent...' : agentHealth?.online ? 'Agent Online' : 'Agent Offline'}
+            {checkingHealth
+              ? 'Checking Agent...'
+              : !agentHealth?.online
+                ? 'Agent Offline'
+                : modelLimited
+                  ? 'AI limited'
+                  : 'Agent Online'}
           </div>
 
           {onClose && (

@@ -21,23 +21,23 @@ class StatsSection extends StatelessWidget {
   static const List<StatItem> stats = [
     StatItem(
       iconPath: AppAssets.badgeExperience,
-      highlight: '5 years experience',
-      subtext: 'Since 2019',
+      highlight: 'Verified staff',
+      subtext: 'Ministry approved',
     ),
     StatItem(
       iconPath: AppAssets.networkMembers,
-      highlight: '10K plus',
-      subtext: 'members',
+      highlight: 'AI booking',
+      subtext: 'Finds your slot',
     ),
     StatItem(
       iconPath: AppAssets.hospitalDoctors,
-      highlight: '20+ hospitals',
-      subtext: '60+ doctors',
+      highlight: 'Live booth queue',
+      subtext: 'Arrival to discharge',
     ),
     StatItem(
       iconPath: AppAssets.chartReviews,
-      highlight: '2K plus',
-      subtext: 'Reviews',
+      highlight: 'Digital records',
+      subtext: 'Every dose on file',
     ),
   ];
 

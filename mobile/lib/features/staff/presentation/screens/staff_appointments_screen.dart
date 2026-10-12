@@ -605,11 +605,12 @@ class _StaffAppointmentsScreenState extends State<StaffAppointmentsScreen> {
 
   Future<void> _pickDate() async {
     final initial = DateTime.tryParse(_filterDate) ?? hospitalNow();
+    // The API serves the clinical queue for yesterday, today and tomorrow only.
     final picked = await showDatePicker(
       context: context,
       initialDate: initial,
-      firstDate: hospitalNow().subtract(const Duration(days: 365)),
-      lastDate: hospitalNow().add(const Duration(days: 365)),
+      firstDate: hospitalNow().subtract(const Duration(days: 1)),
+      lastDate: hospitalNow().add(const Duration(days: 1)),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(

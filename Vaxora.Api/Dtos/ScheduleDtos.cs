@@ -55,6 +55,12 @@ public class ScheduleStockHorizonRequestDto
 
     [Required]
     public string EndTime { get; set; } = "11:00";
+
+    /// <summary>
+    /// The session being edited, if any. Its own reserved doses are left out of the
+    /// "already planned" total so an edit is not blocked by the session itself.
+    /// </summary>
+    public Guid? ExcludeScheduleId { get; set; }
 }
 
 public class ScheduleStockHorizonDto

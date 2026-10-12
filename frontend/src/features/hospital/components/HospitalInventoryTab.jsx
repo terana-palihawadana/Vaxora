@@ -1,8 +1,9 @@
 import { deferEffectCallback } from '../../../shared/utils/deferEffectCallback.js';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import RestockVaccineModal from './RestockVaccineModal';
 import VaccineWastageModal from './VaccineWastageModal';
 import BatchAuditModal from './BatchAuditModal';
+import ReceiveOrderModal from './ReceiveOrderModal';
 import inventoryService from '../services/inventoryService';
 import InventoryAIInventoryWorkflow from './InventoryAIInventoryWorkflow';
 import HospitalSubpageHero from './HospitalSubpageHero';
@@ -15,6 +16,7 @@ import {
   IconClose,
   IconFile,
   IconPackage,
+  IconPencil,
   IconSearch,
   IconShield,
   IconSnowflake,
@@ -23,6 +25,8 @@ import {
   IconTrash,
 } from './HospitalIcons';
 import useConfirmDialog from '../../../shared/hooks/useConfirmDialog';
+import { downloadCsv } from '../../../shared/utils/downloadCsv';
+import { hospitalToday } from '../utils/hospitalDate';
 
 const INVENTORY_VIEWS = ['stock', 'formulary', 'vaults'];
 
@@ -35,13 +39,26 @@ function formatCategory(category) {
     : c;
 }
 
+// Low stock is per vaccine (all unexpired lots together), as flagged by the API
+function isLowStock(item) {
+  return item.isLowStock ?? item.available <= item.minThreshold;
+}
+
+// A purchase order awaiting delivery: listed, but holds no usable stock yet
+function isOnOrder(item) {
+  return item.status === 'ordered';
+}
+
 export default function HospitalInventoryTab() {
   const [confirm, confirmDialog] = useConfirmDialog();
   const [view, setView] = useViewParam(INVENTORY_VIEWS);
   const [isRestockOpen, setIsRestockOpen] = useState(false);
   const [isWastageOpen, setIsWastageOpen] = useState(false);
   const [selectedAuditVaccine, setSelectedAuditVaccine] = useState(null);
+  const [receivingBatch, setReceivingBatch] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastTone, setToastTone] = useState('success'); // success | error
+  const toastTimerRef = useRef(null);
   const [isAIAgentOpen, setIsAIAgentOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
@@ -51,6 +68,10 @@ export default function HospitalInventoryTab() {
   const [newVaccineMfrInput, setNewVaccineMfrInput] = useState('');
   const [newVaccineCategoryInput, setNewVaccineCategoryInput] = useState('routine');
   const [newVaccinePriceInput, setNewVaccinePriceInput] = useState('0');
+  const [newVaccineCostInput, setNewVaccineCostInput] = useState('0');
+  const [newSupplierNameInput, setNewSupplierNameInput] = useState('');
+  const [newSupplierEmailInput, setNewSupplierEmailInput] = useState('');
+  const [editingFormularyId, setEditingFormularyId] = useState(null);
   const [showRegistryBox, setShowRegistryBox] = useState(() => view === 'formulary');
   // Opening the formulary view expands the registry box (adjusted during render, not in an effect).
   const [registryView, setRegistryView] = useState(view);
@@ -89,10 +110,14 @@ export default function HospitalInventoryTab() {
     return map;
   }, [registeredVaccines]);
 
-  const showToast = (msg) => {
+  const showToast = (msg, tone = 'success') => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(''), 4000);
+    setToastTone(tone);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToastMessage(''), 4000);
   };
+
+  useEffect(() => () => clearTimeout(toastTimerRef.current), []);
 
   const loadAll = useCallback(async () => {
     try {
@@ -111,6 +136,9 @@ export default function HospitalInventoryTab() {
             manufacturer: f.manufacturer || '',
             category: String(f.category || 'routine').toLowerCase(),
             price: Number(f.price ?? f.Price ?? 0),
+            supplierCost: Number(f.supplierCost ?? 0),
+            supplierName: f.supplierName || '',
+            supplierEmail: f.supplierEmail || '',
             isFree: Boolean(f.isFree ?? Number(f.price ?? 0) <= 0),
           })).filter((r) => r.name)
         : [];
@@ -125,31 +153,54 @@ export default function HospitalInventoryTab() {
 
   useEffect(() => deferEffectCallback(() => { loadAll(); }), [loadAll]);
 
-  const handleRegisterNewVaccine = async (vaccineName, mfr = '', price = 0, category = 'routine') => {
+  const resetFormularyForm = () => {
+    setEditingFormularyId(null);
+    setNewVaccineInput('');
+    setNewVaccineMfrInput('');
+    setNewVaccineCategoryInput('routine');
+    setNewVaccinePriceInput('0');
+    setNewVaccineCostInput('0');
+    setNewSupplierNameInput('');
+    setNewSupplierEmailInput('');
+  };
+
+  // Load a registered product into the form so its category, fee, cost and supplier can be changed
+  const handleEditFormulation = (row) => {
+    setEditingFormularyId(row.id);
+    setNewVaccineInput(row.name);
+    setNewVaccineMfrInput(row.manufacturer || '');
+    setNewVaccineCategoryInput(row.category || 'routine');
+    setNewVaccinePriceInput(String(row.price ?? 0));
+    setNewVaccineCostInput(String(row.supplierCost ?? 0));
+    setNewSupplierNameInput(row.supplierName || '');
+    setNewSupplierEmailInput(row.supplierEmail || '');
+  };
+
+  const handleRegisterNewVaccine = async (vaccineName, mfr = '', price = 0, category = 'routine', supplierCost = 0, supplier = {}) => {
     const trimmed = vaccineName.trim();
     if (!trimmed) return;
     if (registeredVaccines.some((v) => String(v.name || '').toLowerCase() === trimmed.toLowerCase())) {
-      // Already registered — treat as fee / category update
+      // Already registered — treat as fee / cost / category / supplier update
       const existing = registeredVaccines.find(
         (v) => String(v.name || '').toLowerCase() === trimmed.toLowerCase()
       );
       if (existing?.id) {
         try {
-          await inventoryService.updateFormularyPrice(existing.id, price, category);
+          await inventoryService.updateFormularyPrice(existing.id, price, category, supplierCost, supplier);
           await loadAll();
           showToast(`Updated "${trimmed}" (${category}${Number(price) <= 0 ? ', Free' : `, LKR ${Number(price).toFixed(2)}`}).`);
         } catch (err) {
-          showToast(err.message);
+          showToast(err.message, 'error');
         }
       }
       return;
     }
     try {
-      await inventoryService.registerFormulary(trimmed, mfr, price, category);
+      await inventoryService.registerFormulary(trimmed, mfr, price, category, supplierCost, supplier);
       await loadAll();
       showToast(`Registered "${trimmed}" as ${category}${Number(price) <= 0 ? ' · Free' : ` · LKR ${Number(price).toFixed(2)}`}.`);
     } catch (err) {
-      showToast(err.message);
+      showToast(err.message, 'error');
     }
   };
 
@@ -160,17 +211,16 @@ export default function HospitalInventoryTab() {
       newVaccineInput,
       newVaccineMfrInput,
       parseFloat(newVaccinePriceInput || 0),
-      newVaccineCategoryInput
+      newVaccineCategoryInput,
+      parseFloat(newVaccineCostInput || 0),
+      { name: newSupplierNameInput.trim(), email: newSupplierEmailInput.trim() }
     );
-    setNewVaccineInput('');
-    setNewVaccineMfrInput('');
-    setNewVaccineCategoryInput('routine');
-    setNewVaccinePriceInput('0');
+    resetFormularyForm();
   };
 
   const handleRemoveFormulation = async (name) => {
     if (uniqueFormulations.length <= 1) {
-      alert('You must keep at least one registered vaccine product.');
+      showToast('You must keep at least one registered vaccine product.', 'error');
       return;
     }
     const ok = await confirm({
@@ -195,7 +245,7 @@ export default function HospitalInventoryTab() {
       await loadAll();
       showToast(`Removed "${name}" from registered formulary options.`);
     } catch (err) {
-      showToast(err.message);
+      showToast(err.message, 'error');
       await loadAll();
     }
   };
@@ -214,7 +264,18 @@ export default function HospitalInventoryTab() {
       await loadAll();
       showToast(`Successfully logged restock of +${quantity} vials for ${vaccineName} (Lot ${lotNumber}).`);
     } catch (err) {
-      showToast(err.message);
+      showToast(err.message, 'error');
+      throw err;
+    }
+  };
+
+  const handleReceiveOrder = async (batch, { lotNumber, quantity, expiryDate, storageUnit }) => {
+    try {
+      await inventoryService.receiveOrderedBatch(batch.id, { lotNumber, quantity, expiryDate, storageUnit });
+      await loadAll();
+      showToast(`Received ${quantity} vials of ${batch.name} (Lot ${lotNumber}).`);
+    } catch (err) {
+      showToast(err.message, 'error');
       throw err;
     }
   };
@@ -225,7 +286,7 @@ export default function HospitalInventoryTab() {
       await loadAll();
       showToast(`Logged ${quantity} wasted vials.`);
     } catch (err) {
-      showToast(err.message);
+      showToast(err.message, 'error');
       throw err;
     }
   };
@@ -235,8 +296,13 @@ export default function HospitalInventoryTab() {
       await inventoryService.adjustStock(id, delta, `Quick ${delta > 0 ? '+' : ''}${delta} adjustment`);
       await loadAll();
     } catch (err) {
-      showToast(err.message);
+      showToast(err.message, 'error');
     }
+  };
+
+  const handleRefreshRecords = async () => {
+    await loadAll();
+    showToast('Stock records refreshed.');
   };
 
   const filteredInventory = useMemo(() => {
@@ -248,14 +314,43 @@ export default function HospitalInventoryTab() {
         (item.manufacturer || '').toLowerCase().includes(q) ||
         (item.storageUnit || '').toLowerCase().includes(q);
       if (!matchSearch) return false;
-      if (statusFilter === 'low' && item.available > item.minThreshold) return false;
-      if (statusFilter === 'sufficient' && item.available <= item.minThreshold) return false;
+      if (statusFilter === 'low' && !isLowStock(item)) return false;
+      if (statusFilter === 'sufficient' && isLowStock(item)) return false;
       if (statusFilter === 'expiring' && item.expiryStatus !== 'expiring_soon') return false;
       if (statusFilter === 'ultracold' && !(item.storageUnit || '').toLowerCase().includes('ultra-cold')) return false;
       if (categoryFilter !== 'all' && item.category !== categoryFilter) return false;
       return true;
     });
   }, [inventory, searchQuery, statusFilter, categoryFilter]);
+
+  const handleExportReport = () => {
+    if (filteredInventory.length === 0) {
+      showToast('There are no batches to export.', 'error');
+      return;
+    }
+    downloadCsv(`Vaxora_Stock_Ledger_${hospitalToday()}.csv`, [
+      ['Vaccine', 'Lot', 'Manufacturer', 'Category', 'Storage', 'Vials on hand', 'Vials received', 'Doses', 'Expiry', 'Status'],
+      ...filteredInventory.map((item) => [
+        item.name,
+        item.lotNumber,
+        item.manufacturer || '',
+        formatCategory(item.category),
+        item.storageUnit || '',
+        item.available,
+        item.capacity,
+        item.availableDoses ?? item.available * item.dosesPerVial,
+        isOnOrder(item) ? '' : item.expiry,
+        isOnOrder(item)
+          ? 'On order'
+          : isLowStock(item)
+            ? 'Low stock'
+            : item.expiryStatus === 'expiring_soon'
+              ? 'Expiring soon'
+              : 'In stock',
+      ]),
+    ]);
+    showToast(`Exported ${filteredInventory.length} batch${filteredInventory.length === 1 ? '' : 'es'} to CSV.`);
+  };
 
   const inventoryCategories = useMemo(
     () => [...new Set(inventory.map((item) => item.category).filter(Boolean))].sort(),
@@ -267,12 +362,19 @@ export default function HospitalInventoryTab() {
     (acc, curr) => acc + (curr.availableDoses ?? curr.available * curr.dosesPerVial),
     0
   );
-  const lowStockCount = inventory.filter((item) => item.available <= item.minThreshold).length;
-  const healthyCount = inventory.filter((item) => item.available > item.minThreshold).length;
+  const lowStockCount = inventory.filter(isLowStock).length;
+  const lowVaccineCount = new Set(
+    inventory.filter(isLowStock).map((item) => item.vaccineId ?? item.name)
+  ).size;
+  const healthyCount = inventory.length - lowStockCount;
   const expiringCount = inventory.filter((item) => item.expiryStatus === 'expiring_soon').length;
   const ultracoldCount = inventory.filter((item) =>
     (item.storageUnit || '').toLowerCase().includes('ultra-cold')
   ).length;
+  const vaultsOk = coldVaults.filter(
+    (vault) => !vault.status || /optimal|ok|normal|safe|active/i.test(String(vault.status))
+  ).length;
+  const vaultsNeedingAttention = coldVaults.length - vaultsOk;
 
   const inventorySubtitle =
     view === 'formulary'
@@ -316,7 +418,11 @@ export default function HospitalInventoryTab() {
       {inventoryHero}
       <div className="hospital-inventory-content">
         {toastMessage && (
-          <div className="inventory-toast-banner">
+          <div
+            className="inventory-toast-banner"
+            role={toastTone === 'error' ? 'alert' : 'status'}
+            style={toastTone === 'error' ? { background: 'var(--color-error)' } : undefined}
+          >
             <span>{toastMessage}</span>
             <button type="button" onClick={() => setToastMessage('')}>&times;</button>
           </div>
@@ -350,12 +456,12 @@ export default function HospitalInventoryTab() {
             </div>
             <div className="hospital-stat-info">
               <span className="hospital-stat-label">Low Stock Reorders</span>
-              <span className={`hospital-stat-value${lowStockCount > 0 ? ' is-alert' : ''}`}>
-                {lowStockCount}
+              <span className={`hospital-stat-value${lowVaccineCount > 0 ? ' is-alert' : ''}`}>
+                {lowVaccineCount}
               </span>
               <span className="hospital-stat-meta">
-                {lowStockCount > 0
-                  ? `${lowStockCount} formulation${lowStockCount === 1 ? '' : 's'} need reorder`
+                {lowVaccineCount > 0
+                  ? `${lowVaccineCount} formulation${lowVaccineCount === 1 ? '' : 's'} need reorder`
                   : 'All stocks above safety threshold'}
               </span>
             </div>
@@ -379,16 +485,24 @@ export default function HospitalInventoryTab() {
           </div>
 
           <div className="hospital-stat-card">
-            <div className="hospital-stat-icon stat-icon-green">
+            <div className={`hospital-stat-icon ${vaultsNeedingAttention === 0 ? 'stat-icon-green' : 'stat-icon-amber'}`}>
               <IconSnowflake size={22} />
             </div>
             <div className="hospital-stat-info">
               <span className="hospital-stat-label">Cold Storage Status</span>
-              <span className="hospital-stat-value">100%</span>
+              <span className="hospital-stat-value">
+                {coldVaults.length > 0 ? `${vaultsOk}/${coldVaults.length}` : '—'}
+              </span>
               <span className="hospital-stat-meta">
-                <span className="meta-positive">
-                  {coldVaults.length} units online · 0 excursions
-                </span>
+                {coldVaults.length === 0 ? (
+                  'No cold vaults linked'
+                ) : (
+                  <span className={vaultsNeedingAttention === 0 ? 'meta-positive' : 'meta-warning'}>
+                    {vaultsNeedingAttention === 0
+                      ? `${coldVaults.length} vault${coldVaults.length === 1 ? '' : 's'} optimal`
+                      : `${vaultsNeedingAttention} need${vaultsNeedingAttention === 1 ? 's' : ''} attention`}
+                  </span>
+                )}
               </span>
             </div>
           </div>
@@ -412,7 +526,7 @@ export default function HospitalInventoryTab() {
               <IconBot size={16} />
               Inventory assistant
             </button>
-            <button type="button" className="btn-inventory-action btn-export-neutral" onClick={() => showToast('Exporting official MOH Vaccine Stock Ledger (.CSV)...')}>
+            <button type="button" className="btn-inventory-action btn-export-neutral" onClick={handleExportReport}>
               <IconFile size={16} />
               Export report
             </button>
@@ -487,8 +601,39 @@ export default function HospitalInventoryTab() {
                       ? Math.min(100, Math.round((item.available / received) * 100))
                       : 0;
                     const doseCount = item.availableDoses ?? item.available * item.dosesPerVial;
-                    const isLow = item.available <= item.minThreshold;
+                    const isLow = isLowStock(item);
                     const isExpiring = item.expiryStatus === 'expiring_soon';
+                    if (isOnOrder(item)) {
+                      return (
+                        <tr key={item.id}>
+                          <td className="is-left">
+                            <div className="inv-name">{item.name}</div>
+                            <div className="inv-sub">Order {item.lotNumber}{item.manufacturer ? ` · ${item.manufacturer}` : ''}</div>
+                          </td>
+                          <td className="is-left"><span className="inv-category">{formatCategory(item.category)}</span></td>
+                          <td className="is-left"><div className="inv-sub">Assigned on receipt</div></td>
+                          <td className="is-left">
+                            <div className="inv-main"><strong>{item.capacity}</strong> ordered</div>
+                            <div className="inv-sub">Not in stock yet</div>
+                          </td>
+                          <td className="is-left"><div className="inv-sub">—</div></td>
+                          <td className="is-left"><div className="inv-sub">Set on receipt</div></td>
+                          <td className="is-left"><span className="inv-status is-due">On order</span></td>
+                          <td>
+                            <div className="inv-actions">
+                              <button type="button" className="inv-action is-primary" onClick={() => setReceivingBatch(item)} title="Record the delivery and add it to stock">
+                                <IconPackage size={14} />
+                                Receive
+                              </button>
+                              <button type="button" className="inv-action" onClick={() => setSelectedAuditVaccine(item)} title="View batch audit">
+                                <IconClipboard size={14} />
+                                Audit
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
                     return (
                       <tr key={item.id} className={isLow ? 'row-highlight-low' : ''}>
                         <td className="is-left">
@@ -509,6 +654,9 @@ export default function HospitalInventoryTab() {
                             <div className={`stock-progress-fill ${item.statusColor}`} style={{ width: `${pct}%` }} />
                           </div>
                           {isLow && <div className="inv-alert">Below {item.minThreshold} minimum</div>}
+                          {!isLow && item.vaccineOnOrder > 0 && item.vaccineAvailable <= item.minThreshold && (
+                            <div className="inv-sub">{item.vaccineOnOrder} more on order</div>
+                          )}
                         </td>
                         <td className="is-left">
                           <div className="inv-main"><strong>{doseCount.toLocaleString()}</strong></div>
@@ -542,17 +690,48 @@ export default function HospitalInventoryTab() {
           </div>
         ) : (
           <div className="inventory-cards-grid">
+            {filteredInventory.length === 0 && (
+              <p className="empty-state-text" style={{ gridColumn: '1 / -1' }}>
+                No vaccines match the selected criteria.
+              </p>
+            )}
             {filteredInventory.map((item) => {
               const received = Math.max(item.capacity || 0, item.available || 0);
               const pct = received > 0
                 ? Math.min(100, Math.round((item.available / received) * 100))
                 : 0;
               const doseCount = item.availableDoses ?? item.available * item.dosesPerVial;
-              const isLow = item.available <= item.minThreshold;
+              const isLow = isLowStock(item);
+              if (isOnOrder(item)) {
+                return (
+                  <div key={item.id} className="inventory-card-item">
+                    <div className="inv-card-top">
+                      <span className="category-tag">{String(item.category || 'routine').toUpperCase()}</span>
+                      <span className="stock-badge badge-expiring">On order</span>
+                    </div>
+                    <h4 className="inv-card-name">{item.name}</h4>
+                    <div className="inv-card-meta">
+                      <span>Order: <strong>{item.lotNumber}</strong></span>
+                      <span>Expiry: <strong>Set on receipt</strong></span>
+                    </div>
+                    <div className="inv-card-stock-block">
+                      <div className="stock-header-flex">
+                        <span>Ordered:</span>
+                        <strong>{item.capacity} vials</strong>
+                      </div>
+                      <div className="doses-sub-line">Not in stock yet. Receive it when the delivery arrives.</div>
+                    </div>
+                    <div className="inv-card-actions">
+                      <button type="button" className="btn-card-audit" onClick={() => setSelectedAuditVaccine(item)}>Audit Ledger</button>
+                      <button type="button" className="btn-card-restock" onClick={() => setReceivingBatch(item)}>Receive</button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={item.id} className={`inventory-card-item ${isLow ? 'card-low-stock' : ''}`}>
                   <div className="inv-card-top">
-                    <span className="category-tag">{item.category.toUpperCase()}</span>
+                    <span className="category-tag">{String(item.category || 'routine').toUpperCase()}</span>
                     {isLow ? <span className="stock-badge badge-reorder">Low Stock</span> : <span className="stock-badge badge-healthy">Optimal</span>}
                   </div>
                   <h4 className="inv-card-name">{item.name}</h4>
@@ -617,73 +796,131 @@ export default function HospitalInventoryTab() {
 
           {showRegistryBox && (
             <div className="formulary-card-body">
-              <form onSubmit={handleRegisterFormSubmit} className="formulary-input-row">
-                <div className="formulary-input-group formulary-input-group--name">
-                  <label className="formulary-label" htmlFor="formulary-vaccine-name">
-                    Vaccine product name *
-                  </label>
-                  <input
-                    id="formulary-vaccine-name"
-                    type="text"
-                    className="formulary-text-input"
-                    placeholder="e.g. Hepatitis B Recombinant"
-                    value={newVaccineInput}
-                    onChange={(e) => setNewVaccineInput(e.target.value)}
-                    required
-                  />
+              <form onSubmit={handleRegisterFormSubmit} className="formulary-form">
+                <div className="formulary-input-row">
+                  <div className="formulary-input-group formulary-input-group--name">
+                    <label className="formulary-label" htmlFor="formulary-vaccine-name">
+                      Vaccine product name *
+                    </label>
+                    <input
+                      id="formulary-vaccine-name"
+                      type="text"
+                      className="formulary-text-input"
+                      placeholder="e.g. Hepatitis B Recombinant"
+                      value={newVaccineInput}
+                      onChange={(e) => setNewVaccineInput(e.target.value)}
+                      disabled={Boolean(editingFormularyId)}
+                      required
+                    />
+                  </div>
+                  <div className="formulary-input-group formulary-input-group--mfr">
+                    <label className="formulary-label" htmlFor="formulary-vaccine-mfr">
+                      Manufacturer
+                    </label>
+                    <input
+                      id="formulary-vaccine-mfr"
+                      type="text"
+                      className="formulary-text-input"
+                      placeholder="e.g. Serum Institute"
+                      value={newVaccineMfrInput}
+                      onChange={(e) => setNewVaccineMfrInput(e.target.value)}
+                      disabled={Boolean(editingFormularyId)}
+                    />
+                  </div>
+                  <div className="formulary-input-group formulary-input-group--category">
+                    <label className="formulary-label" htmlFor="formulary-vaccine-category">
+                      Category
+                    </label>
+                    <select
+                      id="formulary-vaccine-category"
+                      className="formulary-text-input"
+                      value={newVaccineCategoryInput}
+                      onChange={(e) => setNewVaccineCategoryInput(e.target.value)}
+                    >
+                      <option value="routine">Routine</option>
+                      <option value="mrna">mRNA</option>
+                      <option value="seasonal">Seasonal</option>
+                      <option value="pediatric">Pediatric</option>
+                    </select>
+                  </div>
+                  <div className="formulary-input-group formulary-input-group--fee">
+                    <label className="formulary-label" htmlFor="formulary-vaccine-cost">
+                      Cost / vial (LKR)
+                    </label>
+                    <input
+                      id="formulary-vaccine-cost"
+                      type="number"
+                      min="0"
+                      step="1"
+                      className="formulary-text-input"
+                      placeholder="Supplier cost"
+                      value={newVaccineCostInput}
+                      onChange={(e) => setNewVaccineCostInput(e.target.value)}
+                      title="What the supplier charges per vial. Used on purchase orders."
+                    />
+                  </div>
+                  <div className="formulary-input-group formulary-input-group--fee">
+                    <label className="formulary-label" htmlFor="formulary-vaccine-price">
+                      Fee / person (LKR)
+                    </label>
+                    <input
+                      id="formulary-vaccine-price"
+                      type="number"
+                      min="0"
+                      step="1"
+                      className="formulary-text-input"
+                      placeholder="0 = Free"
+                      value={newVaccinePriceInput}
+                      onChange={(e) => setNewVaccinePriceInput(e.target.value)}
+                      title="Enter 0 for Free / MOH-subsidized vaccines"
+                    />
+                  </div>
                 </div>
-                <div className="formulary-input-group formulary-input-group--mfr">
-                  <label className="formulary-label" htmlFor="formulary-vaccine-mfr">
-                    Manufacturer / supplier
-                  </label>
-                  <input
-                    id="formulary-vaccine-mfr"
-                    type="text"
-                    className="formulary-text-input"
-                    placeholder="e.g. Serum Institute"
-                    value={newVaccineMfrInput}
-                    onChange={(e) => setNewVaccineMfrInput(e.target.value)}
-                  />
-                </div>
-                <div className="formulary-input-group formulary-input-group--category">
-                  <label className="formulary-label" htmlFor="formulary-vaccine-category">
-                    Category
-                  </label>
-                  <select
-                    id="formulary-vaccine-category"
-                    className="formulary-text-input"
-                    value={newVaccineCategoryInput}
-                    onChange={(e) => setNewVaccineCategoryInput(e.target.value)}
-                  >
-                    <option value="routine">Routine</option>
-                    <option value="mrna">mRNA</option>
-                    <option value="seasonal">Seasonal</option>
-                    <option value="pediatric">Pediatric</option>
-                  </select>
-                </div>
-                <div className="formulary-input-group formulary-input-group--fee">
-                  <label className="formulary-label" htmlFor="formulary-vaccine-price">
-                    Fee / person (LKR)
-                  </label>
-                  <input
-                    id="formulary-vaccine-price"
-                    type="number"
-                    min="0"
-                    step="1"
-                    className="formulary-text-input"
-                    placeholder="0 = Free"
-                    value={newVaccinePriceInput}
-                    onChange={(e) => setNewVaccinePriceInput(e.target.value)}
-                    title="Enter 0 for Free / MOH-subsidized vaccines"
-                  />
-                </div>
-                <div className="formulary-input-group formulary-input-group--action">
-                  <span className="formulary-label formulary-label--spacer" aria-hidden="true">
-                    &nbsp;
-                  </span>
-                  <button type="submit" className="btn-register-vaccine">
-                    Register product
-                  </button>
+                <div className="formulary-input-row formulary-input-row--supplier">
+                  <div className="formulary-input-group">
+                    <label className="formulary-label" htmlFor="formulary-supplier-name">
+                      Supplier
+                    </label>
+                    <input
+                      id="formulary-supplier-name"
+                      type="text"
+                      className="formulary-text-input"
+                      placeholder="e.g. State Pharmaceuticals Corporation"
+                      value={newSupplierNameInput}
+                      onChange={(e) => setNewSupplierNameInput(e.target.value)}
+                      maxLength={200}
+                    />
+                  </div>
+                  <div className="formulary-input-group">
+                    <label className="formulary-label" htmlFor="formulary-supplier-email">
+                      Supplier email
+                    </label>
+                    <input
+                      id="formulary-supplier-email"
+                      type="email"
+                      className="formulary-text-input"
+                      placeholder="orders@supplier.lk"
+                      value={newSupplierEmailInput}
+                      onChange={(e) => setNewSupplierEmailInput(e.target.value)}
+                      maxLength={200}
+                      title="Purchase orders for this product are emailed here"
+                    />
+                  </div>
+                  <div className="formulary-input-group formulary-input-group--action">
+                    <span className="formulary-label formulary-label--spacer" aria-hidden="true">
+                      &nbsp;
+                    </span>
+                    <div className="formulary-action-row">
+                      <button type="submit" className="btn-register-vaccine">
+                        {editingFormularyId ? 'Save changes' : 'Register product'}
+                      </button>
+                      {editingFormularyId && (
+                        <button type="button" className="btn-toggle-registry" onClick={resetFormularyForm}>
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </form>
 
@@ -737,6 +974,30 @@ export default function HospitalInventoryTab() {
                             </>
                           )}
                         </span>
+                        {Number(row?.supplierCost) > 0 && (
+                          <span className="pill-meta" title="Supplier cost per vial, used on purchase orders">
+                            <span className="pill-meta-text">Cost LKR {Number(row.supplierCost).toLocaleString()}</span>
+                          </span>
+                        )}
+                        {row?.supplierName && (
+                          <span
+                            className="pill-meta"
+                            title={row.supplierEmail ? `Orders go to ${row.supplierEmail}` : 'No supplier email saved'}
+                          >
+                            <span className="pill-meta-text">{row.supplierName}</span>
+                          </span>
+                        )}
+                        {row?.id && (
+                          <button
+                            type="button"
+                            className="pill-remove-btn pill-edit-btn"
+                            onClick={() => handleEditFormulation(row)}
+                            title={`Edit ${vName}`}
+                            aria-label={`Edit ${vName}`}
+                          >
+                            <IconPencil size={12} />
+                          </button>
+                        )}
                         <button
                           type="button"
                           className="pill-remove-btn"
@@ -821,10 +1082,10 @@ export default function HospitalInventoryTab() {
         <div className="inventory-footer-notice">
           <div className="footer-notice-text">
             <IconShield size={16} />
-            <span>Storage and lot records sync with the national immunization cold-chain registry.</span>
+            <span>Stock, lot and vault records shown here come live from the hospital database.</span>
           </div>
-          <button type="button" className="btn-sync-registry" onClick={() => showToast('Cold chain registry status: All batches verified.')}>
-            Sync registry
+          <button type="button" className="btn-sync-registry" onClick={handleRefreshRecords}>
+            Refresh records
           </button>
         </div>
         )}
@@ -842,7 +1103,7 @@ export default function HospitalInventoryTab() {
       <VaccineWastageModal
         isOpen={isWastageOpen}
         onClose={() => setIsWastageOpen(false)}
-        inventoryItems={inventory}
+        inventoryItems={inventory.filter((item) => !isOnOrder(item))}
         onLogWastage={handleLogWastage}
       />
 
@@ -850,6 +1111,12 @@ export default function HospitalInventoryTab() {
         isOpen={Boolean(selectedAuditVaccine)}
         onClose={() => setSelectedAuditVaccine(null)}
         vaccine={selectedAuditVaccine}
+      />
+
+      <ReceiveOrderModal
+        batch={receivingBatch}
+        onClose={() => setReceivingBatch(null)}
+        onReceive={handleReceiveOrder}
       />
 
       <InventoryAIInventoryWorkflow

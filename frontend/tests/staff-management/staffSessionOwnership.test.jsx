@@ -107,7 +107,7 @@ describe('Staff Management - Live session ownership', () => {
 
   it("hides a colleague's session from staff at another booth (normal)", async () => {
     await renderDashboard({ onDuty: true, shifts: [shiftAt('b02', 'B02 · Child')] });
-    fireEvent.click(screen.getByRole('button', { name: 'All booths' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All sessions' }));
 
     expect(screen.queryByText('Active Immunization Station')).toBeNull();
     expect(screen.getByText('With B01 · Nurse Kavindi')).toBeTruthy();
@@ -124,7 +124,7 @@ describe('Staff Management - Live session ownership', () => {
   it('takes over after confirmation, keeping the current status (normal)', async () => {
     staffAppointmentService.takeOverSession.mockResolvedValue({});
     await renderDashboard({ onDuty: true, shifts: [shiftAt('b02', 'B02 · Child')] });
-    fireEvent.click(screen.getByRole('button', { name: 'All booths' }));
+    fireEvent.click(screen.getByRole('button', { name: 'All sessions' }));
 
     fireEvent.click(screen.getByRole('button', { name: 'Take over' }));
     const dialog = await screen.findByRole('alertdialog');

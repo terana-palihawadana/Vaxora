@@ -23,6 +23,10 @@ public class User
     [Required]
     public UserStatus Status { get; set; } = UserStatus.Pending;
 
+    /// <summary>Name for accounts that have no profile table of their own (front desk).</summary>
+    [MaxLength(150)]
+    public string? FullName { get; set; }
+
     [MaxLength(20)]
     public string? PhoneNumber { get; set; }
 

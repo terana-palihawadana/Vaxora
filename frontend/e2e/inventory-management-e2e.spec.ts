@@ -1,12 +1,11 @@
 import { test, expect, Page } from '@playwright/test';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
-const HOSPITAL_EMAIL = process.env.HOSPITAL_EMAIL ?? 'hospital@vaxora.local';
-const HOSPITAL_PASSWORD = process.env.HOSPITAL_PASSWORD ?? 'Hospital@123';
 
 async function loginAsHospital(page: Page) {
   await page.goto('/login');
-  await page.getByLabel(/email/i).fill(HOSPITAL_EMAIL);
-  await page.getByLabel(/password/i).fill(HOSPITAL_PASSWORD);
+  await page.getByLabel(/email/i).fill(TEST_ACCOUNTS.hospital.email);
+  await page.getByLabel(/password/i).fill(TEST_ACCOUNTS.hospital.password);
   await page.getByRole('button', { name: /log in|sign in/i }).click();
   await page.waitForURL('**/hospital/**', { timeout: 15_000 });
 }

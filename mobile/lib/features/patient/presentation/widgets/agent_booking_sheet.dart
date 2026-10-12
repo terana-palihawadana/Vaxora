@@ -131,9 +131,11 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
     }
   }
 
-  void _approveProposal(AgentProposal proposal) {
+  void _approveProposal(AgentProposal proposal, {bool payAtDesk = false}) {
+    // The agent reads "pay at the hospital desk on the day" to skip online checkout.
+    final payment = payAtDesk ? ' I will pay at the hospital desk on the day.' : '';
     final prompt =
-        'I approve and confirm booking for ${proposal.vaccineName} at ${proposal.hospitalName} on ${proposal.appointmentDate} at ${proposal.timeSlot}. Please proceed with booking.';
+        'I approve and confirm booking for ${proposal.vaccineName} at ${proposal.hospitalName} on ${proposal.appointmentDate} at ${proposal.timeSlot}.$payment Please proceed with booking.';
     _sendMessage(prompt);
   }
 
@@ -838,6 +840,27 @@ class _AgentBookingSheetState extends State<AgentBookingSheet> {
               ),
             ],
           ),
+          if (p.requiresPayment) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: _isLoading
+                    ? null
+                    : () => _approveProposal(p, payAtDesk: true),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  foregroundColor: StaffSurfaces.cta,
+                  side: BorderSide(color: StaffSurfaces.cta),
+                  textStyle: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: const Text('Pay on the day'),
+              ),
+            ),
+          ],
         ],
       ),
     );

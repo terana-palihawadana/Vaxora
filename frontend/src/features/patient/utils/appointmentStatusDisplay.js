@@ -24,7 +24,7 @@ export function getPatientAppointmentStatusDisplay(status) {
     case 'insession':
       return { label: 'In session', backgroundColor: 'var(--color-info-bg)', color: 'var(--color-info)' };
     case 'observation':
-      return { label: 'Observation', backgroundColor: 'var(--color-ai-bg)', color: 'var(--color-ai)' };
+      return { label: 'Observation', backgroundColor: 'var(--color-soft-panel-deep)', color: 'var(--color-primary-dark)' };
     case 'completed':
       return { label: 'Completed', backgroundColor: 'var(--color-success-bg)', color: 'var(--color-success)' };
     case 'cancelled':

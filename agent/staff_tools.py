@@ -176,6 +176,7 @@ async def tool_propose_shift_for_approval(
     booth_id: Optional[str] = None,
     notes: Optional[str] = None,
     reason: Optional[str] = None,
+    token: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Build a suggested shift. The hospital presses Approve or Decline.
@@ -213,6 +214,31 @@ async def tool_propose_shift_for_approval(
             "success": False,
             "error": f"A single shift cannot exceed {MAX_SHIFT_MINUTES // 60} hours.",
         }
+
+    # A named person can still be on a day off, outside the hours they offer this
+    # hospital, or working elsewhere. Skipped without a token (no API access).
+    if token:
+        busy = await tool_get_staff_busy_blocks(clean_date, clean_date, token=token)
+        for block in (busy.get("blocks") or []) if busy.get("success") else []:
+            block_affiliation = block.get("localAffiliationId") or block.get("LocalAffiliationId")
+            if str(block_affiliation) != str(affiliation_id):
+                continue
+            if _day_key(block.get("shiftDate") or block.get("ShiftDate")) != clean_date:
+                continue
+            block_start = _minutes(block.get("startTime") or block.get("StartTime"))
+            block_end = _minutes(block.get("endTime") or block.get("EndTime"))
+            if not (start_minutes < block_end and block_start < end_minutes):
+                continue
+            if block.get("isUnavailable") or block.get("IsUnavailable"):
+                why = "is on a day off or outside the hours they offer this hospital"
+            elif block.get("isExternal") or block.get("IsExternal"):
+                why = "is working at another hospital then"
+            else:
+                why = "already has a shift then"
+            return {
+                "success": False,
+                "error": f"{staff_name or 'That staff member'} {why}. Pick another person or time.",
+            }
 
     proposal: Dict[str, Any] = {
         "affiliationId": affiliation_id,
@@ -732,8 +758,35 @@ def _day_session_count(planned, affiliation_id: str, date: str) -> int:
     return sum(
         1
         for item in planned
-        if str(item.get("affiliationId")) == aid and item.get("date") == date
+        if str(item.get("affiliationId")) == aid
+        and item.get("date") == date
+        and not item.get("unavailable")
+        and not item.get("external")
     )
+
+
+def _offers_limited_hours(planned, affiliation_id: str) -> bool:
+    """True when this person only offers the hospital part of the week (or has days off in it)."""
+    aid = str(affiliation_id)
+    return any(
+        item.get("unavailable") and str(item.get("affiliationId")) == aid for item in planned
+    )
+
+
+def _is_behind_fair_share(pool, planned, workload, person) -> bool:
+    """
+    A part-week person goes first only while they have fewer shifts this week than
+    their colleagues' average. Once level, sessions rotate normally, so the few
+    hours they offer do not turn into every session in those hours.
+    """
+    affiliation_id = person["affiliationId"]
+    if not _offers_limited_hours(planned, affiliation_id):
+        return False
+    others = [p["affiliationId"] for p in pool if p["affiliationId"] != affiliation_id]
+    if not others:
+        return False
+    average = sum(workload.get(other, 0) for other in others) / len(others)
+    return workload.get(affiliation_id, 0) < average
 
 
 def _pick_lightest_free(
@@ -774,6 +827,9 @@ def _pick_lightest_free(
         return None
     free.sort(
         key=lambda person: (
+            # Someone who offers only a few hours can only be used inside them, so use
+            # them there first, but only until they have a fair share of the week.
+            0 if _is_behind_fair_share(pool, planned, workload, person) else 1,
             # Prefer someone with no shift that day before stacking a 2nd/3rd session.
             _day_session_count(planned, person["affiliationId"], date),
             _specialty_fit_score(vaccine_label, person.get("specialization")),
@@ -984,7 +1040,11 @@ def _validate_proposals(
         ]
         if len(overlap_blocks) > 1:
             issues.append({"gapId": gap_id, "message": "Staff member is already booked for this slot."})
-        week_shifts = sum(1 for item in planned if item.get("affiliationId") == affiliation_id)
+        week_shifts = sum(
+            1
+            for item in planned
+            if item.get("affiliationId") == affiliation_id and not item.get("unavailable")
+        )
         if week_shifts > MAX_WEEKLY_SHIFTS:
             issues.append(
                 {
@@ -1082,6 +1142,7 @@ async def _prepare_roster_state(
     # Include other-hospital shifts for the same people so we don't propose conflicts.
     busy_result = await busy_task
     external_busy = 0
+    unavailable_staff = set()
     if busy_result.get("success"):
         seen = {
             (
@@ -1104,6 +1165,10 @@ async def _prepare_roster_state(
             is_external = bool(block.get("isExternal") if block.get("isExternal") is not None else block.get("IsExternal"))
             if is_external:
                 external_busy += 1
+            # Days off and hours the doctor does not offer this hospital.
+            is_unavailable = bool(block.get("isUnavailable") or block.get("IsUnavailable"))
+            if is_unavailable:
+                unavailable_staff.add(str(affiliation_id))
             planned.append(
                 {
                     "affiliationId": affiliation_id,
@@ -1112,6 +1177,9 @@ async def _prepare_roster_state(
                     "end": end,
                     "role": "",
                     "boothId": None,
+                    # Blocks the slot, but is not a shift they are working here.
+                    "unavailable": is_unavailable,
+                    "external": is_external,
                 }
             )
 
@@ -1148,6 +1216,7 @@ async def _prepare_roster_state(
         "sessions": sessions,
         "planned": planned,
         "externalBusyCount": external_busy,
+        "unavailableStaffCount": len(unavailable_staff),
         "workload": workload,
         "workloadBefore": _workload_summary(workload, staff),
         "today": _hospital_today(),
@@ -1190,6 +1259,12 @@ def _discover_staffing_gaps(state: Dict[str, Any]) -> Tuple[List[str], List[Dict
     if external_busy:
         findings.append(
             f"Respecting {external_busy} existing shift(s) at other hospitals so proposals won't clash on approve."
+        )
+
+    unavailable_staff = int(state.get("unavailableStaffCount") or 0)
+    if unavailable_staff:
+        findings.append(
+            f"Keeping {unavailable_staff} doctor(s) off their days off and outside the hours they offer this hospital."
         )
 
     demand = _demand_groups(appointments, clean_from, clean_to, sessions=sessions)

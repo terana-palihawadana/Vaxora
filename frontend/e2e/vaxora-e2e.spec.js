@@ -1,8 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
 const TEST_PATIENT = {
-  email: 'patient1@vaxora.lk',
-  password: 'Password123!',
+  email: TEST_ACCOUNTS.patient.email,
+  get password() {
+    return TEST_ACCOUNTS.patient.password;
+  },
   name: 'Kamal Perera',
 };
 

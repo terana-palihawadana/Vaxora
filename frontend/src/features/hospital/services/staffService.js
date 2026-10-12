@@ -89,6 +89,13 @@ export const staffService = {
     });
   },
 
+  updateMyAvailability(affiliationId, payload) {
+    return apiRequest(`/staff/affiliations/${affiliationId}/availability`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
+
   getMyInvitations() {
     return apiRequest('/staff/invitations');
   },
@@ -129,6 +136,21 @@ export const staffService = {
   deactivateHospitalBooth(boothId) {
     return apiRequest(`/staff/booths/${boothId}`, {
       method: 'DELETE',
+    });
+  },
+
+  getRosterSessions({ from, to }) {
+    return apiRequest(`/staff/sessions${buildQuery({ from, to })}`);
+  },
+
+  getSessionCandidates(scheduleId, date) {
+    return apiRequest(`/staff/sessions/candidates${buildQuery({ scheduleId, date })}`);
+  },
+
+  assignSessionStaff(payload) {
+    return apiRequest('/staff/sessions/assign', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 

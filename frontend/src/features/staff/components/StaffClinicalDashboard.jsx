@@ -85,6 +85,31 @@ function clockToMinutes(value) {
   return match ? Number(match[1]) * 60 + Number(match[2]) : null;
 }
 
+/** Minutes since midnight for "17:20", "17:20:00" or "05:20 PM". */
+function slotStartMinutes(value) {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?/i.exec(String(value || '').trim());
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const meridiem = (match[3] || '').toUpperCase();
+  if (meridiem === 'PM' && hours < 12) hours += 12;
+  if (meridiem === 'AM' && hours === 12) hours = 0;
+  return hours * 60 + Number(match[2]);
+}
+
+const CLOSED_STATUSES = ['completed', 'cancelled', 'rejected'];
+
+/**
+ * In my session: at my booth and booked inside my shift. Someone booked earlier at
+ * the same booth who is still not finished stays listed, so nobody is left waiting.
+ */
+function isInMySession(patient, session) {
+  if (!isAtBooth(patient, session)) return false;
+  if (patient.startMinutes == null || session.start == null || session.end == null) return true;
+  if (patient.startMinutes >= session.start && patient.startMinutes < session.end) return true;
+  const closed = CLOSED_STATUSES.includes(String(patient.appointmentStatus || '').toLowerCase());
+  return patient.startMinutes < session.start && !closed;
+}
+
 function normalizeBooth(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -331,6 +356,7 @@ export default function StaffClinicalDashboard({
         booth: a.boothLabel || null,
         boothId: a.boothId || null,
         time: a.timeSlot || [a.startTime, a.endTime].filter(Boolean).join(' – ') || '—',
+        startMinutes: slotStartMinutes(a.startTime) ?? slotStartMinutes(a.timeSlot),
         status,
         appointmentStatus: a.status,
         notes: a.notes || '',
@@ -349,7 +375,14 @@ export default function StaffClinicalDashboard({
       return start != null && end != null && start <= nowMinutes && nowMinutes < end;
     });
     if (!live || (!live.boothId && !live.boothOrStation)) return null;
-    return { id: live.boothId || null, label: live.boothOrStation || 'My booth' };
+    return {
+      id: live.boothId || null,
+      label: live.boothOrStation || 'My booth',
+      // The shift's hours are the session's hours.
+      start: clockToMinutes(live.startTime),
+      end: clockToMinutes(live.endTime),
+      hours: `${String(live.startTime).slice(0, 5)}-${String(live.endTime).slice(0, 5)}`,
+    };
     // `now` ticks every 30s so the booth follows shift changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todayShifts, primaryAffiliation, now]);
@@ -358,7 +391,7 @@ export default function StaffClinicalDashboard({
   // Patients without a booth (e.g. walk-ins at a hospital with no booths) stay visible to everyone.
   const scopedPatients = useMemo(() => {
     if (!boothFiltered) return patients;
-    return patients.filter((p) => (!p.booth && !p.boothId) || isAtBooth(p, myBooth));
+    return patients.filter((p) => (!p.booth && !p.boothId) || isInMySession(p, myBooth));
   }, [patients, boothFiltered, myBooth]);
 
   // A live session belongs to its booth team or whoever called the patient in;
@@ -407,6 +440,15 @@ export default function StaffClinicalDashboard({
   const activePatientPhotoUrl =
     activePatient?.photoUrl || activePatientContact?.patientProfilePhotoUrl || null;
 
+  // The queue list hides contact details until revealed, so the NIC comes from the contact lookup.
+  const administerPatient = useMemo(
+    () =>
+      activePatient
+        ? { ...activePatient, nic: activePatientContact?.patientNic || '' }
+        : null,
+    [activePatient, activePatientContact]
+  );
+
   const activePaymentSettled = activePatient ? isPaymentSettled(activePatient) : true;
 
   useEffect(() => {
@@ -450,7 +492,7 @@ export default function StaffClinicalDashboard({
           : unpaidWaiting
             ? 'No paid patients waiting. Unpaid appointments cannot be administered yet.'
             : boothFiltered
-              ? `No more waiting patients at ${myBooth.label}. Switch to All booths to help elsewhere.`
+              ? `No more waiting patients in your session at ${myBooth.label}. Switch to All sessions to help elsewhere.`
               : "No more waiting patients in today's queue."
       );
       return;
@@ -1087,7 +1129,7 @@ export default function StaffClinicalDashboard({
               </h2>
               <p className="section-title-desc">
                 {boothFiltered
-                  ? `Patients at ${myBooth.label} today, plus unassigned walk-ins`
+                  ? `Your session at ${myBooth.label}, ${myBooth.hours}, plus unassigned walk-ins`
                   : 'All patients booked at this hospital today'}
               </p>
             </div>
@@ -1096,20 +1138,20 @@ export default function StaffClinicalDashboard({
           <div className="queue-controls-bar">
             <div className="queue-controls-left">
               {myBooth ? (
-                <div className="queue-scope-switch" role="group" aria-label="Booth scope">
+                <div className="queue-scope-switch" role="group" aria-label="Session scope">
                   <button
                     type="button"
                     className={`queue-scope-btn${boothScope === 'mine' ? ' active' : ''}`}
                     onClick={() => setBoothScope('mine')}
                   >
-                    My booth · {String(myBooth.label).split(' · ')[0]}
+                    My session · {String(myBooth.label).split(' · ')[0]}
                   </button>
                   <button
                     type="button"
                     className={`queue-scope-btn${boothScope === 'all' ? ' active' : ''}`}
                     onClick={() => setBoothScope('all')}
                   >
-                    All booths
+                    All sessions
                   </button>
                 </div>
               ) : null}
@@ -1524,7 +1566,7 @@ export default function StaffClinicalDashboard({
       <AdministerModal
         isOpen={isAdministerModalOpen}
         onClose={() => setIsAdministerModalOpen(false)}
-        patient={activePatient}
+        patient={administerPatient}
         onCertify={handleCertifyAdministration}
         lotOptions={inventoryLots}
         isDoctor={isDoctor}

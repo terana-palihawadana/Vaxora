@@ -122,6 +122,7 @@ class _StaffShiftsScreenState extends State<StaffShiftsScreen> {
           (id) => shifts.every((s) => s.shiftId != id),
         );
       });
+      await _reconcileCalendar(shifts);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -131,6 +132,21 @@ class _StaffShiftsScreenState extends State<StaffShiftsScreen> {
         _covers = [];
         _seenIncoming = {};
       });
+    }
+  }
+
+  /// Keeps calendar events in step with the roster that just loaded.
+  Future<void> _reconcileCalendar(List<ShiftModel> shifts) async {
+    try {
+      final changed = await StaffCalendarSync.reconcile(
+        shifts: shifts,
+        from: _from,
+        to: _to,
+        hospitalNameFor: _hospitalFor,
+      );
+      if (changed) await _loadSynced();
+    } catch (_) {
+      // Calendar trouble must not break the roster.
     }
   }
 
@@ -188,19 +204,35 @@ class _StaffShiftsScreenState extends State<StaffShiftsScreen> {
     if (shifts.isEmpty || _syncing) return;
     setState(() => _syncing = true);
     try {
-      final added = await StaffCalendarSync.addShifts(
+      final result = await StaffCalendarSync.addShifts(
         shifts: shifts,
         hospitalNameFor: _hospitalFor,
       );
       await _loadSynced();
       if (!mounted) return;
+      if (result.status == CalendarSyncStatus.denied) {
+        _toast('Calendar access is off. Allow it in Settings.');
+        return;
+      }
+      if (result.status == CalendarSyncStatus.noCalendar) {
+        _toast('No calendar found on this device.');
+        return;
+      }
       setState(() {
         _selectMode = false;
         _selectedIds = {};
       });
-      _toast(added == 0 ? 'Nothing added.' : 'Added $added shifts.');
-    } catch (e) {
-      _toast('Calendar error: $e');
+      final saved = result.added + result.updated;
+      final shiftsLabel = saved == 1 ? '1 shift' : '$saved shifts';
+      if (result.failed > 0) {
+        _toast('Added $shiftsLabel, ${result.failed} failed.');
+      } else if (saved == 0) {
+        _toast('Already in your calendar.');
+      } else {
+        _toast('Added $shiftsLabel to calendar.');
+      }
+    } catch (_) {
+      _toast('Could not reach the calendar.');
     } finally {
       if (mounted) setState(() => _syncing = false);
     }

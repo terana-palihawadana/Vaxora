@@ -220,6 +220,15 @@ export function IconArrowRight(props) {
   );
 }
 
+export function IconSend(props) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M21 3L10.5 13.5" {...stroke} />
+      <path d="M21 3l-6.5 18-4-7.5L3 9.5 21 3z" {...stroke} />
+    </SvgIcon>
+  );
+}
+
 export function IconCheck(props) {
   return (
     <SvgIcon {...props}>

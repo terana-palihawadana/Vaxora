@@ -36,7 +36,6 @@ describe('Booking Management - Create Booking Form & Validation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    window.alert = vi.fn();
 
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
@@ -92,9 +91,9 @@ describe('Booking Management - Create Booking Form & Validation', () => {
 
     fireEvent.submit(form);
 
-    expect(window.alert).toHaveBeenCalledWith(
-      'Please complete all steps (Vaccine, Hospital, Date, and Time).'
-    );
+    expect(
+      await screen.findByText('Please complete all steps (Vaccine, Hospital, Date, and Time).')
+    ).toBeInTheDocument();
     expect(appointmentService.bookAppointment).not.toHaveBeenCalled();
   });
 
@@ -250,11 +249,11 @@ describe('Booking Management - Create Booking Form & Validation', () => {
     });
     fireEvent.click(submitBtn);
 
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalledWith(
+    expect(
+      await screen.findByText(
         'Booking failed: The requested time slot has just been reserved by another patient.'
-      );
-    });
+      )
+    ).toBeInTheDocument();
   });
 
   // 8. Loading state while submitting

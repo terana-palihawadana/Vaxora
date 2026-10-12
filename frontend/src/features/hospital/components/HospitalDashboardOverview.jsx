@@ -6,6 +6,7 @@ import scheduleService from '../services/scheduleService';
 import RestockVaccineModal from './RestockVaccineModal';
 import staffService from '../services/staffService';
 import { inventoryService } from '../services/inventoryService';
+import deskService from '../../desk/services/deskService';
 import { appointmentService } from '../../patient/services/appointmentService';
 import { authService } from '../../auth';
 import { hospitalMinutesNow, hospitalToday, toHospitalDateKey } from '../utils/hospitalDate';
@@ -202,6 +203,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
   const [sessionFilter, setSessionFilter] = useState('all');
   const [todaySessions, setTodaySessions] = useState([]);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastTone, setToastTone] = useState('success'); // success | error
   // Tick so missed slots drop off the live board when their window ends.
   const [nowMinutes, setNowMinutes] = useState(() => hospitalMinutesNow());
 
@@ -259,8 +261,9 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
 
   const toastTimerRef = useRef(null);
 
-  const showToast = (msg) => {
+  const showToast = (msg, tone = 'success') => {
     setToastMessage(msg);
+    setToastTone(tone);
     clearTimeout(toastTimerRef.current);
     toastTimerRef.current = setTimeout(() => setToastMessage(''), 3500);
   };
@@ -273,7 +276,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       showToast('Counter payment recorded — patient is ready for clinical queue.');
       await loadAppointmentsQueue();
     } catch (err) {
-      showToast(err.message || 'Failed to record payment.');
+      showToast(err.message || 'Failed to record payment.', 'error');
     }
   };
 
@@ -283,7 +286,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       showToast('Patient checked in — now in the clinical queue.');
       await loadAppointmentsQueue();
     } catch (err) {
-      showToast(err.message || 'Failed to check in patient.');
+      showToast(err.message || 'Failed to check in patient.', 'error');
     }
   };
 
@@ -303,7 +306,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       showToast('Marked as no-show.');
       await loadAppointmentsQueue();
     } catch (err) {
-      showToast(err.message || 'Failed to mark no-show.');
+      showToast(err.message || 'Failed to mark no-show.', 'error');
     }
   };
 
@@ -320,7 +323,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       showToast('Unpaid appointment declined.');
       await loadAppointmentsQueue();
     } catch (err) {
-      showToast(err.message || 'Failed to decline appointment.');
+      showToast(err.message || 'Failed to decline appointment.', 'error');
     }
   };
 
@@ -329,11 +332,17 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
     setInventoryLoading(true);
     setInventoryError('');
     try {
-      const [batchesRes, formularyRes, vaultsRes] = await Promise.allSettled([
-        inventoryService.getInventory(),
-        inventoryService.getFormulary(),
-        inventoryService.getColdVaults(),
-      ]);
+      // The front desk only needs the vaccine list for walk-ins; stock and vaults stay manager-only.
+      const isDeskUser = String(authService.getUser()?.role || '').toUpperCase() === 'FRONT_DESK';
+      const [batchesRes, formularyRes, vaultsRes] = await Promise.allSettled(
+        isDeskUser
+          ? [Promise.resolve([]), deskService.getFormulary(), Promise.resolve([])]
+          : [
+              inventoryService.getInventory(),
+              inventoryService.getFormulary(),
+              inventoryService.getColdVaults(),
+            ]
+      );
 
       const batches = batchesRes.status === 'fulfilled' && Array.isArray(batchesRes.value) ? batchesRes.value : [];
       const formulary = formularyRes.status === 'fulfilled' && Array.isArray(formularyRes.value) ? formularyRes.value : [];
@@ -343,11 +352,13 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       setColdVaults(vaults);
 
       // Map DB batches to inventory cards
-      const mappedBatches = batches.map((b) => {
+      // Orders awaiting delivery hold no stock yet, so they are not shown as inventory cards
+      const mappedBatches = batches.filter((b) => b.status !== 'ordered').map((b) => {
         const available = Number(b.available ?? b.quantity ?? 0);
         const capacity = Number(b.capacity ?? Math.max(available * 1.5, 400));
         const minThreshold = Number(b.minThreshold ?? 50);
-        const isLow = available <= minThreshold;
+        // Low stock is per vaccine (all unexpired lots together), as flagged by the API
+        const isLow = b.isLowStock ?? available <= minThreshold;
 
         return {
           id: b.id,
@@ -420,10 +431,10 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
             nic: a.patientNic || a.PatientNic || '',
             date: appointmentDate,
             vaccine: a.vaccineName || a.VaccineName || 'Vaccine',
-            dose: a.prescribedDosage || a.PrescribedDosage || 'Primary / Booster Dose',
+            dose: a.prescribedDosage || a.PrescribedDosage || 'Dosage not set',
             booth: resolveQueueBooth(a, boothCards),
             practitioner: a.doctorName ? `Dr. ${a.doctorName.replace(/^Dr\.\s*/i, '')}` : (a.nurseName ? `Nurse ${a.nurseName}` : 'Staff Duty Officer'),
-            time: a.timeSlot || a.TimeSlot || '09:00 AM - 09:20 AM',
+            time: a.timeSlot || a.TimeSlot || '',
             status: queueStatus,
             dbStatus: rawStatus,
             paymentStatus: a.paymentStatus || a.PaymentStatus || '—',
@@ -617,7 +628,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       showToast(`Logged restock shipment for ${vaccineName} (${quantity} vials).`);
     } catch (err) {
       console.error('Failed to restock batch:', err);
-      alert('Failed to log restock shipment: ' + err.message);
+      showToast(`Failed to log restock shipment: ${err.message}`, 'error');
       throw err;
     }
   };
@@ -740,6 +751,12 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
     () => todayPatients.filter((p) => p.status === 'waiting' && p.checkedIn).length,
     [todayPatients]
   );
+
+  const hasQueueFilters =
+    statusFilter !== 'all'
+    || boothFilter !== 'all'
+    || sessionFilter !== 'all'
+    || Boolean(searchQuery.trim());
 
   const queueRows = isQueueView ? filteredQueue : filteredQueue.slice(0, HOME_QUEUE_PREVIEW_ROWS);
 
@@ -936,7 +953,9 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
             ) : filteredQueue.length === 0 ? (
               <tr>
                 <td colSpan={isQueueView ? 6 : 5} className="empty-table-cell">
-                  No patients in today's queue.
+                  {hasQueueFilters && todayQueuePatients.length > 0
+                    ? 'No patients match these filters.'
+                    : "No patients in today's queue."}
                 </td>
               </tr>
             ) : (
@@ -1087,10 +1106,11 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
       {/* Toast Notice */}
       {toastMessage && (
         <div
+          role={toastTone === 'error' ? 'alert' : 'status'}
           style={{
-            background: 'var(--color-success-bg)',
-            border: '1px solid var(--color-success-border)',
-            color: 'var(--color-success)',
+            background: `var(--color-${toastTone}-bg)`,
+            border: `1px solid var(--color-${toastTone}-border)`,
+            color: `var(--color-${toastTone})`,
             padding: '12px 18px',
             borderRadius: '10px',
             marginBottom: '20px',
@@ -1098,7 +1118,7 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 4px 12px rgba(var(--rgb-success), 0.12)',
+            boxShadow: `0 4px 12px rgba(var(--rgb-${toastTone}), 0.12)`,
             animation: 'fadeIn 0.2s ease',
           }}
         >
@@ -1106,7 +1126,8 @@ export default function HospitalDashboardOverview({ view = 'home' }) {
           <button
             type="button"
             onClick={() => setToastMessage('')}
-            style={{ background: 'none', border: 'none', color: 'var(--color-success)', cursor: 'pointer', fontWeight: 800 }}
+            aria-label="Dismiss"
+            style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontWeight: 800 }}
           >
             <IconClose size={14} />
           </button>

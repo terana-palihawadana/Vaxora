@@ -137,7 +137,7 @@ export default function LoginForm({ onSwitchToSignup, onForgotPassword, onSucces
           onClick={onSwitchToSignup}
           disabled={loading}
         >
-          Create a new account signup
+          Create a new account
         </button>
       </div>
     </form>

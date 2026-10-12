@@ -43,34 +43,52 @@ async def tool_get_stock_levels(token: Optional[str] = None) -> Dict[str, Any]:
 
 async def tool_get_low_stock_items(token: Optional[str] = None) -> Dict[str, Any]:
     """
-    Returns ONLY batches where available <= minThreshold.
+    Returns ONLY vaccines whose total unexpired stock is <= minThreshold.
+    Stock is summed across all of a vaccine's batches, so a nearly empty lot
+    is not flagged while another lot of the same vaccine still covers it.
+    Vials already on order (purchase order sent, delivery pending) count as
+    covered, so the same shortage is not ordered twice.
     Pre-filters on the Python side so the LLM doesn't have to compare numbers.
     Enriches each item with 'deficit' and 'suggested_qty' (pre-computed).
     """
     try:
         batches = await _api_get("/inventory/batches", token=token)
-        low: List[Dict[str, Any]] = []
+        vaccines: Dict[str, Dict[str, Any]] = {}
         for b in batches or []:
+            vaccine_id = b.get("vaccineId")
             available = b.get("available")
             min_threshold = b.get("minThreshold")
-            if not isinstance(available, int) or not isinstance(min_threshold, int):
+            if not vaccine_id or not isinstance(available, int) or not isinstance(min_threshold, int):
                 continue
-            if available <= min_threshold:
-                deficit = min_threshold - available
-                # recommended = max(50, round_up_to_nearest_50((2 * threshold) - available))
-                target = (2 * min_threshold) - available
+            entry = vaccines.setdefault(vaccine_id, {
+                "vaccineId": vaccine_id,
+                "vaccineName": b.get("name"),
+                "available": 0,
+                "onOrder": 0,
+                "minThreshold": min_threshold,
+                "batchCount": 0,
+            })
+            if b.get("status") == "ordered":
+                capacity = b.get("capacity")
+                entry["onOrder"] += capacity if isinstance(capacity, int) else 0
+                continue
+            entry["batchCount"] += 1
+            if b.get("expiryStatus") != "expired":
+                entry["available"] += available
+
+        low: List[Dict[str, Any]] = []
+        for entry in vaccines.values():
+            available = entry["available"]
+            covered = available + entry["onOrder"]
+            min_threshold = entry["minThreshold"]
+            if covered <= min_threshold:
+                # recommended = max(50, round_up_to_nearest_50((2 * threshold) - covered))
+                target = (2 * min_threshold) - covered
                 rounded = ((target + 49) // 50) * 50 if target > 0 else 50
-                suggested_qty = max(50, rounded)
                 low.append({
-                    "batchId": b.get("id"),
-                    "vaccineId": b.get("vaccineId"),
-                    "vaccineName": b.get("name"),
-                    "lotNumber": b.get("lotNumber"),
-                    "available": available,
-                    "minThreshold": min_threshold,
-                    "deficit": deficit,
-                    "suggested_qty": suggested_qty,
-                    "expiry": b.get("expiry"),
+                    **entry,
+                    "deficit": min_threshold - available,
+                    "suggested_qty": max(50, rounded),
                 })
         return {"success": True, "low_stock_items": low, "count": len(low)}
     except Exception as e:
@@ -83,6 +101,31 @@ async def tool_get_vaccines(token: Optional[str] = None) -> Dict[str, Any]:
         return {"success": True, "vaccines": data}
     except Exception as e:
         return {"success": False, "error": str(e)}
+
+
+async def get_formulary_pricing(token: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    """
+    vaccine_id -> {"supplier_cost", "category", "supplier_name"} from the hospital's formulary.
+    Returns {} on any failure so the PO falls back to category estimates.
+    """
+    try:
+        entries = await _api_get("/inventory/formulary", token=token)
+    except Exception:
+        return {}
+    pricing: Dict[str, Dict[str, Any]] = {}
+    for e in entries or []:
+        vaccine_id = e.get("vaccineId")
+        if not vaccine_id:
+            continue
+        cost = e.get("supplierCost") or 0
+        # Whole-rupee costs stay ints so the PO shows 1,200 rather than 1,200.0
+        cost = int(cost) if float(cost).is_integer() else float(cost)
+        pricing[str(vaccine_id).lower()] = {
+            "supplier_cost": cost,
+            "category": e.get("category"),
+            "supplier_name": e.get("supplierName"),
+        }
+    return pricing
 
 
 async def tool_get_expiring_batches(days_threshold: int = 60, token: Optional[str] = None) -> Dict[str, Any]:
@@ -188,7 +231,7 @@ RESTOCK_TOOLS_SCHEMA = [
         "function": {
             "name": "get_low_stock_items",
             "description": (
-                "Returns ONLY batches that are at or below their minimum threshold. "
+                "Returns ONLY vaccines whose total stock across all batches is at or below the minimum threshold. "
                 "Each item already includes 'deficit' and 'suggested_qty' (pre-computed). "
                 "Use this instead of get_stock_levels when you need to find restock candidates."
             ),

@@ -39,5 +39,11 @@ public class StaffAffiliation
     public DateTime InvitedAt { get; set; } = DateTime.UtcNow;
     public DateTime? RespondedAt { get; set; }
 
+    /// <summary>
+    /// The doctor's main employer. It rosters them freely; other hospitals only get
+    /// the hours the doctor offers in <see cref="StaffAvailabilityWindow"/>.
+    /// </summary>
+    public bool IsPrimary { get; set; }
+
     public virtual ICollection<StaffShift> Shifts { get; set; } = new List<StaffShift>();
 }

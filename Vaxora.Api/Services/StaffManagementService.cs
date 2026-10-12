@@ -16,6 +16,8 @@ public interface IStaffManagementService
     /// <summary>Removes staff from the roster and returns how many upcoming shifts were freed.</summary>
     Task<int> RemoveAffiliationAsync(Guid hospitalUserId, Guid affiliationId);
     Task<StaffAffiliationDto> UpdateDutyStatusAsync(Guid actorUserId, Guid affiliationId, UpdateDutyStatusDto dto);
+    /// <summary>A doctor sets which hospital is primary and the hours offered to this one.</summary>
+    Task<StaffAffiliationDto> UpdateMyAvailabilityAsync(Guid staffUserId, Guid affiliationId, UpdateStaffAvailabilityDto dto);
     Task<List<HospitalBoothDto>> GetHospitalBoothsAsync(Guid hospitalUserId, bool activeOnly = false);
     Task<HospitalBoothDto> CreateHospitalBoothAsync(Guid hospitalUserId, CreateHospitalBoothDto dto);
     Task<HospitalBoothDto> UpdateHospitalBoothAsync(Guid hospitalUserId, Guid boothId, UpdateHospitalBoothDto dto);
@@ -28,6 +30,12 @@ public interface IStaffManagementService
     /// </summary>
     Task<List<StaffBusyBlockDto>> GetAffiliatedStaffBusyBlocksAsync(Guid hospitalUserId, DateOnly? from = null, DateOnly? to = null);
     Task<StaffCoverageReportDto> GetCoverageReportAsync(Guid hospitalUserId, DateOnly from, DateOnly to);
+    /// <summary>Posted vaccine sessions in the range with who is rostered onto each.</summary>
+    Task<List<RosterSessionDto>> GetRosterSessionsAsync(Guid hospitalUserId, DateOnly from, DateOnly to);
+    /// <summary>Every active doctor and nurse, with whether they can staff this session.</summary>
+    Task<List<SessionCandidateDto>> GetSessionCandidatesAsync(Guid hospitalUserId, Guid scheduleId, DateOnly date);
+    /// <summary>Rosters staff onto a session; the shift takes the session's date, hours and booth.</summary>
+    Task<RosterSessionDto> AssignSessionStaffAsync(Guid hospitalUserId, AssignSessionStaffDto dto);
     Task<SuggestWeekCoverageResultDto> SuggestWeekCoverageAsync(Guid hospitalUserId, SuggestWeekCoverageDto dto);
     Task<List<StaffShiftDto>> GetMyShiftsAsync(Guid staffUserId, DateOnly? from = null, DateOnly? to = null);
     Task<StaffShiftDto> UpdateShiftAsync(Guid hospitalUserId, Guid shiftId, UpdateStaffShiftDto dto);
@@ -255,7 +263,8 @@ public class StaffManagementService : IStaffManagementService
             .Include(a => a.HospitalUser).ThenInclude(h => h.HospitalProfile)
             .Include(a => a.StaffUser).ThenInclude(s => s.DoctorProfile)
             .Include(a => a.StaffUser).ThenInclude(s => s.NurseProfile)
-            .Where(a => a.HospitalUserId == hospitalUserId)
+            // Front-desk accounts are managed separately and never join the clinical roster.
+            .Where(a => a.HospitalUserId == hospitalUserId && a.StaffRole != UserRole.FRONT_DESK)
             .AsQueryable();
 
         var statusFilter = string.IsNullOrWhiteSpace(status) ? AffiliationStatus.Active.ToString() : status.Trim();
@@ -299,6 +308,7 @@ public class StaffManagementService : IStaffManagementService
 
         var dtos = list.Select(a => MapAffiliation(a, a.HospitalUser, a.StaffUser)).ToList();
         await AttachLiveDutyAsync(dtos);
+        await AttachAvailabilityAsync(dtos);
 
         if (!string.IsNullOrWhiteSpace(dutyStatus) &&
             Enum.TryParse<DutyStatus>(dutyStatus.Trim(), true, out var liveDutyFilter))
@@ -343,6 +353,7 @@ public class StaffManagementService : IStaffManagementService
 
         var dtos = list.Select(a => MapAffiliation(a, a.HospitalUser, a.StaffUser)).ToList();
         await AttachLiveDutyAsync(dtos);
+        await AttachAvailabilityAsync(dtos);
         return dtos;
     }
 
@@ -451,6 +462,9 @@ public class StaffManagementService : IStaffManagementService
         if (!Enum.TryParse<DutyStatus>(dto.DutyStatus.Trim(), true, out var newDuty))
             throw new InvalidOperationException("DutyStatus must be Off, OnDuty, or OnBreak.");
 
+        if (newDuty == DutyStatus.OnDuty)
+            await EnsureCanClockInAsync(affiliation, checkOfferedHours: isStaff);
+
         affiliation.DutyStatus = newDuty;
         affiliation.DutyUpdatedAt = DateTime.UtcNow;
         affiliation.DutyUpdatedByUserId = actorUserId;
@@ -473,7 +487,236 @@ public class StaffManagementService : IStaffManagementService
         await _context.SaveChangesAsync();
         var result = MapAffiliation(affiliation, affiliation.HospitalUser, affiliation.StaffUser);
         await AttachLiveDutyAsync(new List<StaffAffiliationDto> { result });
+        await AttachAvailabilityAsync(new List<StaffAffiliationDto> { result });
         return result;
+    }
+
+    /// <summary>
+    /// A doctor cannot be present at two hospitals at once, and outside the primary
+    /// hospital may only clock in around the hours they offered. The hospital desk can
+    /// still clock someone in for a one-off (checkOfferedHours = false).
+    /// </summary>
+    private async Task EnsureCanClockInAsync(StaffAffiliation affiliation, bool checkOfferedHours)
+    {
+        var otherAffiliationIds = await _context.StaffAffiliations
+            .AsNoTracking()
+            .Where(a =>
+                a.StaffUserId == affiliation.StaffUserId &&
+                a.Id != affiliation.Id &&
+                a.Status == AffiliationStatus.Active)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var onDutyElsewhere = await StaffDutyHelper.GetOnDutyAffiliationIdsAsync(_context, otherAffiliationIds);
+        if (onDutyElsewhere.Count > 0)
+            throw new InvalidOperationException(
+                "Already on duty at another hospital. Clock out there before clocking in here.");
+
+        if (!checkOfferedHours) return;
+
+        var rules = (await StaffAvailabilityHelper.LoadAsync(_context, new[] { affiliation.Id }))
+            .GetValueOrDefault(affiliation.Id);
+        if (rules == null) return;
+
+        var today = HospitalToday();
+        if (rules.UnavailableDates.Contains(today))
+            throw new InvalidOperationException(
+                "You marked today as unavailable at this hospital. Update your availability to clock in.");
+
+        if (!rules.HasWeeklyLimit) return;
+
+        var now = HospitalNow().TimeOfDay;
+        var grace = StaffAvailabilityHelper.ClockInGrace;
+        var insideOfferedHours = rules.Windows.Any(w =>
+            w.Day == today.DayOfWeek &&
+            now >= w.Start.ToTimeSpan() - grace &&
+            now <= w.End.ToTimeSpan() + grace);
+
+        // A rostered shift (for example a hospital-approved one-off) also allows clock-in.
+        var hasShiftToday = await _context.StaffShifts
+            .AsNoTracking()
+            .AnyAsync(s => s.AffiliationId == affiliation.Id && s.ShiftDate == today);
+
+        if (!insideOfferedHours && !hasShiftToday)
+            throw new InvalidOperationException(
+                "This is outside the hours you offer this hospital. Update your availability to clock in.");
+    }
+
+    public async Task<StaffAffiliationDto> UpdateMyAvailabilityAsync(
+        Guid staffUserId,
+        Guid affiliationId,
+        UpdateStaffAvailabilityDto dto)
+    {
+        await EnsureActiveStaffAsync(staffUserId);
+
+        var affiliation = await _context.StaffAffiliations
+            .Include(a => a.HospitalUser).ThenInclude(h => h.HospitalProfile)
+            .Include(a => a.StaffUser).ThenInclude(s => s.DoctorProfile)
+            .Include(a => a.StaffUser).ThenInclude(s => s.NurseProfile)
+            .FirstOrDefaultAsync(a => a.Id == affiliationId);
+
+        if (affiliation == null)
+            throw new KeyNotFoundException("Affiliation not found.");
+
+        if (affiliation.StaffUserId != staffUserId)
+            throw new UnauthorizedAccessException("You can only set your own availability.");
+
+        if (affiliation.Status != AffiliationStatus.Active)
+            throw new InvalidOperationException("Availability can only be set for hospitals you have joined.");
+
+        // Nurses belong to a single hospital, so there is nothing to split.
+        if (affiliation.StaffRole != UserRole.DOCTOR)
+            throw new InvalidOperationException("Availability applies to doctors only.");
+
+        var requested = dto.Windows ?? new List<AvailabilityWindowDto>();
+        if (requested.Any(w => w.DayOfWeek < 0 || w.DayOfWeek > 6))
+            throw new InvalidOperationException("Day of week must be between Sunday and Saturday.");
+
+        var windows = requested
+            .Select(w => new StaffAvailabilityHelper.Window((DayOfWeek)w.DayOfWeek, w.StartTime, w.EndTime))
+            .OrderBy(w => w.Day)
+            .ThenBy(w => w.Start)
+            .ToList();
+
+        foreach (var window in windows)
+        {
+            if (window.End <= window.Start)
+                throw new InvalidOperationException($"{window.Day}: end time must be after start time.");
+        }
+
+        for (var i = 1; i < windows.Count; i++)
+        {
+            if (windows[i].Day == windows[i - 1].Day && windows[i].Start < windows[i - 1].End)
+                throw new InvalidOperationException($"{windows[i].Day}: the time blocks overlap.");
+        }
+
+        var otherAffiliations = await _context.StaffAffiliations
+            .Include(a => a.HospitalUser).ThenInclude(h => h.HospitalProfile)
+            .Where(a =>
+                a.StaffUserId == staffUserId &&
+                a.Id != affiliation.Id &&
+                a.Status == AffiliationStatus.Active)
+            .ToListAsync();
+
+        // Hours offered to two hospitals must not clash or leave no time to travel.
+        if (!dto.IsPrimary && windows.Count > 0)
+        {
+            var otherRules = await StaffAvailabilityHelper.LoadAsync(
+                _context,
+                otherAffiliations.Select(a => a.Id).ToList());
+
+            foreach (var other in otherAffiliations)
+            {
+                var rules = otherRules.GetValueOrDefault(other.Id);
+                if (rules == null || !rules.HasWeeklyLimit) continue;
+
+                var clash = windows.FirstOrDefault(w => rules.Windows.Any(o =>
+                    o.Day == w.Day &&
+                    StaffAvailabilityHelper.WithinTravelGap(w.Start, w.End, o.Start, o.End)));
+                if (clash != null)
+                {
+                    var otherName = other.HospitalUser.HospitalProfile?.HospitalName ?? "another hospital";
+                    throw new InvalidOperationException(
+                        $"{clash.Day} {clash.Start:HH\\:mm}-{clash.End:HH\\:mm} clashes with the hours you offer {otherName}. " +
+                        $"Leave at least {StaffAvailabilityHelper.TravelGap.TotalMinutes:0} minutes between hospitals.");
+                }
+            }
+        }
+
+        var today = HospitalToday();
+        var unavailableDates = (dto.UnavailableDates ?? new List<DateOnly>())
+            .Where(d => d >= today)
+            .Distinct()
+            .OrderBy(d => d)
+            .ToList();
+        if (unavailableDates.Count > 366)
+            throw new InvalidOperationException("You can list at most 366 days off.");
+
+        // Only one hospital can be the main employer.
+        if (dto.IsPrimary)
+        {
+            foreach (var other in otherAffiliations.Where(a => a.IsPrimary))
+                other.IsPrimary = false;
+        }
+        affiliation.IsPrimary = dto.IsPrimary;
+
+        _context.StaffAvailabilityWindows.RemoveRange(
+            await _context.StaffAvailabilityWindows.Where(w => w.AffiliationId == affiliation.Id).ToListAsync());
+        _context.StaffUnavailableDates.RemoveRange(
+            await _context.StaffUnavailableDates.Where(d => d.AffiliationId == affiliation.Id).ToListAsync());
+
+        _context.StaffAvailabilityWindows.AddRange(windows.Select(w => new StaffAvailabilityWindow
+        {
+            AffiliationId = affiliation.Id,
+            DayOfWeek = w.Day,
+            StartTime = w.Start,
+            EndTime = w.End
+        }));
+        _context.StaffUnavailableDates.AddRange(unavailableDates.Select(d => new StaffUnavailableDate
+        {
+            AffiliationId = affiliation.Id,
+            Date = d
+        }));
+
+        _context.AuditLogs.Add(new AuditLog
+        {
+            UserId = staffUserId,
+            UserEmail = affiliation.StaffUser.Email,
+            Role = affiliation.StaffRole.ToString(),
+            Action = "STAFF_AVAILABILITY_UPDATED",
+            Details =
+                $"{GetStaffName(affiliation.StaffUser)} set availability at hospital user {affiliation.HospitalUserId}: " +
+                $"primary={dto.IsPrimary}, {windows.Count} weekly block(s), {unavailableDates.Count} unavailable date(s)"
+        });
+
+        await _context.SaveChangesAsync();
+
+        var result = MapAffiliation(affiliation, affiliation.HospitalUser, affiliation.StaffUser);
+        var results = new List<StaffAffiliationDto> { result };
+        await AttachLiveDutyAsync(results);
+        await AttachAvailabilityAsync(results);
+        return result;
+    }
+
+    private async Task AttachAvailabilityAsync(List<StaffAffiliationDto> dtos)
+    {
+        if (dtos.Count == 0) return;
+
+        var rules = await StaffAvailabilityHelper.LoadAsync(_context, dtos.Select(d => d.AffiliationId).ToList());
+        foreach (var dto in dtos)
+        {
+            if (!rules.TryGetValue(dto.AffiliationId, out var rule)) continue;
+            dto.AvailabilityWindows = rule.Windows
+                .Select(w => new AvailabilityWindowDto
+                {
+                    DayOfWeek = (int)w.Day,
+                    StartTime = w.Start,
+                    EndTime = w.End
+                })
+                .ToList();
+            dto.UnavailableDates = rule.UnavailableDates.OrderBy(d => d).ToList();
+        }
+    }
+
+    /// <summary>
+    /// Rejects a shift outside what the doctor offers this hospital unless the hospital
+    /// confirmed the one-off. The "Outside availability:" prefix lets clients offer that choice.
+    /// </summary>
+    private async Task EnsureWithinAvailabilityAsync(
+        StaffAffiliation affiliation,
+        DateOnly shiftDate,
+        TimeOnly start,
+        TimeOnly end,
+        bool overrideAvailability)
+    {
+        if (overrideAvailability) return;
+
+        var rules = (await StaffAvailabilityHelper.LoadAsync(_context, new[] { affiliation.Id }))
+            .GetValueOrDefault(affiliation.Id);
+        var reason = StaffAvailabilityHelper.Explain(rules, shiftDate, start, end);
+        if (reason != null)
+            throw new InvalidOperationException(
+                $"Outside availability: {GetStaffName(affiliation.StaffUser)} is {reason} at this hospital.");
     }
 
     public async Task<List<HospitalBoothDto>> GetHospitalBoothsAsync(Guid hospitalUserId, bool activeOnly = false)
@@ -645,7 +888,11 @@ public class StaffManagementService : IStaffManagementService
         if (affiliation.Status != AffiliationStatus.Active)
             throw new InvalidOperationException("Shifts can only be assigned to active staff.");
 
-        await EnsureNoShiftOverlapAsync(affiliation.StaffUserId, dto.ShiftDate, dto.StartTime, dto.EndTime);
+        if (affiliation.StaffRole == UserRole.FRONT_DESK)
+            throw new InvalidOperationException("Shifts can only be assigned to doctors or nurses.");
+
+        await EnsureNoShiftOverlapAsync(hospitalUserId, affiliation.StaffUserId, dto.ShiftDate, dto.StartTime, dto.EndTime);
+        await EnsureWithinAvailabilityAsync(affiliation, dto.ShiftDate, dto.StartTime, dto.EndTime, dto.OverrideAvailability);
 
         var (boothId, boothLabel) = await ResolveBoothAssignmentAsync(
             hospitalUserId,
@@ -708,7 +955,10 @@ public class StaffManagementService : IStaffManagementService
 
         var localAffiliations = await _context.StaffAffiliations
             .AsNoTracking()
-            .Where(a => a.HospitalUserId == hospitalUserId && a.Status == AffiliationStatus.Active)
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.Status == AffiliationStatus.Active &&
+                a.StaffRole != UserRole.FRONT_DESK)
             .Select(a => new { a.Id, a.StaffUserId })
             .ToListAsync();
 
@@ -735,18 +985,369 @@ public class StaffManagementService : IStaffManagementService
             .ThenBy(s => s.StartTime)
             .ToListAsync();
 
-        return shifts
+        var blocks = shifts
             .Where(s => localByStaff.ContainsKey(s.Affiliation.StaffUserId))
-            .Select(s => new StaffBusyBlockDto
+            .Select(s =>
             {
-                StaffUserId = s.Affiliation.StaffUserId,
-                LocalAffiliationId = localByStaff[s.Affiliation.StaffUserId],
-                ShiftDate = s.ShiftDate,
-                StartTime = s.StartTime,
-                EndTime = s.EndTime,
-                IsExternal = s.Affiliation.HospitalUserId != hospitalUserId
+                // Another hospital's shift also blocks the travel time either side of it.
+                var isExternal = s.Affiliation.HospitalUserId != hospitalUserId;
+                return new StaffBusyBlockDto
+                {
+                    StaffUserId = s.Affiliation.StaffUserId,
+                    LocalAffiliationId = localByStaff[s.Affiliation.StaffUserId],
+                    ShiftDate = s.ShiftDate,
+                    StartTime = isExternal ? PadStart(s.StartTime) : s.StartTime,
+                    EndTime = isExternal ? PadEnd(s.EndTime) : s.EndTime,
+                    IsExternal = isExternal
+                };
             })
             .ToList();
+
+        blocks.AddRange(await BuildUnavailableBlocksAsync(
+            localAffiliations.Select(a => (a.Id, a.StaffUserId)).ToList(),
+            from,
+            to));
+        return blocks;
+    }
+
+    /// <summary>
+    /// Days off and hours a doctor does not offer this hospital, expressed as busy
+    /// blocks so the scheduling agent never proposes a shift there.
+    /// </summary>
+    private async Task<List<StaffBusyBlockDto>> BuildUnavailableBlocksAsync(
+        List<(Guid AffiliationId, Guid StaffUserId)> affiliations,
+        DateOnly? from,
+        DateOnly? to)
+    {
+        var blocks = new List<StaffBusyBlockDto>();
+        var rules = await StaffAvailabilityHelper.LoadAsync(_context, affiliations.Select(a => a.AffiliationId).ToList());
+        var dayStart = TimeOnly.MinValue;
+        var dayEnd = new TimeOnly(23, 59, 59);
+
+        foreach (var (affiliationId, staffUserId) in affiliations)
+        {
+            if (!rules.TryGetValue(affiliationId, out var rule)) continue;
+
+            void Add(DateOnly date, TimeOnly start, TimeOnly end)
+            {
+                if (end <= start) return;
+                blocks.Add(new StaffBusyBlockDto
+                {
+                    StaffUserId = staffUserId,
+                    LocalAffiliationId = affiliationId,
+                    ShiftDate = date,
+                    StartTime = start,
+                    EndTime = end,
+                    IsUnavailable = true
+                });
+            }
+
+            foreach (var date in rule.UnavailableDates)
+            {
+                if ((!from.HasValue || date >= from.Value) && (!to.HasValue || date <= to.Value))
+                    Add(date, dayStart, dayEnd);
+            }
+
+            // Weekly hours need a bounded range to expand into dates.
+            if (!rule.HasWeeklyLimit || !from.HasValue || !to.HasValue) continue;
+            if (to.Value.DayNumber - from.Value.DayNumber > 62) continue;
+
+            for (var date = from.Value; date <= to.Value; date = date.AddDays(1))
+            {
+                if (rule.UnavailableDates.Contains(date)) continue;
+
+                var cursor = dayStart;
+                foreach (var window in rule.Windows.Where(w => w.Day == date.DayOfWeek).OrderBy(w => w.Start))
+                {
+                    Add(date, cursor, window.Start);
+                    cursor = window.End;
+                }
+                Add(date, cursor, dayEnd);
+            }
+        }
+
+        return blocks;
+    }
+
+    private sealed record SessionOccurrence(VaccineSchedule Schedule, DateOnly Date, TimeOnly Start, TimeOnly End);
+
+    /// <summary>Dated runs of the hospital's active vaccine sessions in [from, to].</summary>
+    private async Task<List<SessionOccurrence>> ExpandSessionsAsync(
+        Guid hospitalUserId,
+        Guid? hospitalProfileId,
+        DateOnly from,
+        DateOnly to)
+    {
+        var schedules = await _context.VaccineSchedules
+            .AsNoTracking()
+            .Include(s => s.Booth)
+            .Where(s =>
+                s.Status == "Active" &&
+                (s.HospitalUserId == hospitalUserId ||
+                 (hospitalProfileId != null && s.HospitalProfileId == hospitalProfileId)))
+            .ToListAsync();
+
+        var occurrences = new List<SessionOccurrence>();
+        foreach (var schedule in schedules)
+        {
+            if (!TimeOnly.TryParse(schedule.StartTime, out var start) ||
+                !TimeOnly.TryParse(schedule.EndTime, out var end) ||
+                end <= start)
+            {
+                continue;
+            }
+
+            if (!string.Equals(schedule.ScheduleType, "Weekly", StringComparison.OrdinalIgnoreCase))
+            {
+                if (schedule.SpecificDate is { } specific && specific >= from && specific <= to)
+                    occurrences.Add(new SessionOccurrence(schedule, specific, start, end));
+                continue;
+            }
+
+            var weekdays = (schedule.DaysOfWeek ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            for (var date = from; date <= to; date = date.AddDays(1))
+            {
+                if (schedule.StartDate.HasValue && date < schedule.StartDate.Value) continue;
+                if (schedule.EndDate.HasValue && date > schedule.EndDate.Value) continue;
+                var dayName = date.DayOfWeek.ToString();
+                if (weekdays.Any(d =>
+                        string.Equals(d, dayName, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(d, dayName[..3], StringComparison.OrdinalIgnoreCase)))
+                {
+                    occurrences.Add(new SessionOccurrence(schedule, date, start, end));
+                }
+            }
+        }
+
+        return occurrences;
+    }
+
+    /// <summary>A shift staffs a session when it is in that booth during the session's hours.</summary>
+    private static bool ShiftStaffsSession(StaffShift shift, SessionOccurrence session) =>
+        shift.ShiftDate == session.Date &&
+        shift.StartTime < session.End &&
+        shift.EndTime > session.Start &&
+        (session.Schedule.BoothId == null || shift.BoothId == session.Schedule.BoothId);
+
+    private static bool SessionIsOver(SessionOccurrence session)
+    {
+        var today = HospitalToday();
+        return session.Date < today ||
+               (session.Date == today && session.End <= TimeOnly.FromDateTime(HospitalNow()));
+    }
+
+    private static RosterSessionDto MapRosterSession(SessionOccurrence session, IEnumerable<StaffShift> hospitalShifts)
+    {
+        var staffing = hospitalShifts
+            .Where(s => ShiftStaffsSession(s, session))
+            .OrderBy(s => s.StartTime)
+            .ToList();
+
+        List<RosterSessionStaffDto> ForRole(UserRole role) => staffing
+            .Where(s => s.Affiliation.StaffRole == role)
+            .Select(s => new RosterSessionStaffDto
+            {
+                ShiftId = s.Id,
+                AffiliationId = s.AffiliationId,
+                StaffName = GetStaffName(s.Affiliation.StaffUser),
+                StartTime = s.StartTime,
+                EndTime = s.EndTime
+            })
+            .ToList();
+
+        return new RosterSessionDto
+        {
+            ScheduleId = session.Schedule.Id,
+            Date = session.Date,
+            StartTime = session.Start,
+            EndTime = session.End,
+            BoothId = session.Schedule.BoothId,
+            BoothLabel = session.Schedule.Booth?.DisplayLabel ?? session.Schedule.BoothLabel,
+            VaccineName = session.Schedule.VaccineName,
+            Doctors = ForRole(UserRole.DOCTOR),
+            Nurses = ForRole(UserRole.NURSE),
+            CanAssign = !SessionIsOver(session)
+        };
+    }
+
+    private Task<List<StaffShift>> LoadHospitalShiftsAsync(Guid hospitalUserId, DateOnly from, DateOnly to) =>
+        _context.StaffShifts
+            .AsNoTracking()
+            .Include(s => s.Affiliation).ThenInclude(a => a.StaffUser).ThenInclude(u => u.DoctorProfile)
+            .Include(s => s.Affiliation).ThenInclude(a => a.StaffUser).ThenInclude(u => u.NurseProfile)
+            .Where(s =>
+                s.Affiliation.HospitalUserId == hospitalUserId &&
+                s.Affiliation.Status == AffiliationStatus.Active &&
+                s.ShiftDate >= from &&
+                s.ShiftDate <= to)
+            .ToListAsync();
+
+    public async Task<List<RosterSessionDto>> GetRosterSessionsAsync(Guid hospitalUserId, DateOnly from, DateOnly to)
+    {
+        var hospitalProfileId = await EnsureActiveHospitalWithProfileAsync(hospitalUserId);
+
+        if (to < from)
+            throw new InvalidOperationException("End date must be on or after the start date.");
+        if (to.DayNumber - from.DayNumber > 31)
+            throw new InvalidOperationException("Session range cannot exceed 31 days.");
+
+        var sessions = await ExpandSessionsAsync(hospitalUserId, hospitalProfileId, from, to);
+        var shifts = await LoadHospitalShiftsAsync(hospitalUserId, from, to);
+
+        return sessions
+            .Select(session => MapRosterSession(session, shifts))
+            .OrderBy(s => s.Date)
+            .ThenBy(s => s.StartTime)
+            .ThenBy(s => s.BoothLabel, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private async Task<SessionOccurrence> FindSessionAsync(Guid hospitalUserId, Guid scheduleId, DateOnly date)
+    {
+        var hospitalProfileId = await EnsureActiveHospitalWithProfileAsync(hospitalUserId);
+        var session = (await ExpandSessionsAsync(hospitalUserId, hospitalProfileId, date, date))
+            .FirstOrDefault(s => s.Schedule.Id == scheduleId);
+        return session ?? throw new KeyNotFoundException("That session does not run on this date.");
+    }
+
+    public async Task<List<SessionCandidateDto>> GetSessionCandidatesAsync(Guid hospitalUserId, Guid scheduleId, DateOnly date)
+    {
+        var session = await FindSessionAsync(hospitalUserId, scheduleId, date);
+        return await BuildSessionCandidatesAsync(hospitalUserId, session);
+    }
+
+    private async Task<List<SessionCandidateDto>> BuildSessionCandidatesAsync(Guid hospitalUserId, SessionOccurrence session)
+    {
+        var staff = await _context.StaffAffiliations
+            .AsNoTracking()
+            .Include(a => a.StaffUser).ThenInclude(u => u.DoctorProfile)
+            .Include(a => a.StaffUser).ThenInclude(u => u.NurseProfile)
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.Status == AffiliationStatus.Active &&
+                (a.StaffRole == UserRole.DOCTOR || a.StaffRole == UserRole.NURSE))
+            .ToListAsync();
+
+        // Shifts at any hospital that day, since a doctor elsewhere cannot staff this session.
+        var staffUserIds = staff.Select(a => a.StaffUserId).Distinct().ToList();
+        var dayShifts = await _context.StaffShifts
+            .AsNoTracking()
+            .Include(s => s.Affiliation)
+            .Where(s =>
+                staffUserIds.Contains(s.Affiliation.StaffUserId) &&
+                s.Affiliation.Status == AffiliationStatus.Active &&
+                s.ShiftDate == session.Date)
+            .ToListAsync();
+
+        var rules = await StaffAvailabilityHelper.LoadAsync(_context, staff.Select(a => a.Id).ToList());
+        var (start, end) = (session.Start, session.End);
+
+        var candidates = new List<SessionCandidateDto>();
+        foreach (var affiliation in staff)
+        {
+            var theirs = dayShifts.Where(s => s.Affiliation.StaffUserId == affiliation.StaffUserId).ToList();
+            var local = theirs.Where(s => s.Affiliation.HospitalUserId == hospitalUserId).ToList();
+            var elsewhere = theirs.Where(s => s.Affiliation.HospitalUserId != hospitalUserId).ToList();
+
+            string? reason = null;
+            var canOverride = false;
+
+            var clash = local.FirstOrDefault(s => s.StartTime < end && s.EndTime > start);
+            if (local.Any(s => ShiftStaffsSession(s, session)))
+                reason = "Already on this session";
+            else if (clash != null)
+                reason = $"On another shift {clash.StartTime:HH\\:mm}-{clash.EndTime:HH\\:mm}";
+            else if (elsewhere.Any(s => s.StartTime < end && s.EndTime > start))
+                reason = "Working at another hospital";
+            else if (elsewhere.Any(s => StaffAvailabilityHelper.WithinTravelGap(start, end, s.StartTime, s.EndTime)))
+                reason = "At another hospital too close to this session";
+            else
+            {
+                var unavailable = StaffAvailabilityHelper.Explain(
+                    rules.GetValueOrDefault(affiliation.Id), session.Date, start, end);
+                if (unavailable != null)
+                {
+                    reason = char.ToUpperInvariant(unavailable[0]) + unavailable[1..];
+                    canOverride = true;
+                }
+            }
+
+            candidates.Add(new SessionCandidateDto
+            {
+                AffiliationId = affiliation.Id,
+                StaffName = GetStaffName(affiliation.StaffUser),
+                StaffRole = affiliation.StaffRole.ToString(),
+                Specialization = affiliation.StaffUser.DoctorProfile?.Specialization,
+                StaffPhotoUrl = affiliation.StaffUser.DoctorProfile?.ProfilePhotoUrl
+                    ?? affiliation.StaffUser.NurseProfile?.ProfilePhotoUrl,
+                Available = reason == null,
+                Reason = reason,
+                CanOverride = canOverride,
+                ShiftsThatDay = local.Count
+            });
+        }
+
+        // Free people first, lightest day first, so the obvious pick is on top.
+        return candidates
+            .OrderByDescending(c => c.Available)
+            .ThenBy(c => c.ShiftsThatDay)
+            .ThenBy(c => c.StaffName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    public async Task<RosterSessionDto> AssignSessionStaffAsync(Guid hospitalUserId, AssignSessionStaffDto dto)
+    {
+        var session = await FindSessionAsync(hospitalUserId, dto.ScheduleId, dto.Date);
+        if (SessionIsOver(session))
+            throw new InvalidOperationException("This session has already ended.");
+
+        var requested = (dto.AffiliationIds ?? new List<Guid>()).Distinct().ToList();
+        if (requested.Count == 0)
+            throw new InvalidOperationException("Pick at least one staff member.");
+
+        // Check everyone before creating anything, so a session is not left half staffed.
+        var candidates = (await BuildSessionCandidatesAsync(hospitalUserId, session))
+            .ToDictionary(c => c.AffiliationId);
+        foreach (var affiliationId in requested)
+        {
+            if (!candidates.TryGetValue(affiliationId, out var candidate))
+                throw new KeyNotFoundException("Affiliation not found for this hospital.");
+            if (candidate.Available) continue;
+            if (candidate.CanOverride && dto.OverrideAvailability) continue;
+
+            var prefix = candidate.CanOverride ? "Outside availability: " : string.Empty;
+            throw new InvalidOperationException($"{prefix}{candidate.StaffName}: {candidate.Reason}.");
+        }
+
+        // A session already under way is staffed from now, since shifts cannot start in the past.
+        var start = session.Start;
+        if (session.Date == HospitalToday())
+        {
+            var now = HospitalNow();
+            var nextMinute = new TimeOnly(now.Hour, now.Minute).AddMinutes(1);
+            if (start < nextMinute && nextMinute < session.End)
+                start = nextMinute;
+        }
+
+        var booth = session.Schedule.Booth;
+        foreach (var affiliationId in requested)
+        {
+            await CreateShiftAsync(hospitalUserId, new CreateStaffShiftDto
+            {
+                AffiliationId = affiliationId,
+                ShiftDate = session.Date,
+                StartTime = start,
+                EndTime = session.End,
+                BoothId = booth is { IsActive: true } ? booth.Id : null,
+                BoothOrStation = booth is { IsActive: true } ? null : session.Schedule.BoothLabel,
+                Notes = $"{session.Schedule.VaccineName} session",
+                OverrideAvailability = dto.OverrideAvailability
+            });
+        }
+
+        var shifts = await LoadHospitalShiftsAsync(hospitalUserId, session.Date, session.Date);
+        return MapRosterSession(session, shifts);
     }
 
     public async Task<StaffCoverageReportDto> GetCoverageReportAsync(Guid hospitalUserId, DateOnly from, DateOnly to)
@@ -761,7 +1362,10 @@ public class StaffManagementService : IStaffManagementService
 
         var activeAffiliations = await _context.StaffAffiliations
             .AsNoTracking()
-            .Where(a => a.HospitalUserId == hospitalUserId && a.Status == AffiliationStatus.Active)
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.Status == AffiliationStatus.Active &&
+                a.StaffRole != UserRole.FRONT_DESK)
             .ToListAsync();
 
         var activeDoctors = activeAffiliations.Count(a => a.StaffRole == UserRole.DOCTOR);
@@ -939,15 +1543,16 @@ public class StaffManagementService : IStaffManagementService
     }
 
     /// <summary>
-    /// Suggest a realistic clinic roster for Low/Partial days: AM + PM slots,
-    /// rotating doctors and nurses, targeting ~2 of each role when available.
-    /// Does not persist — hospital must approve proposals in the UI.
+    /// Rules-based roster suggestions, used when the scheduling agent is unreachable.
+    /// Proposes a doctor and a nurse for every posted vaccine session that still lacks
+    /// one, with the session's own date, hours and booth. Nothing is saved: the
+    /// hospital approves each proposal.
     /// </summary>
     public async Task<SuggestWeekCoverageResultDto> SuggestWeekCoverageAsync(
         Guid hospitalUserId,
         SuggestWeekCoverageDto dto)
     {
-        await EnsureActiveHospitalAsync(hospitalUserId);
+        var hospitalProfileId = await EnsureActiveHospitalWithProfileAsync(hospitalUserId);
 
         if (dto.To < dto.From)
             throw new InvalidOperationException("End date must be on or after start date.");
@@ -955,50 +1560,31 @@ public class StaffManagementService : IStaffManagementService
         if ((dto.To.DayNumber - dto.From.DayNumber) > 31)
             throw new InvalidOperationException("Suggest range cannot exceed 31 days.");
 
-        // Defaults kept for API compatibility; real suggestions use AM/PM clinic slots.
+        // Kept for API compatibility; shift hours now come from each session.
         _ = ParseSuggestTime(dto.DefaultStart, new TimeOnly(8, 0));
         _ = ParseSuggestTime(dto.DefaultEnd, new TimeOnly(16, 0));
-
-        var coverage = await GetCoverageReportAsync(hospitalUserId, dto.From, dto.To);
 
         var activeStaff = await _context.StaffAffiliations
             .AsNoTracking()
             .Include(a => a.StaffUser).ThenInclude(u => u.DoctorProfile)
             .Include(a => a.StaffUser).ThenInclude(u => u.NurseProfile)
-            .Where(a => a.HospitalUserId == hospitalUserId && a.Status == AffiliationStatus.Active)
+            .Where(a =>
+                a.HospitalUserId == hospitalUserId &&
+                a.Status == AffiliationStatus.Active &&
+                a.StaffRole != UserRole.FRONT_DESK)
             .OrderBy(a => a.InvitedAt)
-            .ToListAsync();
-
-        var existingShifts = await _context.StaffShifts
-            .AsNoTracking()
-            .Include(s => s.Affiliation)
-            .Where(s =>
-                s.Affiliation.HospitalUserId == hospitalUserId &&
-                s.Affiliation.Status == AffiliationStatus.Active &&
-                s.ShiftDate >= dto.From &&
-                s.ShiftDate <= dto.To)
             .ToListAsync();
 
         var doctors = activeStaff.Where(a => a.StaffRole == UserRole.DOCTOR).ToList();
         var nurses = activeStaff.Where(a => a.StaffRole == UserRole.NURSE).ToList();
-        var targetDoctors = TargetDailyRoleCount(doctors.Count);
-        var targetNurses = TargetDailyRoleCount(nurses.Count);
 
-        var activeBooths = await _context.HospitalBooths
-            .AsNoTracking()
-            .Where(b => b.HospitalUserId == hospitalUserId && b.IsActive)
-            .OrderBy(b => b.SortOrder)
-            .ThenBy(b => b.Code)
-            .ToListAsync();
+        var sessions = (await ExpandSessionsAsync(hospitalUserId, hospitalProfileId, dto.From, dto.To))
+            .OrderBy(s => s.Date)
+            .ThenBy(s => s.Start)
+            .ToList();
+        var hospitalShifts = await LoadHospitalShiftsAsync(hospitalUserId, dto.From, dto.To);
 
-        var clinicSlots = new (TimeOnly Start, TimeOnly End, string SlotLabel)[]
-        {
-            (new TimeOnly(8, 0), new TimeOnly(12, 0), "Morning"),
-            (new TimeOnly(13, 0), new TimeOnly(17, 0), "Afternoon")
-        };
-
-        var proposals = new List<ShiftProposalDto>();
-        var planned = existingShifts
+        var planned = hospitalShifts
             .Select(s => (s.AffiliationId, s.ShiftDate, s.StartTime, s.EndTime, s.Affiliation.StaffRole))
             .ToList();
 
@@ -1018,118 +1604,79 @@ public class StaffManagementService : IStaffManagementService
                 s.ShiftDate <= dto.To)
             .Select(s => new { s.Affiliation.StaffUserId, s.ShiftDate, s.StartTime, s.EndTime })
             .ToListAsync();
+        // Padded by the travel gap so a proposal is never back-to-back with another hospital.
         var externalBusy = externalShifts
-            .Select(s => (localAffiliationByStaff[s.StaffUserId], s.ShiftDate, s.StartTime, s.EndTime, UserRole.DOCTOR))
+            .Select(s => (
+                localAffiliationByStaff[s.StaffUserId],
+                s.ShiftDate,
+                PadStart(s.StartTime),
+                PadEnd(s.EndTime),
+                UserRole.DOCTOR))
             .ToList();
+
+        var availability = await StaffAvailabilityHelper.LoadAsync(
+            _context,
+            activeStaff.Select(a => a.Id).ToList());
 
         var today = HospitalToday();
         var nowTime = TimeOnly.FromDateTime(HospitalNow());
-        var skippedPastDays = 0;
+        var proposals = new List<ShiftProposalDto>();
+        var skippedPastDays = new HashSet<DateOnly>();
+        var unstaffedSessions = 0;
         var doctorCursor = 0;
         var nurseCursor = 0;
-        var boothCursor = 0;
 
-        foreach (var day in coverage.Days.Where(d => d.CoverageLevel is "Low" or "Partial"))
+        foreach (var session in sessions)
         {
-            if (day.Date < today)
+            if (session.Date < today)
             {
-                skippedPastDays++;
+                skippedPastDays.Add(session.Date);
                 continue;
             }
 
-            foreach (var (slotStart, slotEnd, slotLabel) in clinicSlots)
+            // Shifts cannot start in the past, so a session already under way is left alone.
+            if (session.Date == today && session.Start < nowTime)
+                continue;
+
+            var booth = session.Schedule.Booth;
+            var boothLabel = booth?.DisplayLabel ?? session.Schedule.BoothLabel;
+            var window = $"{session.Start:HH\\:mm}-{session.End:HH\\:mm}";
+            var needed = false;
+
+            foreach (var role in new[] { UserRole.DOCTOR, UserRole.NURSE })
             {
-                if (day.Date == today && slotStart < nowTime)
-                    continue;
+                var staffed =
+                    hospitalShifts.Any(s => s.Affiliation.StaffRole == role && ShiftStaffsSession(s, session));
+                if (staffed) continue;
+                needed = true;
 
-                Guid? boothId = null;
-                string station;
-                if (activeBooths.Count > 0)
+                var chosen = role == UserRole.DOCTOR
+                    ? PickNextFreeStaff(doctors, ref doctorCursor, session.Date, session.Start, session.End, planned, externalBusy, availability)
+                    : PickNextFreeStaff(nurses, ref nurseCursor, session.Date, session.Start, session.End, planned, externalBusy, availability);
+                if (chosen == null) continue;
+
+                var roleLabel = role == UserRole.DOCTOR ? "doctor" : "nurse";
+                proposals.Add(new ShiftProposalDto
                 {
-                    var booth = activeBooths[boothCursor % activeBooths.Count];
-                    boothCursor++;
-                    boothId = booth.Id;
-                    station = $"{booth.DisplayLabel} — {slotLabel}";
-                }
-                else
-                {
-                    station = slotLabel;
-                }
-
-                var dayDocs = planned
-                    .Where(p => p.ShiftDate == day.Date && p.StaffRole == UserRole.DOCTOR)
-                    .Select(p => p.AffiliationId)
-                    .Distinct()
-                    .Count();
-
-                if (dayDocs < targetDoctors)
-                {
-                    var doctor = PickNextFreeStaff(
-                        doctors,
-                        ref doctorCursor,
-                        day.Date,
-                        slotStart,
-                        slotEnd,
-                        planned,
-                        externalBusy);
-                    if (doctor != null)
-                    {
-                        proposals.Add(new ShiftProposalDto
-                        {
-                            AffiliationId = doctor.Id,
-                            StaffName = GetStaffName(doctor.StaffUser),
-                            StaffRole = doctor.StaffRole.ToString(),
-                            ShiftDate = day.Date,
-                            StartTime = slotStart,
-                            EndTime = slotEnd,
-                            BoothId = boothId,
-                            BoothOrStation = station,
-                            Notes = "Suggested clinic coverage (AM/PM rotation)",
-                            Reason = $"{day.Summary} — doctor for {station}"
-                        });
-                        planned.Add((doctor.Id, day.Date, slotStart, slotEnd, UserRole.DOCTOR));
-                    }
-                }
-
-                var dayNurses = planned
-                    .Where(p => p.ShiftDate == day.Date && p.StaffRole == UserRole.NURSE)
-                    .Select(p => p.AffiliationId)
-                    .Distinct()
-                    .Count();
-
-                if (dayNurses < targetNurses)
-                {
-                    var nurse = PickNextFreeStaff(
-                        nurses,
-                        ref nurseCursor,
-                        day.Date,
-                        slotStart,
-                        slotEnd,
-                        planned,
-                        externalBusy);
-                    if (nurse != null)
-                    {
-                        proposals.Add(new ShiftProposalDto
-                        {
-                            AffiliationId = nurse.Id,
-                            StaffName = GetStaffName(nurse.StaffUser),
-                            StaffRole = nurse.StaffRole.ToString(),
-                            ShiftDate = day.Date,
-                            StartTime = slotStart,
-                            EndTime = slotEnd,
-                            BoothId = boothId,
-                            BoothOrStation = station,
-                            Notes = "Suggested clinic coverage (AM/PM rotation)",
-                            Reason = $"{day.Summary} — nurse for {station}"
-                        });
-                        planned.Add((nurse.Id, day.Date, slotStart, slotEnd, UserRole.NURSE));
-                    }
-                }
+                    AffiliationId = chosen.Id,
+                    StaffName = GetStaffName(chosen.StaffUser),
+                    StaffRole = chosen.StaffRole.ToString(),
+                    ShiftDate = session.Date,
+                    StartTime = session.Start,
+                    EndTime = session.End,
+                    BoothId = booth is { IsActive: true } ? booth.Id : null,
+                    BoothOrStation = boothLabel,
+                    Notes = $"{session.Schedule.VaccineName} session",
+                    Reason = $"{session.Schedule.VaccineName} {window} needs a {roleLabel}"
+                });
+                planned.Add((chosen.Id, session.Date, session.Start, session.End, role));
             }
+
+            if (needed) unstaffedSessions++;
         }
 
-        var skippedNote = skippedPastDays > 0
-            ? $" Skipped {skippedPastDays} past day(s) that can no longer be scheduled."
+        var skippedNote = skippedPastDays.Count > 0
+            ? $" Skipped {skippedPastDays.Count} past day(s) that can no longer be scheduled."
             : string.Empty;
 
         return new SuggestWeekCoverageResultDto
@@ -1139,11 +1686,13 @@ public class StaffManagementService : IStaffManagementService
             ActiveDoctors = doctors.Count,
             ActiveNurses = nurses.Count,
             ProposalCount = proposals.Count,
-            SkippedPastDays = skippedPastDays,
+            SkippedPastDays = skippedPastDays.Count,
             Proposals = proposals,
             Message = proposals.Count > 0
-                ? $"Suggested {proposals.Count} AM/PM shift(s) with staff rotation (target {targetDoctors}D + {targetNurses}N per day).{skippedNote}"
-                : $"No upcoming Low/Partial days needing new shifts, or no free staff available.{skippedNote}"
+                ? $"Suggested {proposals.Count} shift(s) for {unstaffedSessions} session(s) that still need staff.{skippedNote}"
+                : unstaffedSessions > 0
+                    ? $"No free staff for the {unstaffedSessions} session(s) that still need staff.{skippedNote}"
+                    : $"Every upcoming session in this range is already staffed.{skippedNote}"
         };
     }
 
@@ -1163,26 +1712,59 @@ public class StaffManagementService : IStaffManagementService
         TimeOnly start,
         TimeOnly end,
         List<(Guid AffiliationId, DateOnly ShiftDate, TimeOnly StartTime, TimeOnly EndTime, UserRole StaffRole)> planned,
-        List<(Guid AffiliationId, DateOnly ShiftDate, TimeOnly StartTime, TimeOnly EndTime, UserRole StaffRole)> externalBusy)
+        List<(Guid AffiliationId, DateOnly ShiftDate, TimeOnly StartTime, TimeOnly EndTime, UserRole StaffRole)> externalBusy,
+        Dictionary<Guid, StaffAvailabilityHelper.Rules> availability)
     {
         if (pool.Count == 0) return null;
+
+        bool IsFree(StaffAffiliation candidate) =>
+            !planned.Concat(externalBusy).Any(p =>
+                p.AffiliationId == candidate.Id &&
+                p.ShiftDate == date &&
+                p.StartTime < end &&
+                start < p.EndTime) &&
+            StaffAvailabilityHelper.IsAvailable(availability.GetValueOrDefault(candidate.Id), date, start, end);
+
+        int ShiftCount(StaffAffiliation candidate) => planned.Count(p => p.AffiliationId == candidate.Id);
+
+        // A doctor who offers only part of the week can only be used inside those hours,
+        // so they go first there, but only while they have fewer shifts in the range than
+        // their colleagues' average. Once level, the normal rotation applies.
+        bool IsBehindFairShare(StaffAffiliation candidate)
+        {
+            var others = pool.Where(other => other.Id != candidate.Id).ToList();
+            return others.Count > 0 && ShiftCount(candidate) < others.Average(ShiftCount);
+        }
+
+        var limited = pool.FirstOrDefault(candidate =>
+            availability.GetValueOrDefault(candidate.Id)?.HasWeeklyLimit == true &&
+            !planned.Any(p => p.AffiliationId == candidate.Id && p.ShiftDate == date) &&
+            IsBehindFairShare(candidate) &&
+            IsFree(candidate));
+        if (limited != null) return limited;
 
         for (var attempt = 0; attempt < pool.Count; attempt++)
         {
             var candidate = pool[cursor % pool.Count];
             cursor++;
 
-            var conflict = planned.Concat(externalBusy).Any(p =>
-                p.AffiliationId == candidate.Id &&
-                p.ShiftDate == date &&
-                p.StartTime < end &&
-                start < p.EndTime);
-
-            if (!conflict)
+            if (IsFree(candidate))
                 return candidate;
         }
 
         return null;
+    }
+
+    private static TimeOnly PadStart(TimeOnly start)
+    {
+        var padded = start.ToTimeSpan() - StaffAvailabilityHelper.TravelGap;
+        return padded < TimeSpan.Zero ? TimeOnly.MinValue : TimeOnly.FromTimeSpan(padded);
+    }
+
+    private static TimeOnly PadEnd(TimeOnly end)
+    {
+        var padded = end.ToTimeSpan() + StaffAvailabilityHelper.TravelGap;
+        return padded >= TimeSpan.FromDays(1) ? TimeOnly.MaxValue : TimeOnly.FromTimeSpan(padded);
     }
 
     private static TimeOnly ParseSuggestTime(string? value, TimeOnly fallback)
@@ -1240,11 +1822,22 @@ public class StaffManagementService : IStaffManagementService
         ValidateShiftSchedule(dto.ShiftDate, dto.StartTime, dto.EndTime, existingStart: shift.StartTime, existingDate: shift.ShiftDate);
 
         await EnsureNoShiftOverlapAsync(
+            hospitalUserId,
             shift.Affiliation.StaffUserId,
             dto.ShiftDate,
             dto.StartTime,
             dto.EndTime,
             excludeShiftId: shift.Id);
+
+        // Booth or notes edits keep the slot, so only a moved slot is checked again.
+        var slotMoved =
+            shift.ShiftDate != dto.ShiftDate ||
+            shift.StartTime.Hour != dto.StartTime.Hour ||
+            shift.StartTime.Minute != dto.StartTime.Minute ||
+            shift.EndTime.Hour != dto.EndTime.Hour ||
+            shift.EndTime.Minute != dto.EndTime.Minute;
+        if (slotMoved)
+            await EnsureWithinAvailabilityAsync(shift.Affiliation, dto.ShiftDate, dto.StartTime, dto.EndTime, dto.OverrideAvailability);
 
         shift.ShiftDate = dto.ShiftDate;
         shift.StartTime = dto.StartTime;
@@ -1408,9 +2001,11 @@ public class StaffManagementService : IStaffManagementService
     }
 
     /// <summary>
-    /// Blocks overlapping shifts for the same staff member on the same date (any hospital).
+    /// Blocks overlapping shifts for the same staff member on the same date (any hospital),
+    /// and shifts at another hospital that leave no time to travel.
     /// </summary>
     private async Task EnsureNoShiftOverlapAsync(
+        Guid hospitalUserId,
         Guid staffUserId,
         DateOnly shiftDate,
         TimeOnly startTime,
@@ -1431,6 +2026,15 @@ public class StaffManagementService : IStaffManagementService
         {
             throw new InvalidOperationException(
                 "This staff member is already unavailable during that time slot.");
+        }
+
+        var tooCloseElsewhere = existing.Any(s =>
+            s.Affiliation.HospitalUserId != hospitalUserId &&
+            StaffAvailabilityHelper.WithinTravelGap(startTime, endTime, s.StartTime, s.EndTime));
+        if (tooCloseElsewhere)
+        {
+            throw new InvalidOperationException(
+                $"This staff member has a shift at another hospital within {StaffAvailabilityHelper.TravelGap.TotalMinutes:0} minutes of this slot. Leave travel time between hospitals.");
         }
     }
 
@@ -1501,7 +2105,7 @@ public class StaffManagementService : IStaffManagementService
         var more = sessions.Count > 3 ? $" and {sessions.Count - 3} more" : string.Empty;
         return $"{booth.DisplayLabel} still has {sessions.Count} active session" +
                $"{(sessions.Count == 1 ? "" : "s")}: {string.Join(", ", shown)}{more}. " +
-               "Cancel them in Schedules first.";
+               "Cancel them under Sessions first.";
     }
 
     private static string NormalizeBoothCode(string? code)
@@ -1612,7 +2216,8 @@ public class StaffManagementService : IStaffManagementService
             DutyStatus = affiliation.DutyStatus.ToString(),
             DutyUpdatedAt = affiliation.DutyUpdatedAt,
             InvitedAt = affiliation.InvitedAt,
-            RespondedAt = affiliation.RespondedAt
+            RespondedAt = affiliation.RespondedAt,
+            IsPrimary = affiliation.IsPrimary
         };
     }
 

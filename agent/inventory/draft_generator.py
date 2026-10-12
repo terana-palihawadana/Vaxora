@@ -9,7 +9,8 @@ from typing import Dict, Any, List, Optional
 
 
 # ==================== PRICE LOOKUP ====================
-# Simple price map by category. In real deployment this would come from supplier APIs.
+# Each line is priced from the supplier cost the hospital saved on its formulary.
+# This category map is only the fallback estimate for vaccines with no cost set.
 
 CATEGORY_UNIT_PRICES_LKR = {
     "mrna": 2000,
@@ -17,6 +18,10 @@ CATEGORY_UNIT_PRICES_LKR = {
     "seasonal": 1000,
     "pediatric": 1500,
 }
+
+
+# Matches the API's fallback for products with no supplier saved on the formulary
+DEFAULT_SUPPLIER = "State Pharmaceuticals Corporation"
 
 
 def _now():
@@ -42,6 +47,7 @@ def generate_purchase_order_draft(
     restock_proposals: List[Dict[str, Any]],
     hospital_name: str,
     hospital_registration: Optional[str] = None,
+    formulary_pricing: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Optional[Dict[str, Any]]:
     """
     Combines one or more restock proposals into a single draft PO.
@@ -51,6 +57,7 @@ def generate_purchase_order_draft(
             Each has: vaccine_id, vaccine_name, current_stock, recommended_quantity, reason, urgency
         hospital_name: buyer hospital display name
         hospital_registration: MOH registration number if available
+        formulary_pricing: vaccine_id -> {"supplier_cost", "category", "supplier_name"} from the hospital formulary
 
     Returns:
         Draft PO document, or None if no valid proposals.
@@ -68,9 +75,11 @@ def generate_purchase_order_draft(
 
     for p in valid:
         qty = int(p.get("recommended_quantity", 0))
-        # Best-effort category guess from name
-        category = _guess_category(p.get("vaccine_name", ""))
-        unit = _get_unit_price(category)
+        priced = (formulary_pricing or {}).get(str(p.get("vaccine_id", "")).lower(), {})
+        # Formulary category when known, otherwise a best-effort guess from the name
+        category = priced.get("category") or _guess_category(p.get("vaccine_name", ""))
+        supplier_cost = priced.get("supplier_cost") or 0
+        unit = supplier_cost if supplier_cost > 0 else _get_unit_price(category)
         line_total = qty * unit
         subtotal += line_total
 
@@ -78,6 +87,7 @@ def generate_purchase_order_draft(
             "vaccine_id": p.get("vaccine_id", ""),
             "vaccine_name": p.get("vaccine_name", "Unknown"),
             "category": category,
+            "supplier": priced.get("supplier_name") or DEFAULT_SUPPLIER,
             "quantity": qty,
             "unit_price_lkr": unit,
             "total_lkr": line_total,
@@ -86,6 +96,7 @@ def generate_purchase_order_draft(
             "justification": p.get("reason", "Agent-recommended reorder"),
         })
 
+    suppliers = list(dict.fromkeys(li["supplier"] for li in line_items))
     doc_number = _gen_doc_number("PO")
     delivery_days = 14
     delivery_date = _now().replace(microsecond=0)
@@ -108,7 +119,8 @@ def generate_purchase_order_draft(
             "name": hospital_name,
             "registration": hospital_registration or "MOH-PENDING",
         },
-        "supplier": "State Pharmaceuticals Corporation",
+        # Each supplier is emailed only its own lines when the order is approved
+        "supplier": suppliers[0] if len(suppliers) == 1 else f"{len(suppliers)} suppliers: {', '.join(suppliers)}",
         "order_date": _now().strftime("%Y-%m-%d"),
         "delivery_date": delivery_date,
         "delivery_lead_days": delivery_days,

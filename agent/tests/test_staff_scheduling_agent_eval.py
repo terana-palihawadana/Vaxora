@@ -26,7 +26,6 @@ from staff_tools import (
     _validate_proposals,
     tool_propose_shift_for_approval,
 )
-from shift_swap_agent import _build_swap_proposal
 from orchestrator import MultiAgentOrchestrator
 
 
@@ -153,16 +152,6 @@ def test_validate_proposals_flags_unknown_staff_and_overlap():
 
 
 @pytest.mark.asyncio
-async def test_orchestrator_routes_cover_request_to_shift_swap_not_scheduling():
-    orch = MultiAgentOrchestrator()
-    target = await orch.route_intent(
-        [{"role": "user", "content": "I can't make my shift tomorrow, please cover me"}],
-        allowed_agents=["ShiftSwapAgent", "StaffSchedulingAgent"],
-    )
-    assert target == "ShiftSwapAgent"
-
-
-@pytest.mark.asyncio
 async def test_orchestrator_routes_hospital_roster_to_staff_scheduling():
     orch = MultiAgentOrchestrator()
     target = await orch.route_intent(
@@ -172,31 +161,9 @@ async def test_orchestrator_routes_hospital_roster_to_staff_scheduling():
                 "content": "Analyze coverage and suggest shifts for the roster this week",
             }
         ],
-        allowed_agents=["ShiftSwapAgent", "StaffSchedulingAgent"],
+        allowed_agents=["StaffSchedulingAgent"],
     )
     assert target == "StaffSchedulingAgent"
-
-
-def test_shift_swap_structures_pending_hospital_review_payload():
-    messages = [
-        {
-            "role": "user",
-            "content": (
-                "Need cover for shift aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee "
-                "on 2026-10-08 09:00-11:00. Reason: clinic conflict"
-            ),
-        }
-    ]
-    proposal = _build_swap_proposal(
-        messages,
-        {"name": "Dr. Sam", "hospitalName": "General Hospital"},
-    )
-    assert proposal is not None
-    assert proposal["kind"] == "ShiftSwapRequest"
-    assert proposal["shiftId"] == "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-    assert proposal["shiftDate"] == "2026-10-08"
-    assert proposal["status"] == "PendingHospitalReview"
-    assert "clinic conflict" in (proposal["reason"] or "").lower()
 
 
 def test_malformed_golden_case_fails_loudly():

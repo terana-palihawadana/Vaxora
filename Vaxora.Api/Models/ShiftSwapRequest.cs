@@ -13,7 +13,7 @@ public enum ShiftSwapStatus
 
 /// <summary>
 /// A doctor/nurse's request for someone else to cover one of their shifts.
-/// Created by the mobile ShiftSwapAgent flow; the hospital approves or
+/// Created from the staff cover-request form; the hospital approves or
 /// declines. This lives in its own table so hospital users can query it
 /// scoped to their own affiliations without touching AgentWorkflows.
 /// </summary>

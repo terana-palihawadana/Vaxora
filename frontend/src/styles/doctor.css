@@ -1430,10 +1430,11 @@
   border: 1px solid var(--color-info-border);
 }
 
+/* Deep navy on light cyan: the step after "in session" blue. Purple is kept for AI. */
 .status-observation {
-  background-color: var(--color-ai-bg);
-  color: var(--color-ai);
-  border: 1px solid var(--color-ai-border);
+  background-color: var(--color-soft-panel-deep);
+  color: var(--color-primary-dark);
+  border: 1px solid var(--color-accent-frost);
 }
 
 .status-completed {
@@ -1880,7 +1881,7 @@
 .doctor-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(var(--rgb-primary-dark), 0.6);
+  background-color: var(--color-overlay);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
@@ -3302,6 +3303,153 @@
   border-color: var(--color-success-border);
   background: var(--color-success-bg);
   color: var(--color-success);
+}
+
+.staff-affil-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.staff-affil-hours {
+  font-size: 0.8125rem;
+  color: var(--color-text-body);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.staff-affil-primary-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-info-border);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* Availability editor: one row per weekday, hours only for ticked days. */
+.staff-avail-modal {
+  max-width: 480px;
+}
+
+.staff-avail-primary {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-info-border);
+  border-radius: 10px;
+  background: var(--color-info-bg);
+  cursor: pointer;
+}
+
+.staff-avail-primary input {
+  margin-top: 3px;
+}
+
+.staff-avail-primary span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.875rem;
+  color: var(--color-text-title);
+}
+
+.staff-avail-primary small {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.staff-avail-grid {
+  display: grid;
+  gap: 6px;
+}
+
+.staff-avail-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 4px 10px;
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+}
+
+.staff-avail-row.is-on {
+  border-color: var(--color-info-border);
+}
+
+.staff-avail-day {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 64px;
+  flex-shrink: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-title);
+  cursor: pointer;
+}
+
+.staff-avail-times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.staff-avail-times .doctor-form-input {
+  padding: 6px 8px;
+  min-width: 0;
+}
+
+.staff-avail-off {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.staff-avail-dayoff-add {
+  display: flex;
+  gap: 8px;
+}
+
+.staff-avail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.staff-avail-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--color-border-card);
+  border-radius: 999px;
+  background: var(--color-bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-body);
+}
+
+.staff-avail-chip button {
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
 }
 
 .staff-affil-hospital-avatar {
@@ -4827,6 +4975,11 @@
 .staff-workspace-page h3 {
   font-family: var(--font-heading);
   letter-spacing: 0;
+}
+
+/* The profile wrapper centres its children, which shrank the banner to its text. */
+.staff-workspace-page > .portal-hero {
+  align-self: stretch;
 }
 
 .staff-workspace-page > .doctor-manage-appointments-card,

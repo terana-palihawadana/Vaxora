@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { TEST_ACCOUNTS } from './testAccounts.js';
 
 // Accessibility (WCAG 2.1 A/AA) checks for every main page of the Vaxora web app,
 // one test per page and role, using axe-core on the real React app against the local API.
 // Doctor and nurse portals are not covered: no doctor or nurse account is seeded.
 
-const ACCOUNTS = {
-  patient: { email: 'patient1@vaxora.lk', password: 'Password123!', home: /\/patient\// },
-  hospital: { email: 'hospital@vaxora.local', password: 'Hospital@123', home: /\/hospital\// },
-  admin: { email: 'admin@vaxora.health.gov.lk', password: 'Admin@Vaxora2026', home: /\/admin\// },
+const HOMES = {
+  patient: /\/patient\//,
+  hospital: /\/hospital\//,
+  admin: /\/admin\//,
 };
 
 const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
@@ -41,12 +42,12 @@ const PAGES = [
 ];
 
 async function loginAs(page, role) {
-  const account = ACCOUNTS[role];
+  const account = TEST_ACCOUNTS[role];
   await page.goto('/login');
   await page.fill('input[name="email"]', account.email);
   await page.fill('input[name="password"]', account.password);
   await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(account.home, { timeout: 20000 });
+  await expect(page).toHaveURL(HOMES[role], { timeout: 20000 });
 }
 
 function describeViolations(violations) {

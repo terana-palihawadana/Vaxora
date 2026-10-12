@@ -47,9 +47,9 @@ dependencies:
   # Inventory module packages (Vishmika)
   mobile_scanner: ^5.2.3
   provider: ^6.1.2
-  add_2_calendar: ^3.0.1
   file_picker: ^11.0.3
-
+  device_calendar: 4.3.3
+  timezone: 0.9.4
 dev_dependencies:
   flutter_test:
     sdk: flutter
