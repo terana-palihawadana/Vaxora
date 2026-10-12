@@ -653,6 +653,68 @@ public class VaccinationBookingTests
     }
 
     [Fact]
+    public async Task CreateWalkInAppointmentAsync_auto_assigns_the_running_sessions_booth()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var tetanus = AddVaccine(context, "Tetanus Toxoid");
+        var firstBooth = AddBooth(context, hospital, "B02", "Travel", 1, tetanus);
+        var sessionBooth = AddBooth(context, hospital, "B04", "Wound care", 2, tetanus);
+        var schedule = new VaccineSchedule
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Tetanus Toxoid",
+            ScheduleType = "OneTime",
+            SpecificDate = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(5.5)),
+            StartTime = "00:00",
+            EndTime = "23:59",
+            BoothId = sessionBooth.Id,
+            BoothLabel = sessionBooth.DisplayLabel,
+            Status = "Active"
+        };
+        context.VaccineSchedules.Add(schedule);
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+
+        var result = await service.CreateWalkInAppointmentAsync(hospital.Id, WalkIn("Tetanus Toxoid", boothLabel: null));
+
+        Assert.Equal(sessionBooth.DisplayLabel, result.BoothLabel);
+        Assert.Equal(sessionBooth.Id, result.BoothId);
+        Assert.Equal(schedule.Id, result.VaccineScheduleId);
+        Assert.NotEqual(firstBooth.DisplayLabel, result.BoothLabel);
+    }
+
+    [Fact]
+    public async Task CreateWalkInAppointmentAsync_ends_the_slot_at_the_session_end_in_a_short_last_stretch()
+    {
+        await using var context = TestDb.CreateContext();
+        var hospital = TestDb.AddHospital(context);
+        var hospitalNow = DateTime.UtcNow.AddHours(5.5);
+        var now = new TimeOnly(hospitalNow.Hour, hospitalNow.Minute);
+        // Too close to midnight to fit a session around the current minute.
+        if (now < new TimeOnly(0, 10) || now > new TimeOnly(23, 45)) return;
+
+        // A 15-minute session holds no full 20-minute band, so now is in its leftover stretch.
+        var sessionEnd = now.AddMinutes(10);
+        context.VaccineSchedules.Add(new VaccineSchedule
+        {
+            HospitalUserId = hospital.Id,
+            VaccineName = "Tetanus Toxoid",
+            ScheduleType = "OneTime",
+            SpecificDate = DateOnly.FromDateTime(hospitalNow),
+            StartTime = now.AddMinutes(-5).ToString("HH:mm"),
+            EndTime = sessionEnd.ToString("HH:mm"),
+            Status = "Active"
+        });
+        await context.SaveChangesAsync();
+        var service = CreateService(context);
+
+        var result = await service.CreateWalkInAppointmentAsync(hospital.Id, WalkIn("Tetanus Toxoid", boothLabel: null));
+
+        Assert.Equal(sessionEnd.ToString("HH:mm"), result.EndTime);
+    }
+
+    [Fact]
     public async Task CreateWalkInAppointmentAsync_rejects_desk_booth_that_does_not_offer_the_vaccine()
     {
         await using var context = TestDb.CreateContext();

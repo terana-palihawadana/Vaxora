@@ -652,8 +652,6 @@ public class AppointmentService : IAppointmentService
         var today = DateOnly.FromDateTime(hospitalNow);
         var arrival = new TimeOnly(hospitalNow.Hour, hospitalNow.Minute);
 
-        var (boothId, boothLabel) = await ResolveWalkInBoothAsync(hospital.Id, vaccineName, dto.BoothLabel);
-
         var vName = vaccineName.ToLowerInvariant();
         var hospitalProfileId = hospital.HospitalProfile?.Id;
         var scheduleQuery = _context.VaccineSchedules
@@ -662,9 +660,31 @@ public class AppointmentService : IAppointmentService
                 (s.HospitalUserId == hospital.Id ||
                  (hospitalProfileId != null && s.HospitalProfileId == hospitalProfileId)) &&
                 (s.VaccineName.ToLower() == vName || s.VaccineName.ToLower().Contains(vName)));
+        var vaccineSchedules = await scheduleQuery.ToListAsync();
+
+        // On Auto, a walk-in joins the booth of the session running right now, so they
+        // show in that session's queue. Otherwise the desk's choice or auto-assign applies.
+        Guid? boothId = null;
+        string? boothLabel = null;
+        var runningBoothId = string.IsNullOrWhiteSpace(dto.BoothLabel)
+            ? vaccineSchedules
+                .Where(s => s.BoothId.HasValue && IsSessionRunning(s, today, arrival))
+                .Select(s => s.BoothId)
+                .FirstOrDefault()
+            : null;
+        if (runningBoothId.HasValue)
+        {
+            var sessionBooth = await _context.HospitalBooths
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == runningBoothId.Value && b.HospitalUserId == hospital.Id && b.IsActive);
+            if (sessionBooth != null)
+                (boothId, boothLabel) = (sessionBooth.Id, sessionBooth.DisplayLabel);
+        }
+        if (!boothId.HasValue)
+            (boothId, boothLabel) = await ResolveWalkInBoothAsync(hospital.Id, vaccineName, dto.BoothLabel);
+
         // Prefer the session running right now, then the one at the assigned booth so
         // vaccine and booth agree.
-        var vaccineSchedules = await scheduleQuery.ToListAsync();
         var schedule = vaccineSchedules
             .OrderByDescending(s => IsSessionRunning(s, today, arrival))
             .ThenByDescending(s => boothId.HasValue && s.BoothId == boothId)
@@ -1836,9 +1856,14 @@ public class AppointmentService : IAppointmentService
                 slot.Slot))
             .ToList();
         var arrivedIn = bands.FindIndex(b => arrival >= b.Start && arrival < b.End);
-        // Arrived in a leftover stretch shorter than a full band at the end of the session.
+        // Arrived in a leftover stretch shorter than a full band at the end of the session:
+        // the slot stops at the session end rather than running past it.
         if (arrivedIn < 0)
-            return (arrival, arrival.AddMinutes(bandMinutes));
+        {
+            return TryParseTime(schedule.EndTime, out var sessionEnd) && sessionEnd > arrival
+                ? (arrival, sessionEnd)
+                : (arrival, arrival.AddMinutes(bandMinutes));
+        }
 
         var booked = await _context.Appointments
             .Where(a =>
